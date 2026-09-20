@@ -67,7 +67,7 @@ TYPESAFE_API_KEY=... go run ./examples/quickstart
 ## Gotchas
 
 - Dev environment is Windows (Git Bash); CI is ubuntu-latest on Go 1.27.x +
-  stable, triggered on `master`, `develop`, and PRs. Main branch is `master`.
+  stable, triggered on `master` and PRs. Main branch is `master`.
 - CI is split by trust boundary: `ci.yml` (push + PR, **secretless** — tests,
   Staticcheck, Govulncheck, zero-dependency check) and `integration.yml`
   (trusted pushes only; sole consumer of the `TYPESAFE_API_KEY` secret held

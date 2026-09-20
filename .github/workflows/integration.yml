@@ -8,7 +8,7 @@ name: Trusted Integration
 # pull_request_target trigger here.
 on:
   push:
-    branches: [master, develop]
+    branches: [master]
 
 permissions:
   contents: read
