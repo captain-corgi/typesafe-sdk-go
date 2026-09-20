@@ -22,6 +22,8 @@ but the package is named `typesafe` (like `go-openai`). Requires Go 1.27+.
 - `references/` — git **submodules**: `typesafe-sdk-python` (v0.7.0, primary
   parity reference) and `typesafe-sdk-js` (secondary cross-check). Read-only;
   never edit. If empty: `git submodule update --init`.
+- Governance: `SECURITY.md` (vulnerability reporting), `CONTRIBUTING.md`
+  (contribution rules), `.github/CODEOWNERS` (owner-reviewed sensitive paths).
 - `.claude/`, `.agentkit/` — tooling config, not part of the SDK.
 
 ## Commands
@@ -66,6 +68,11 @@ TYPESAFE_API_KEY=... go run ./examples/quickstart
 
 - Dev environment is Windows (Git Bash); CI is ubuntu-latest on Go 1.27.x +
   stable, triggered on `master`, `develop`, and PRs. Main branch is `master`.
+- CI is split by trust boundary: `ci.yml` (push + PR, **secretless** — tests,
+  Staticcheck, Govulncheck, zero-dependency check) and `integration.yml`
+  (trusted pushes only; sole consumer of the `TYPESAFE_API_KEY` secret held
+  in the `typesafe-integration` GitHub environment). Never add secrets or a
+  `pull_request_target` trigger to PR CI.
 - Integration tests and all examples make real network calls; guard on
   `TYPESAFE_API_KEY`.
 - `references/` content is ignored by the build but pinned as submodules —

@@ -1,7 +1,14 @@
 name: CI
 
+# Untrusted-safe validation: this workflow runs on pull requests (including
+# forks) and must stay secretless. Live-API integration tests live in
+# integration.yml, which runs only on trusted pushes and holds the
+# TYPESAFE_API_KEY environment secret. Do not add secrets or a
+# pull_request_target trigger here.
 on:
   push:
+    branches: [master, develop]
+  pull_request:
     branches: [master, develop]
 
 permissions:
@@ -42,8 +49,6 @@ jobs:
           fi
       - name: Vet
         run: go vet ./...
-      # The zero-dependency promise is a contract, so prove it rather than
-      # trusting review: tidy must be a no-op and the module graph must verify.
       - name: Check go.mod is tidy
         run: go mod tidy -diff
       - name: Verify module dependencies
@@ -58,6 +63,37 @@ jobs:
         run: go test ./...
       - name: Build examples
         run: go build ./...
+
+  zero-deps:
+    name: Zero dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
+        with:
+          go-version: stable
+      # The zero-dependency promise is a contract, so prove it rather than
+      # trusting review. `go mod tidy -diff` and `go mod verify` (test job)
+      # only prove the module file is consistent; this job proves the actual
+      # invariant: no module other than the SDK itself, and no directives in
+      # go.mod that could smuggle one in later.
+      - name: Assert no external Go module dependencies
+        run: |
+          set -euo pipefail
+          deps="$(go list -m -f '{{if not .Main}}{{.Path}}{{end}}' all | sed '/^$/d')"
+          if [ -n "$deps" ]; then
+            echo "::error::This SDK must remain stdlib-only (zero runtime dependencies)."
+            echo "Unexpected external modules:"
+            echo "$deps"
+            exit 1
+          fi
+          if grep -nE '^(require|replace|exclude|tool)[ (]' go.mod; then
+            echo "::error::go.mod must contain only module and go directives."
+            exit 1
+          fi
+          echo "Zero-dependency invariant satisfied."
 
   lint:
     name: Staticcheck
@@ -86,23 +122,3 @@ jobs:
           go-version: stable
       - name: Govulncheck
         run: go run golang.org/x/vuln/cmd/govulncheck@v1.8.0 ./...
-
-  integration:
-    name: Integration (live API)
-    runs-on: ubuntu-latest
-    continue-on-error: true
-    env:
-      # Secrets cannot be read in `if` conditionals; funnel through env.
-      HAS_API_KEY: ${{ secrets.TYPESAFE_API_KEY != '' }}
-    steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
-        with:
-          persist-credentials: false
-      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
-        with:
-          go-version: stable
-      - name: Run integration tests
-        if: env.HAS_API_KEY == 'true'
-        env:
-          TYPESAFE_API_KEY: ${{ secrets.TYPESAFE_API_KEY }}
-        run: go test -run Integration ./...

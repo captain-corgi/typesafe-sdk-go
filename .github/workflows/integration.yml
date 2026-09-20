@@ -1,0 +1,39 @@
+name: Trusted Integration
+
+# Live-API validation. This is the trusted side of the CI trust boundary:
+# it runs only on pushes to protected branches, never on pull requests, and
+# is the only consumer of the TYPESAFE_API_KEY secret. The secret must live
+# in the `typesafe-integration` environment (not as a repository-level
+# secret) so it can never reach fork-PR code. Do not add a pull_request or
+# pull_request_target trigger here.
+on:
+  push:
+    branches: [master, develop]
+
+permissions:
+  contents: read
+
+jobs:
+  integration:
+    name: Integration (live API)
+    runs-on: ubuntu-latest
+    # Deliberately informational, not a gate: live-API flakiness and outages
+    # must not fail the trusted build. Do not list this job as a required
+    # status check on the branch ruleset; treat its results as advisory.
+    continue-on-error: true
+    environment: typesafe-integration
+    env:
+      # Secrets cannot be read in `if` conditionals; funnel through env.
+      HAS_API_KEY: ${{ secrets.TYPESAFE_API_KEY != '' }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
+        with:
+          go-version: stable
+      - name: Run integration tests
+        if: env.HAS_API_KEY == 'true'
+        env:
+          TYPESAFE_API_KEY: ${{ secrets.TYPESAFE_API_KEY }}
+        run: go test -run Integration ./...
