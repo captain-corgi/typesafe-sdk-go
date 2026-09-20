@@ -1,0 +1,102 @@
+name: CI
+
+on:
+  push:
+    branches: [master, develop]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Test (${{ matrix.os }}, Go ${{ matrix.go-version }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        go-version: ['1.27.x', stable]
+        include:
+          # One run each on the other supported platforms; the dev environment
+          # is Windows, and path and clock handling differ enough to be worth
+          # a build there.
+          - os: windows-latest
+            go-version: stable
+          - os: macos-latest
+            go-version: stable
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ matrix.go-version }}
+      - name: Check formatting
+        shell: bash
+        run: |
+          unformatted=$(gofmt -l .)
+          if [ -n "$unformatted" ]; then
+            echo "Files not gofmt-formatted:"
+            echo "$unformatted"
+            exit 1
+          fi
+      - name: Vet
+        run: go vet ./...
+      # The zero-dependency promise is a contract, so prove it rather than
+      # trusting review: tidy must be a no-op and the module graph must verify.
+      - name: Check go.mod is tidy
+        run: go mod tidy -diff
+      - name: Verify module dependencies
+        run: go mod verify
+      # The race detector needs cgo, which is not reliably available on the
+      # Windows runner; that platform gets a plain run.
+      - name: Test with race detector
+        if: runner.os != 'Windows'
+        run: go test -race ./...
+      - name: Test
+        if: runner.os == 'Windows'
+        run: go test ./...
+      - name: Build examples
+        run: go build ./...
+
+  lint:
+    name: Staticcheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+      # Run as a tool dependency rather than a module requirement, so the SDK
+      # itself keeps zero dependencies.
+      - name: Staticcheck
+        run: go run honnef.co/go/tools/cmd/staticcheck@latest ./...
+
+  vulncheck:
+    name: Govulncheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+      - name: Govulncheck
+        run: go run golang.org/x/vuln/cmd/govulncheck@latest ./...
+
+  integration:
+    name: Integration (live API)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    env:
+      # Secrets cannot be read in `if` conditionals; funnel through env.
+      HAS_API_KEY: ${{ secrets.TYPESAFE_API_KEY != '' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+      - name: Run integration tests
+        if: env.HAS_API_KEY == 'true'
+        env:
+          TYPESAFE_API_KEY: ${{ secrets.TYPESAFE_API_KEY }}
+        run: go test -run Integration ./...

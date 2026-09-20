@@ -1,0 +1,14 @@
+# Go build and test artifacts.
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+coverage.txt
+
+# Editor and tooling noise.
+.idea/
+.vscode/
+references
