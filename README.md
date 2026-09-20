@@ -1,5 +1,7 @@
 # TypeSafe AI SDK for Go
 
+> **Disclaimer:** This project is an independent, community-maintained Go SDK. It is not officially affiliated with, maintained, or endorsed by TypeSafe AI.
+
 [![CI](https://github.com/captain-corgi/typesafe-sdk-go/actions/workflows/ci.yml/badge.svg)](https://github.com/captain-corgi/typesafe-sdk-go/actions/workflows/ci.yml)
 [![Go Reference](https://pkg.go.dev/badge/github.com/captain-corgi/typesafe-sdk-go.svg)](https://pkg.go.dev/github.com/captain-corgi/typesafe-sdk-go)
 
@@ -38,7 +40,7 @@ The question kind you ask determines the statically-known answer type you get
 back — that is the "type safety":
 
 | Primitive | Question | Answer |
-|---|---|---|
+| --- | --- | --- |
 | **Noul** | yes/no | `NoulAnswer{Noul float64}` — probability of true, 0..1 |
 | **Choice** | classification | `ChoiceAnswer{Choice, Confidence, Probabilities}` |
 | **Score** | rubric scoring | `ScoreAnswer{Score, Confidence, Legend, Probabilities}` |
@@ -64,7 +66,7 @@ whitespace-only explicit API keys also inherit. Other explicit strings, includin
 base URLs, model names, and nonblank API keys, are preserved verbatim.
 
 | Setting | Option | Environment | Default |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | API key | `WithAPIKey` | `TYPESAFE_API_KEY` | — (required) |
 | Base URL | `WithBaseURL` | `TYPESAFE_BASE_URL` | `https://api.typesafe.ai` |
 | Model | `WithModel` | `TYPESAFE_DEFAULT_MODEL` | `jev-latest` |
@@ -195,7 +197,7 @@ of the Python SDK's `Response.from_http_response`.
 Every failure is matched with `errors.As`:
 
 | Error type | Meaning |
-|---|---|
+| --- | --- |
 | `*typesafe.TypeSafeError` | shared root of **every** SDK error below; used directly for SDK-side failures (missing key, bad params), wrapping sentinels like `ErrMissingAPIKey`, `ErrClientClosed` |
 | `*typesafe.APIError` | any non-2xx response (`Status`, `Body` raw wire text, `DecodedBody` parsed JSON, `Headers`, `Endpoint`, `RequestID`) |
 | `*typesafe.BadRequestError` … `*typesafe.RateLimitError` | 400 / 401 / 403 / 404 / 422 / 429 subclasses |
