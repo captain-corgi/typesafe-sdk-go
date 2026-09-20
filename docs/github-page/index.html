@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="system">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TypeSafe SDK for Go — Documentation</title>
+  <meta name="description" content="Go client SDK for the TypeSafe AI API — typed answers to named questions, zero runtime dependencies, feature parity with Python SDK v0.7.0.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>">
+  <style>
+    /* ─── THEME TOKENS ─── */
+    :root {
+      --radius: 12px;
+      --max-width: 1200px;
+      color-scheme: light dark;
+    }
+
+    /* ─── DARK THEME ─── */
+    [data-theme="dark"],
+    [data-theme="system"] {
+      --bg: #0d1117;
+      --bg-card: #161b22;
+      --bg-code: #1c2128;
+      --bg-nav: rgba(13, 17, 23, 0.85);
+      --border: #30363d;
+      --text: #e6edf3;
+      --text-muted: #8b949e;
+      --text-on-accent: #0d1117;
+      --accent: #58a6ff;
+      --accent-hover: #79c0ff;
+      --green: #3fb950;
+      --orange: #d29922;
+      --purple: #bc8cff;
+      --red: #f85149;
+      --pink: #f778ba;
+      /* Syntax highlighting — dark */
+      --hl-kw: #ff7b72;
+      --hl-fn: #d2a8ff;
+      --hl-str: #a5d6ff;
+      --hl-cm: #8b949e;
+      --hl-type: #79c0ff;
+      --hl-num: #f0883e;
+      /* Badge tints */
+      --tint-green: rgba(63, 185, 80, 0.15);
+      --tint-accent: rgba(88, 166, 255, 0.15);
+      --tint-purple: rgba(188, 140, 255, 0.15);
+      --tint-orange: rgba(210, 153, 34, 0.15);
+      --tint-red: rgba(248, 81, 73, 0.15);
+      --tint-pink: rgba(247, 120, 186, 0.15);
+      --hero-grad-start: #e6edf3;
+      --hero-grad-end: #58a6ff;
+    }
+
+    /* ─── LIGHT THEME ─── */
+    [data-theme="light"] {
+      --bg: #ffffff;
+      --bg-card: #f6f8fa;
+      --bg-code: #f0f2f5;
+      --bg-nav: rgba(255, 255, 255, 0.85);
+      --border: #d1d9e0;
+      --text: #1f2328;
+      --text-muted: #59636e;
+      --text-on-accent: #ffffff;
+      --accent: #0969da;
+      --accent-hover: #0550ae;
+      --green: #1a7f37;
+      --orange: #9a6700;
+      --purple: #8250df;
+      --red: #cf222e;
+      --pink: #bf3989;
+      /* Syntax highlighting — light */
+      --hl-kw: #cf222e;
+      --hl-fn: #8250df;
+      --hl-str: #0a3069;
+      --hl-cm: #6e7781;
+      --hl-type: #0550ae;
+      --hl-num: #953800;
+      /* Badge tints */
+      --tint-green: rgba(26, 127, 55, 0.1);
+      --tint-accent: rgba(9, 105, 218, 0.1);
+      --tint-purple: rgba(130, 80, 223, 0.1);
+      --tint-orange: rgba(154, 103, 0, 0.1);
+      --tint-red: rgba(207, 34, 46, 0.1);
+      --tint-pink: rgba(191, 57, 137, 0.1);
+      --hero-grad-start: #1f2328;
+      --hero-grad-end: #0969da;
+    }
+
+    /* ─── SYSTEM PREFERENCE OVERRIDE ─── */
+    @media (prefers-color-scheme: light) {
+      [data-theme="system"] {
+        --bg: #ffffff;
+        --bg-card: #f6f8fa;
+        --bg-code: #f0f2f5;
+        --bg-nav: rgba(255, 255, 255, 0.85);
+        --border: #d1d9e0;
+        --text: #1f2328;
+        --text-muted: #59636e;
+        --text-on-accent: #ffffff;
+        --accent: #0969da;
+        --accent-hover: #0550ae;
+        --green: #1a7f37;
+        --orange: #9a6700;
+        --purple: #8250df;
+        --red: #cf222e;
+        --pink: #bf3989;
+        --hl-kw: #cf222e;
+        --hl-fn: #8250df;
+        --hl-str: #0a3069;
+        --hl-cm: #6e7781;
+        --hl-type: #0550ae;
+        --hl-num: #953800;
+        --tint-green: rgba(26, 127, 55, 0.1);
+        --tint-accent: rgba(9, 105, 218, 0.1);
+        --tint-purple: rgba(130, 80, 223, 0.1);
+        --tint-orange: rgba(154, 103, 0, 0.1);
+        --tint-red: rgba(207, 34, 46, 0.1);
+        --tint-pink: rgba(191, 57, 137, 0.1);
+        --hero-grad-start: #1f2328;
+        --hero-grad-end: #0969da;
+      }
+    }
+
+    /* ─── RESET & BASE ─── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; scroll-padding-top: 80px; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      transition: background-color 0.3s, color 0.3s;
+    }
+    a { color: var(--accent); text-decoration: none; transition: color 0.2s; }
+    a:hover { color: var(--accent-hover); }
+    code, pre {
+      font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+      font-size: 0.875rem;
+    }
+    code {
+      background: var(--bg-code);
+      padding: 2px 6px;
+      border-radius: 4px;
+      color: var(--accent);
+    }
+    pre {
+      background: var(--bg-code);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.25rem;
+      overflow-x: auto;
+      line-height: 1.5;
+    }
+    pre code { background: none; padding: 0; color: var(--text); }
+
+    /* ─── NAV ─── */
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: var(--bg-nav);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border);
+      transition: background-color 0.3s, border-color 0.3s;
+    }
+    .nav-inner {
+      max-width: var(--max-width);
+      margin: 0 auto;
+      padding: 0 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 64px;
+    }
+    .nav-brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-weight: 600;
+      font-size: 1.1rem;
+      color: var(--text);
+    }
+    .nav-brand svg { flex-shrink: 0; }
+    .nav-links { display: flex; gap: 1rem; align-items: center; }
+    .nav-links a { color: var(--text-muted); font-size: 0.9rem; font-weight: 500; }
+    .nav-links a:hover { color: var(--text); }
+    .nav-gh {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      color: var(--text) !important;
+      transition: border-color 0.2s, background-color 0.3s;
+    }
+    .nav-gh:hover { border-color: var(--accent); }
+
+    /* ─── THEME TOGGLE ─── */
+    .theme-toggle {
+      display: inline-flex;
+      align-items: center;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 2px;
+      gap: 0;
+      transition: border-color 0.3s, background-color 0.3s;
+    }
+    .theme-toggle button {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 5px 8px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      line-height: 1;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .theme-toggle button:hover { color: var(--text); }
+    .theme-toggle button.active {
+      background: var(--accent);
+      color: var(--text-on-accent);
+    }
+
+    /* ─── MOBILE NAV ─── */
+    .nav-toggle { display: none; background: none; border: none; color: var(--text); cursor: pointer; padding: 8px; }
+    @media (max-width: 768px) {
+      .nav-links {
+        display: none;
+        flex-direction: column;
+        position: absolute;
+        top: 64px;
+        left: 0;
+        right: 0;
+        background: var(--bg);
+        border-bottom: 1px solid var(--border);
+        padding: 1rem 1.5rem;
+        gap: 1rem;
+      }
+      .nav-links.open { display: flex; }
+      .nav-toggle { display: block; }
+    }
+
+    /* ─── HERO ─── */
+    .hero {
+      max-width: var(--max-width);
+      margin: 0 auto;
+      padding: 5rem 1.5rem 4rem;
+      text-align: center;
+    }
+    .hero-badge {
+      display: inline-block;
+      background: var(--tint-accent);
+      border: 1px solid var(--accent);
+      border-color: color-mix(in srgb, var(--accent) 40%, transparent);
+      color: var(--accent);
+      font-size: 0.8rem;
+      font-weight: 600;
+      padding: 4px 14px;
+      border-radius: 999px;
+      margin-bottom: 1.5rem;
+      letter-spacing: 0.03em;
+    }
+    .hero h1 {
+      font-size: clamp(2rem, 5vw, 3.5rem);
+      font-weight: 800;
+      line-height: 1.15;
+      margin-bottom: 1.25rem;
+      background: linear-gradient(135deg, var(--hero-grad-start) 0%, var(--hero-grad-end) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .hero p {
+      font-size: 1.15rem;
+      color: var(--text-muted);
+      max-width: 640px;
+      margin: 0 auto 2.5rem;
+    }
+    .hero-actions { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.95rem;
+      font-weight: 600;
+      padding: 12px 24px;
+      border-radius: 10px;
+      border: 1px solid transparent;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-primary {
+      background: var(--accent);
+      color: var(--text-on-accent);
+    }
+    .btn-primary:hover { background: var(--accent-hover); color: var(--text-on-accent); }
+    .btn-secondary {
+      background: transparent;
+      border-color: var(--border);
+      color: var(--text);
+    }
+    .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* ─── INSTALL SNIPPET ─── */
+    .install-bar {
+      max-width: 480px;
+      margin: 2.5rem auto 0;
+      display: flex;
+      align-items: center;
+      background: var(--bg-code);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.75rem 1rem;
+      gap: 0.75rem;
+      transition: background-color 0.3s, border-color 0.3s;
+    }
+    .install-bar code { flex: 1; color: var(--text-muted); background: none; padding: 0; font-size: 0.9rem; }
+    .install-bar code span { color: var(--green); }
+    .copy-btn {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 4px;
+      border-radius: 4px;
+      transition: color 0.2s;
+      font-size: 1.1rem;
+    }
+    .copy-btn:hover { color: var(--text); }
+
+    /* ─── SECTIONS ─── */
+    section {
+      max-width: var(--max-width);
+      margin: 0 auto;
+      padding: 5rem 1.5rem;
+    }
+    .section-header {
+      text-align: center;
+      margin-bottom: 3rem;
+    }
+    .section-header h2 {
+      font-size: 2rem;
+      font-weight: 700;
+      margin-bottom: 0.75rem;
+      color: var(--text);
+    }
+    .section-header p {
+      color: var(--text-muted);
+      font-size: 1.05rem;
+      max-width: 560px;
+      margin: 0 auto;
+    }
+
+    /* ─── FEATURE GRID ─── */
+    .features {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 1.5rem;
+    }
+    .feature-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.75rem;
+      transition: border-color 0.3s, transform 0.2s, background-color 0.3s;
+    }
+    .feature-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+    .feature-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 1rem;
+      font-size: 1.3rem;
+    }
+    .feature-card h3 { font-size: 1.1rem; font-weight: 600; margin-bottom: 0.5rem; color: var(--text); }
+    .feature-card p { color: var(--text-muted); font-size: 0.9rem; }
+
+    /* ─── QUESTION TYPES TABLE ─── */
+    .types-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 2rem;
+    }
+    .types-table th, .types-table td {
+      text-align: left;
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid var(--border);
+      color: var(--text);
+    }
+    .types-table th {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+    .types-table td { font-size: 0.9rem; }
+    .type-badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      font-family: monospace;
+    }
+    .type-noul { background: var(--tint-green); color: var(--green); }
+    .type-choice { background: var(--tint-accent); color: var(--accent); }
+    .type-score { background: var(--tint-purple); color: var(--purple); }
+
+    /* ─── CODE EXAMPLE ─── */
+    .code-section {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+      align-items: start;
+    }
+    @media (max-width: 900px) {
+      .code-section { grid-template-columns: 1fr; }
+    }
+    .code-desc h3 { font-size: 1.5rem; font-weight: 700; margin-bottom: 1rem; color: var(--text); }
+    .code-desc p { color: var(--text-muted); margin-bottom: 1.5rem; }
+    .code-desc ul { list-style: none; display: flex; flex-direction: column; gap: 0.75rem; }
+    .code-desc li { display: flex; align-items: flex-start; gap: 0.75rem; color: var(--text-muted); font-size: 0.9rem; }
+    .check { color: var(--green); flex-shrink: 0; margin-top: 2px; }
+
+    /* ─── ERRORS GRID ─── */
+    .errors-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1rem;
+      margin-top: 2rem;
+    }
+    .error-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.25rem;
+      transition: background-color 0.3s, border-color 0.3s;
+    }
+    .error-card h4 {
+      font-size: 0.85rem;
+      font-family: monospace;
+      color: var(--orange);
+      margin-bottom: 0.4rem;
+    }
+    .error-card p { font-size: 0.85rem; color: var(--text-muted); }
+
+    /* ─── DOCS GRID ─── */
+    .docs-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 1.25rem;
+    }
+    .doc-link {
+      display: block;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      transition: border-color 0.3s, transform 0.2s, background-color 0.3s;
+      color: var(--text);
+    }
+    .doc-link:hover { border-color: var(--accent); transform: translateY(-2px); color: var(--text); }
+    .doc-link h3 { font-size: 1rem; font-weight: 600; margin-bottom: 0.4rem; color: var(--text); }
+    .doc-link p { color: var(--text-muted); font-size: 0.85rem; }
+
+    /* ─── FOOTER ─── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 2rem 1.5rem;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      transition: border-color 0.3s;
+    }
+    footer a { color: var(--text-muted); }
+    footer a:hover { color: var(--text); }
+
+    /* ─── SYNTAX HIGHLIGHTING (uses CSS variables) ─── */
+    .hl-kw { color: var(--hl-kw); }
+    .hl-fn { color: var(--hl-fn); }
+    .hl-str { color: var(--hl-str); }
+    .hl-cm { color: var(--hl-cm); }
+    .hl-type { color: var(--hl-type); }
+    .hl-num { color: var(--hl-num); }
+
+    /* ─── DIVIDER ─── */
+    .divider {
+      width: 100%;
+      height: 1px;
+      background: var(--border);
+      max-width: var(--max-width);
+      margin: 0 auto;
+      transition: background-color 0.3s;
+    }
+  </style>
+  <!-- Prevent flash: apply saved theme before paint -->
+  <script>
+    (function() {
+      var saved = localStorage.getItem('theme') || 'system';
+      document.documentElement.setAttribute('data-theme', saved);
+    })();
+  </script>
+</head>
+<body>
+
+<!-- ═══════ NAV ═══════ -->
+<nav>
+  <div class="nav-inner">
+    <a href="#" class="nav-brand">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" fill="var(--tint-accent)" stroke="var(--accent)"/>
+      </svg>
+      TypeSafe SDK for Go
+    </a>
+    <button class="nav-toggle" onclick="document.querySelector('.nav-links').classList.toggle('open')" aria-label="Toggle navigation">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+    <div class="nav-links">
+      <a href="#features">Features</a>
+      <a href="#quickstart">Quick Start</a>
+      <a href="#types">Question Types</a>
+      <a href="#errors">Errors</a>
+      <a href="#docs">Docs</a>
+      <!-- Theme toggle -->
+      <div class="theme-toggle" role="radiogroup" aria-label="Color theme">
+        <button onclick="setTheme('light')" id="theme-light" title="Light" aria-label="Light theme">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+        </button>
+        <button onclick="setTheme('system')" id="theme-system" title="System" aria-label="System theme">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+        </button>
+        <button onclick="setTheme('dark')" id="theme-dark" title="Dark" aria-label="Dark theme">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        </button>
+      </div>
+      <a href="https://github.com/captain-corgi/typesafe-sdk-go" class="nav-gh" target="_blank" rel="noopener">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+        GitHub
+      </a>
+    </div>
+  </div>
+</nav>
+
+<!-- ═══════ HERO ═══════ -->
+<div class="hero">
+  <div class="hero-badge">Go SDK · Python v0.7.0 parity</div>
+  <h1>Typed answers to named questions.<br>One request. Zero deps.</h1>
+  <p>A Go client SDK for the TypeSafe AI API. Ask classification, scoring, and yes/no questions about any state — get statically-typed answers back.</p>
+  <div class="hero-actions">
+    <a href="#quickstart" class="btn btn-primary">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+      Quick Start
+    </a>
+    <a href="https://pkg.go.dev/github.com/captain-corgi/typesafe-sdk-go" class="btn btn-secondary" target="_blank" rel="noopener">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      API Reference
+    </a>
+  </div>
+  <div class="install-bar">
+    <code>$ <span>go get</span> github.com/captain-corgi/typesafe-sdk-go</code>
+    <button class="copy-btn" onclick="navigator.clipboard.writeText('go get github.com/captain-corgi/typesafe-sdk-go');this.innerHTML='✓';setTimeout(()=>this.innerHTML='⎘',1500)" title="Copy to clipboard">⎘</button>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ═══════ FEATURES ═══════ -->
+<section id="features">
+  <div class="section-header">
+    <h2>Why TypeSafe SDK for Go?</h2>
+    <p>Production-grade features, idiomatic Go design, zero external dependencies.</p>
+  </div>
+  <div class="features">
+    <div class="feature-card">
+      <div class="feature-icon" style="background: var(--tint-green);">🛡️</div>
+      <h3>Type Safety</h3>
+      <p>Question kind determines answer type at compile time. <code>Noul</code>, <code>Choice</code>, and <code>Score</code> map to their typed answer structs.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon" style="background: var(--tint-accent);">📦</div>
+      <h3>Zero Dependencies</h3>
+      <p>Go standard library only — <code>net/http</code>, <code>encoding/json</code>, <code>log/slog</code>. No third-party packages, ever.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon" style="background: var(--tint-purple);">🔄</div>
+      <h3>Smart Retries</h3>
+      <p>Exponential backoff with jitter, <code>Retry-After</code> headers, per-call budget, configurable selectors and predicates.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon" style="background: var(--tint-orange);">⚡</div>
+      <h3>Concurrent Safe</h3>
+      <p>One <code>Client</code> for the process. Goroutine-safe, verified under <code>-race</code> in CI. Per-call state never leaks.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon" style="background: var(--tint-red);">🔐</div>
+      <h3>Secure by Default</h3>
+      <p>HTTPS required, wire bodies redacted in logs, response size bounded, SDK-owned fields protected from override.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon" style="background: var(--tint-pink);">🐍</div>
+      <h3>Python Parity</h3>
+      <p>Feature-complete with Python SDK v0.7.0. Same error taxonomy, retry semantics, and wire protocol — with Go idioms.</p>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ═══════ QUICK START ═══════ -->
+<section id="quickstart">
+  <div class="code-section">
+    <div class="code-desc">
+      <h3>Up and running in 30 seconds</h3>
+      <p>Create a client, ask typed questions about your state, and read the answers — all with compile-time type safety.</p>
+      <ul>
+        <li><span class="check">✓</span> Client reads <code>TYPESAFE_API_KEY</code> from the environment</li>
+        <li><span class="check">✓</span> Questions validate before any network I/O</li>
+        <li><span class="check">✓</span> Answers are statically typed by question kind</li>
+        <li><span class="check">✓</span> Retries, timeouts, and headers are handled for you</li>
+        <li><span class="check">✓</span> Responses include usage stats and raw HTTP access</li>
+      </ul>
+    </div>
+    <pre><code><span class="hl-cm">// Create a client (reads TYPESAFE_API_KEY)</span>
+<span class="hl-type">client</span>, <span class="hl-type">err</span> := <span class="hl-fn">typesafe.NewClient</span>()
+<span class="hl-kw">if</span> err != <span class="hl-kw">nil</span> { <span class="hl-kw">return</span> err }
+<span class="hl-kw">defer</span> client.<span class="hl-fn">Close</span>()
+
+<span class="hl-cm">// Ask typed questions about a state</span>
+<span class="hl-type">resp</span>, <span class="hl-type">err</span> := client.<span class="hl-fn">SystemOne</span>(ctx, &amp;typesafe.SystemOneParams{
+    State: <span class="hl-kw">map</span>[<span class="hl-type">string</span>]<span class="hl-type">any</span>{
+        <span class="hl-str">"document"</span>: <span class="hl-str">"I was charged twice."</span>,
+    },
+    Questions: typesafe.Questions{
+        <span class="hl-str">"category"</span>: typesafe.Choice{
+            Instructions: <span class="hl-str">"What is this about?"</span>,
+            Criteria: typesafe.ChoiceCriteria{
+                <span class="hl-str">"billing"</span>: <span class="hl-kw">nil</span>,
+                <span class="hl-str">"technical"</span>: <span class="hl-kw">nil</span>,
+            },
+        },
+        <span class="hl-str">"urgent"</span>: typesafe.Noul{
+            Instructions: <span class="hl-str">"Is this urgent?"</span>,
+        },
+    },
+})
+
+<span class="hl-cm">// Read statically-typed answers</span>
+resp.<span class="hl-fn">Choices</span>()[<span class="hl-str">"category"</span>].Choice    <span class="hl-cm">// "billing"</span>
+resp.<span class="hl-fn">Nouls</span>()[<span class="hl-str">"urgent"</span>].Noul         <span class="hl-cm">// 0.92</span></code></pre>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ═══════ QUESTION TYPES ═══════ -->
+<section id="types">
+  <div class="section-header">
+    <h2>Three primitives, typed answers</h2>
+    <p>The question kind you ask determines the statically-known answer type you get back.</p>
+  </div>
+  <div style="overflow-x:auto;">
+    <table class="types-table">
+      <thead>
+        <tr>
+          <th>Primitive</th>
+          <th>Ask about</th>
+          <th>Answer type</th>
+          <th>Key field</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="type-badge type-noul">Noul</span></td>
+          <td>Yes/no probability</td>
+          <td><code>NoulAnswer</code></td>
+          <td><code>Noul float64</code> — probability 0..1</td>
+        </tr>
+        <tr>
+          <td><span class="type-badge type-choice">Choice</span></td>
+          <td>Classification</td>
+          <td><code>ChoiceAnswer</code></td>
+          <td><code>Choice string</code> + <code>Confidence</code> + <code>Probabilities</code></td>
+        </tr>
+        <tr>
+          <td><span class="type-badge type-score">Score</span></td>
+          <td>Rubric scoring</td>
+          <td><code>ScoreAnswer</code></td>
+          <td><code>Score float64</code> + <code>Legend</code> + <code>Probabilities</code></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <p style="color:var(--text-muted);font-size:0.85rem;margin-top:1rem;">Plus <code>RawQuestion</code> for passthrough — any shape the API supports, validated server-side.</p>
+</section>
+
+<div class="divider"></div>
+
+<!-- ═══════ ERRORS ═══════ -->
+<section id="errors">
+  <div class="section-header">
+    <h2>Structured error taxonomy</h2>
+    <p>Every failure matches with <code>errors.As</code>. Subclasses embed <code>*APIError</code>.</p>
+  </div>
+  <div class="errors-grid">
+    <div class="error-card">
+      <h4>*TypeSafeError</h4>
+      <p>Shared root of every SDK error. Used directly for client-side failures (missing key, bad params).</p>
+    </div>
+    <div class="error-card">
+      <h4>*APIError</h4>
+      <p>Any non-2xx response. Carries <code>Status</code>, <code>Body</code>, <code>DecodedBody</code>, <code>Headers</code>, <code>RequestID</code>.</p>
+    </div>
+    <div class="error-card">
+      <h4>*BadRequestError … *RateLimitError</h4>
+      <p>Status-specific subclasses for 400, 401, 403, 404, 422, 429.</p>
+    </div>
+    <div class="error-card">
+      <h4>*InternalServerError</h4>
+      <p>Any status ≥ 500. Retried by default policy.</p>
+    </div>
+    <div class="error-card">
+      <h4>*ConnectionError</h4>
+      <p>No HTTP response. Transport cause preserved via <code>Unwrap</code>.</p>
+    </div>
+    <div class="error-card">
+      <h4>*TimeoutError</h4>
+      <p>Attempt exceeded timeout. Satisfies <code>net.Error</code> and <code>*ConnectionError</code>.</p>
+    </div>
+  </div>
+  <pre style="margin-top:2rem;"><code><span class="hl-kw">var</span> rl *typesafe.RateLimitError
+<span class="hl-kw">if</span> errors.<span class="hl-fn">As</span>(err, &amp;rl) &amp;&amp; rl.RetryAfterMs != <span class="hl-kw">nil</span> {
+    fmt.<span class="hl-fn">Println</span>(<span class="hl-str">"retry after ms:"</span>, *rl.RetryAfterMs)
+}</code></pre>
+</section>
+
+<div class="divider"></div>
+
+<!-- ═══════ DOCS ═══════ -->
+<section id="docs">
+  <div class="section-header">
+    <h2>Deep-dive documentation</h2>
+    <p>Detailed guides for every aspect of the SDK.</p>
+  </div>
+  <div class="docs-grid">
+    <a href="https://github.com/captain-corgi/typesafe-sdk-go/blob/master/docs/getting-started.md" class="doc-link" target="_blank" rel="noopener">
+      <h3>🚀 Getting Started</h3>
+      <p>Install, first call, question kind decision tree.</p>
+    </a>
+    <a href="https://github.com/captain-corgi/typesafe-sdk-go/blob/master/docs/architecture.md" class="doc-link" target="_blank" rel="noopener">
+      <h3>🏗️ Architecture</h3>
+      <p>Module map, life of a call, concurrency model.</p>
+    </a>
+    <a href="https://github.com/captain-corgi/typesafe-sdk-go/blob/master/docs/configuration.md" class="doc-link" target="_blank" rel="noopener">
+      <h3>⚙️ Configuration</h3>
+      <p>Options, env vars, timeouts, HTTP client resolution.</p>
+    </a>
+    <a href="https://github.com/captain-corgi/typesafe-sdk-go/blob/master/docs/questions.md" class="doc-link" target="_blank" rel="noopener">
+      <h3>❓ Questions</h3>
+      <p>Noul, Choice, Score, Raw — what goes on the wire.</p>
+    </a>
+    <a href="https://github.com/captain-corgi/typesafe-sdk-go/blob/master/docs/responses.md" class="doc-link" target="_blank" rel="noopener">
+      <h3>📋 Responses</h3>
+      <p>Typed answers, usage stats, raw access, validation.</p>
+    </a>
+    <a href="https://github.com/captain-corgi/typesafe-sdk-go/blob/master/docs/errors.md" class="doc-link" target="_blank" rel="noopener">
+      <h3>⚠️ Error Handling</h3>
+      <p>Error taxonomy, matching patterns, recipes.</p>
+    </a>
+    <a href="https://github.com/captain-corgi/typesafe-sdk-go/blob/master/docs/retries.md" class="doc-link" target="_blank" rel="noopener">
+      <h3>🔄 Retries &amp; Timeouts</h3>
+      <p>Backoff, jitter, budget, Retry-After, selectors.</p>
+    </a>
+    <a href="https://github.com/captain-corgi/typesafe-sdk-go/blob/master/docs/wire-protocol.md" class="doc-link" target="_blank" rel="noopener">
+      <h3>📡 Wire Protocol</h3>
+      <p>HTTP methods, paths, headers, JSON encoding.</p>
+    </a>
+    <a href="https://github.com/captain-corgi/typesafe-sdk-go/blob/master/docs/observability.md" class="doc-link" target="_blank" rel="noopener">
+      <h3>🔍 Observability</h3>
+      <p>Logging, redaction, slog integration.</p>
+    </a>
+  </div>
+</section>
+
+<!-- ═══════ FOOTER ═══════ -->
+<footer>
+  <p>
+    <a href="https://github.com/captain-corgi/typesafe-sdk-go" target="_blank" rel="noopener">GitHub</a> ·
+    <a href="https://pkg.go.dev/github.com/captain-corgi/typesafe-sdk-go" target="_blank" rel="noopener">pkg.go.dev</a> ·
+    <a href="https://github.com/captain-corgi/typesafe-sdk-go/blob/master/LICENSE" target="_blank" rel="noopener">MIT License</a>
+  </p>
+  <p style="margin-top: 0.5rem;">An independent, community-maintained Go SDK. Not affiliated with TypeSafe AI.</p>
+</footer>
+
+<!-- ═══════ THEME TOGGLE SCRIPT ═══════ -->
+<script>
+  function setTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('theme', theme);
+    updateToggleButtons(theme);
+  }
+
+  function updateToggleButtons(theme) {
+    document.querySelectorAll('.theme-toggle button').forEach(function(btn) {
+      btn.classList.remove('active');
+    });
+    var activeBtn = document.getElementById('theme-' + theme);
+    if (activeBtn) activeBtn.classList.add('active');
+  }
+
+  // Initialize on load
+  var currentTheme = localStorage.getItem('theme') || 'system';
+  document.documentElement.setAttribute('data-theme', currentTheme);
+  updateToggleButtons(currentTheme);
+</script>
+
+</body>
+</html>
