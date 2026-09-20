@@ -53,10 +53,6 @@ flowchart LR
     config --> errors
 ```
 
-The per-file responsibility table lives in
-[plan.md §3](../plans/2026-09-19-typesafe-sdk-go/plan.md); the header names,
-paths, and defaults they share are defined once in `constants.go`.
-
 ## Life of a call
 
 ```mermaid
@@ -155,14 +151,13 @@ Decisions that shape everything above, with their rationale:
   add import-path ceremony without a real boundary.
 - **Hand-written wire structs, no codegen** — the question/answer set is
   small and stable; codegen would add a build step and a dependency for
-  nothing (plan §1).
+  nothing.
 - **Python v0.7.0 is the parity baseline** — where Python and JS references
   disagree, Python wins; deliberate Go deviations are ledgered in
-  [README §Deviations](../README.md#deviations-from-the-python-sdk) and
-  [plan §6](../plans/2026-09-19-typesafe-sdk-go/plan.md).
+  [README §Deviations](../README.md#deviations-from-the-python-sdk)
 - **Validate before network I/O** — the same client-side guarantee Python
   gets from eager construction, adapted to Go constructors, which cannot
-  return errors (plan §6.3).
+  return errors
 - **Silent-by-default `log/slog`** — libraries must not log unless asked;
   see [Observability](observability.md).
 - **Security defaults** — wire bodies are redacted by default, response
