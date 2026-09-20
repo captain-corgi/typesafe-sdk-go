@@ -305,6 +305,8 @@ are capped at 16 KiB.
 
 ## Security
 
+- To report a vulnerability, see [SECURITY.md](SECURITY.md) — please do not
+  open a public issue.
 - Responses are bounded to 16 MiB by default. Use
   `WithMaxResponseBodySize` to select a positive per-client limit; oversized
   bodies return `ErrResponseTooLarge` / `*ResponseTooLargeError` and are not

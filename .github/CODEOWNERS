@@ -1,0 +1,37 @@
+# CODEOWNERS for typesafe-sdk-go
+#
+# These paths can silently compromise downstream users or CI if changed
+# maliciously: network and credential handling, wire encoding, logging
+# redaction, release metadata, CI, and the agent-instruction boundary.
+# The master branch ruleset enforces "Require review from Code Owners".
+#
+# Note for the solo maintainer: GitHub does not count a PR author's own
+# approval, so PRs from @captain-corgi touching these paths need a second
+# reviewer or an explicit admin merge decision.
+
+# CI / automation
+/.github/workflows/   @captain-corgi
+/.github/CODEOWNERS   @captain-corgi
+
+# Dependency and release integrity
+/go.mod               @captain-corgi
+/version.go           @captain-corgi
+
+# Credential / network / request handling
+/client.go            @captain-corgi
+/config.go            @captain-corgi
+/transport.go         @captain-corgi
+/constants.go         @captain-corgi
+
+# Wire encoding
+/json.go              @captain-corgi
+/questions.go         @captain-corgi
+
+# Sensitive logging behavior
+/logging.go           @captain-corgi
+
+# AI agent instruction boundary
+/AGENTS.md            @captain-corgi
+
+# Security policy
+/SECURITY.md          @captain-corgi
