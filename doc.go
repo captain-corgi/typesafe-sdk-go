@@ -1,5 +1,7 @@
-// Package typesafe is a Go client SDK for the TypeSafe AI API
+// Package typesafe is a community-maintained Go client SDK for the TypeSafe AI API
 // (https://typesafe.ai).
+//
+// **Disclaimer:** This project is an independent, community-maintained Go SDK. It is not officially affiliated with, maintained, or endorsed by TypeSafe AI.
 //
 // The API answers typed, named questions about a piece of "state" in a single
 // request ("System One"): you POST a state plus a map of questions, and each
