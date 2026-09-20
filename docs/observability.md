@@ -23,7 +23,7 @@ The API key never appears in any log output or error message.
 | `response` | INFO | after every HTTP exchange: method, url, status, elapsed ms, request id |
 | `retry` | INFO | before each retry attempt: method, url, attempt number |
 | `error` | INFO | transport-level failure, with the classified error type |
-| `wire` | DEBUG | full request/response dumps — headers redacted, bodies **not** |
+| `wire` | DEBUG | request/response dumps — secret headers and bodies redacted by default |
 
 ## Redaction
 
@@ -40,9 +40,11 @@ flowchart TB
     keep --> out
 ```
 
-Note the boundary: secret **headers** are redacted; request and response
-**bodies** are not — they are the payload you asked to see at DEBUG level, so
-keep DEBUG logs out of untrusted hands.
+Bodies use `TYPESAFE_LOG_BODY=off` by default. Set `redacted` to retain JSON
+shape while replacing every string value, or `full` to emit raw payloads.
+`SetLogBodyMode` provides the equivalent programmatic control. Full body
+logging can expose sensitive data and should only be enabled in controlled
+environments; every logged body is capped at 16 KiB.
 
 ## Failure triage, quickly
 

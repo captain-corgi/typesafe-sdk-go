@@ -33,7 +33,8 @@ func ExampleClient_SystemOne() {
 
 	client, err := typesafe.NewClient(
 		typesafe.WithAPIKey("demo-key"),
-		typesafe.WithBaseURL(server.URL),
+		typesafe.WithBaseURL(server.URL), typesafe.WithAllowInsecureHTTP(),
+		typesafe.WithAllowInsecureHTTP(),
 	)
 	if err != nil {
 		log.Fatal(err)
@@ -78,7 +79,7 @@ func ExampleRawQuestion() {
 	}))
 	defer server.Close()
 
-	client, _ := typesafe.NewClient(typesafe.WithAPIKey("demo-key"), typesafe.WithBaseURL(server.URL))
+	client, _ := typesafe.NewClient(typesafe.WithAPIKey("demo-key"), typesafe.WithBaseURL(server.URL), typesafe.WithAllowInsecureHTTP())
 	defer client.Close()
 
 	resp, err := client.SystemOne(context.Background(), &typesafe.SystemOneParams{
@@ -108,7 +109,7 @@ func ExampleModels() {
 	}))
 	defer server.Close()
 
-	client, _ := typesafe.NewClient(typesafe.WithAPIKey("demo-key"), typesafe.WithBaseURL(server.URL))
+	client, _ := typesafe.NewClient(typesafe.WithAPIKey("demo-key"), typesafe.WithBaseURL(server.URL), typesafe.WithAllowInsecureHTTP())
 	defer client.Close()
 
 	models, err := client.Models.List(context.Background(), nil)
@@ -136,7 +137,8 @@ func ExampleRateLimitError() {
 	policy.MaxRetries = 0
 	client, _ := typesafe.NewClient(
 		typesafe.WithAPIKey("demo-key"),
-		typesafe.WithBaseURL(server.URL),
+		typesafe.WithBaseURL(server.URL), typesafe.WithAllowInsecureHTTP(),
+		typesafe.WithAllowInsecureHTTP(),
 		typesafe.WithRetry(policy),
 	)
 	defer client.Close()
@@ -168,7 +170,8 @@ func ExampleRetryPolicy() {
 
 	client, err := typesafe.NewClient(
 		typesafe.WithAPIKey("demo-key"),
-		typesafe.WithBaseURL(server.URL),
+		typesafe.WithBaseURL(server.URL), typesafe.WithAllowInsecureHTTP(),
+		typesafe.WithAllowInsecureHTTP(),
 		typesafe.WithRetry(policy),
 		typesafe.WithTimeout(5*time.Second),
 		typesafe.WithHeaders(map[string]string{"X-Team": "search"}),

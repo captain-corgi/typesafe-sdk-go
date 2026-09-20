@@ -33,8 +33,10 @@ Blank-value semantics, which trip people up:
 
 Settings: API key (`TYPESAFE_API_KEY`), base URL (`TYPESAFE_BASE_URL`,
 trailing slashes stripped), default model (`TYPESAFE_DEFAULT_MODEL`),
-per-attempt timeout, retry policy, default headers, and the underlying
-`*http.Client`.
+per-attempt timeout, maximum response body size, retry policy, default headers,
+and the underlying `*http.Client`. Base URLs must be absolute HTTPS URLs
+without userinfo, queries, or fragments. `WithAllowInsecureHTTP` permits
+HTTP only for loopback hosts.
 
 ## Timeout resolution
 
@@ -85,8 +87,8 @@ diagrammed in [Wire protocol](wire-protocol.md#header-merge-order).
 
 `SystemOneParams` accepts `Model`, `Timeout`, `Retry`, and `ExtraHeaders`;
 `ModelsListParams` accepts `Timeout`, `Retry`, and `ExtraHeaders`.
-`SystemOneParams` also takes `ExtraBody`, a last-write-wins shallow merge
-that can even override `model` ([Questions](questions.md) covers validation,
-[Wire protocol](wire-protocol.md) covers the merge). `Retry` replaces the
-client-level policy for that call only — see
+`SystemOneParams` also takes `ExtraBody`, a shallow merge for additional
+top-level fields. `state`, `model`, and `questions` are reserved and cannot be
+overridden ([Wire protocol](wire-protocol.md) covers the merge). `Retry`
+replaces the client-level policy for that call only — see
 [Retries and timeouts](retries.md).

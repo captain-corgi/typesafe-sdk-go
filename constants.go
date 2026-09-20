@@ -13,6 +13,9 @@ const (
 	// EnvLogLevel is the environment variable selecting the SDK log level
 	// (debug | info | warn | warning | error | off).
 	EnvLogLevel = "TYPESAFE_LOG_LEVEL"
+	// EnvLogBody is the environment variable selecting wire-body logging
+	// (off | redacted | full).
+	EnvLogBody = "TYPESAFE_LOG_BODY"
 
 	// DefaultBaseURL is the default API base URL.
 	DefaultBaseURL = "https://api.typesafe.ai"
@@ -20,6 +23,9 @@ const (
 	DefaultModel = "jev-latest"
 	// DefaultTimeout is the default timeout for each HTTP attempt.
 	DefaultTimeout = 10 * time.Second
+	// DefaultMaxResponseBodySize is the maximum response body buffered by the
+	// SDK and standalone response parsers.
+	DefaultMaxResponseBodySize int64 = 16 << 20
 )
 
 // Internal protocol and logging constants.
@@ -42,6 +48,8 @@ const (
 
 	// maxErrorBodyLength caps the raw body text embedded in an APIError message.
 	maxErrorBodyLength = 200
+	// maxLoggedBodyBytes caps the body text embedded in a DEBUG wire log.
+	maxLoggedBodyBytes = 16 * 1024
 )
 
 // secretHeaders are redacted from DEBUG wire dumps by name (case-insensitive);

@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Security hardening options and errors: `WithMaxResponseBodySize`,
+  `WithAllowInsecureHTTP`, `SetLogBodyMode`/`TYPESAFE_LOG_BODY`,
+  `ErrResponseTooLarge`/`ResponseTooLargeError`, and `ErrInvalidBaseURL`.
+
 - Cookbook examples now mirror the docs use-case map one-for-one:
   `examples/automation-use-cases/` (one program per example automation use
   case — search & retrieval, scientific discovery, model routing, semantic
@@ -22,6 +26,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   groups as `llm-guardrails`, `customer-support`, `lead-generation`,
   `routing`, and `ranking`; `quickstart` and `retries-errors` stay at the
   `examples/` root.
+
+### Security
+
+- Deliberate hardening behavior changes: wire body logging is redacted by
+  default, response buffering is bounded to 16 MiB, base URLs require HTTPS
+  (with loopback-only HTTP opt-in), and `ExtraBody` cannot override `state`,
+  `model`, or `questions`.
 
 ### Changed
 

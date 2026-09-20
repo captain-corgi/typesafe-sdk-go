@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"net/http"
 	"strings"
 	"testing"
@@ -93,6 +94,103 @@ func TestMalformedSystemOneResponses(t *testing.T) {
 				t.Errorf("Error() = %q\n       want %q", validationErr.Error(), want)
 			}
 		})
+	}
+}
+
+func TestReadResponseBodyLimit(t *testing.T) {
+	for _, tt := range []struct {
+		name      string
+		size      int
+		wantError bool
+	}{
+		{name: "below", size: 63},
+		{name: "equal", size: 64},
+		{name: "above", size: 65, wantError: true},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			body, err := readResponseBody(io.NopCloser(strings.NewReader(strings.Repeat("x", tt.size))), 64)
+			if tt.wantError {
+				var tooLarge *ResponseTooLargeError
+				if !errors.As(err, &tooLarge) || tooLarge.Limit != 64 {
+					t.Fatalf("expected ResponseTooLargeError, got %T: %v", err, err)
+				}
+				if !errors.Is(err, ErrResponseTooLarge) {
+					t.Error("oversized response should wrap ErrResponseTooLarge")
+				}
+				var root *TypeSafeError
+				if !errors.As(err, &root) {
+					t.Error("oversized response should match *TypeSafeError")
+				}
+				return
+			}
+			if err != nil || len(body) != tt.size {
+				t.Fatalf("readResponseBody() = %d bytes, %v; want %d bytes, nil", len(body), err, tt.size)
+			}
+		})
+	}
+}
+
+func TestReadResponseBodyMaximumLimit(t *testing.T) {
+	const want = `{"models":[]}`
+	body, err := readResponseBody(io.NopCloser(strings.NewReader(want)), math.MaxInt64)
+	if err != nil {
+		t.Fatalf("readResponseBody() error = %v", err)
+	}
+	if string(body) != want {
+		t.Fatalf("readResponseBody() = %q, want %q", body, want)
+	}
+}
+
+func TestClientRejectsOversizedResponsesWithoutRetry(t *testing.T) {
+	for _, status := range []int{http.StatusOK, http.StatusBadRequest, http.StatusInternalServerError} {
+		t.Run(fmt.Sprintf("status-%d", status), func(t *testing.T) {
+			requests := 0
+			client := newDeterministicClient(t, func(req *http.Request) (*http.Response, error) {
+				requests++
+				return &http.Response{
+					StatusCode: status,
+					Header:     make(http.Header),
+					Body:       io.NopCloser(strings.NewReader(strings.Repeat("x", 65))),
+					Request:    req,
+				}, nil
+			}, WithMaxResponseBodySize(64))
+			_, err := client.Models.List(t.Context(), nil)
+			var tooLarge *ResponseTooLargeError
+			if !errors.As(err, &tooLarge) {
+				t.Fatalf("expected ResponseTooLargeError, got %T: %v", err, err)
+			}
+			if requests != 1 {
+				t.Errorf("oversized body requests = %d, want 1", requests)
+			}
+		})
+	}
+}
+
+func TestStandaloneParserUsesDefaultResponseBodyLimit(t *testing.T) {
+	body := strings.Repeat("x", int(DefaultMaxResponseBodySize)+1)
+	resp := &http.Response{
+		StatusCode: http.StatusOK,
+		Header:     make(http.Header),
+		Body:       io.NopCloser(strings.NewReader(body)),
+	}
+	_, err := ParseSystemOneResponse(resp)
+	var tooLarge *ResponseTooLargeError
+	if !errors.As(err, &tooLarge) || tooLarge.Limit != DefaultMaxResponseBodySize {
+		t.Fatalf("expected default response limit error, got %T: %v", err, err)
+	}
+}
+
+type readErrorBody struct{}
+
+func (readErrorBody) Read([]byte) (int, error) { return 0, errors.New("read failed") }
+func (readErrorBody) Close() error             { return nil }
+
+func TestResponseReadErrorsRemainConnectionErrors(t *testing.T) {
+	resp := &http.Response{StatusCode: http.StatusOK, Body: readErrorBody{}}
+	_, err := ParseSystemOneResponse(resp)
+	var connectionErr *ConnectionError
+	if !errors.As(err, &connectionErr) {
+		t.Fatalf("expected ConnectionError, got %T: %v", err, err)
 	}
 }
 
@@ -470,7 +568,7 @@ func newLoggedOutClient(t *testing.T, baseURL string) *Client {
 	// statuses instant without changing how many attempts are made.
 	immediate := DefaultRetryPolicy()
 	immediate.BackoffInitial = 0
-	client, err := NewClient(WithAPIKey("test-key"), WithBaseURL(baseURL), WithRetry(immediate))
+	client, err := NewClient(WithAPIKey("test-key"), WithBaseURL(baseURL), WithAllowInsecureHTTP(), WithRetry(immediate))
 	if err != nil {
 		t.Fatalf("NewClient: %v", err)
 	}

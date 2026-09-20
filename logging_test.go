@@ -2,6 +2,7 @@ package typesafe
 
 import (
 	"bytes"
+	"errors"
 	"io"
 	"log/slog"
 	"net/http"
@@ -183,6 +184,62 @@ func TestSetupLoggingAppliesEnvLevel(t *testing.T) {
 	setupLogging()
 	if sdkLogger().Enabled(t.Context(), slog.LevelDebug) {
 		t.Error("an empty level should leave the logger silent")
+	}
+}
+
+func TestLogBodyModes(t *testing.T) {
+	t.Cleanup(func() {
+		SetLogger(nil)
+		_ = SetLogBodyMode(LogBodyOff)
+	})
+	tests := []struct {
+		name string
+		mode LogBodyMode
+		body []byte
+		want string
+	}{
+		{name: "off", mode: LogBodyOff, body: []byte(`{"name":"secret","count":2}`), want: "<redacted>"},
+		{name: "redacted", mode: LogBodyRedacted, body: []byte(`{"name":"secret","count":2,"nested":["value",null]}`), want: `{"count":2,"name":"***","nested":["***",null]}`},
+		{name: "redacted top-level string", mode: LogBodyRedacted, body: []byte(`"secret"`), want: `"***"`},
+		{name: "full", mode: LogBodyFull, body: []byte(`{"name":"secret"}`), want: `{"name":"secret"}`},
+		{name: "invalid redacted", mode: LogBodyRedacted, body: []byte("not json"), want: "<redacted 8 bytes>"},
+		{name: "empty", mode: LogBodyFull, body: nil, want: ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := SetLogBodyMode(tt.mode); err != nil {
+				t.Fatalf("SetLogBodyMode: %v", err)
+			}
+			if got := formatLoggedBody(tt.body); got != tt.want {
+				t.Errorf("formatLoggedBody() = %q, want %q", got, tt.want)
+			}
+		})
+	}
+	if err := SetLogBodyMode("bogus"); err == nil {
+		t.Fatal("SetLogBodyMode should reject unknown modes")
+	} else {
+		var root *TypeSafeError
+		if !errors.As(err, &root) {
+			t.Fatalf("unknown mode error should be TypeSafeError: %v", err)
+		}
+	}
+}
+
+func TestLoggedBodyTruncation(t *testing.T) {
+	t.Cleanup(func() {
+		SetLogger(nil)
+		_ = SetLogBodyMode(LogBodyOff)
+	})
+	if err := SetLogBodyMode(LogBodyFull); err != nil {
+		t.Fatal(err)
+	}
+	body := bytes.Repeat([]byte("x"), maxLoggedBodyBytes+1)
+	got := formatLoggedBody(body)
+	if !strings.HasSuffix(got, "<truncated>") {
+		t.Fatalf("formatted body should indicate truncation: suffix %q", got[len(got)-len("<truncated>"):])
+	}
+	if len(got) != maxLoggedBodyBytes+len("<truncated>") {
+		t.Fatalf("formatted body length = %d, want %d", len(got), maxLoggedBodyBytes+len("<truncated>"))
 	}
 }
 

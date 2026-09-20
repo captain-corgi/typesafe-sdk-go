@@ -306,7 +306,7 @@ func TestErrorUnwrapChains(t *testing.T) {
 		// resolveConfig falls back to the environment, so a developer with a
 		// real key exported must still see the missing-key path.
 		t.Setenv("TYPESAFE_API_KEY", "")
-		_, err := resolveConfig("", "", "", 0, nil)
+		_, err := resolveConfig("", "", "", 0, 0, false, nil)
 		if !errors.Is(err, ErrMissingAPIKey) {
 			t.Error("missing key error should wrap ErrMissingAPIKey")
 		}
@@ -340,7 +340,7 @@ func TestErrorsShareTypeSafeRoot(t *testing.T) {
 	// resolveConfig falls back to the environment, so a developer with a real
 	// key exported must still reach the missing-key error.
 	t.Setenv("TYPESAFE_API_KEY", "")
-	_, missingKey := resolveConfig("", "", "", 0, nil)
+	_, missingKey := resolveConfig("", "", "", 0, 0, false, nil)
 
 	for name, err := range map[string]error{
 		"bad request":           apiErrorFor(400, `{"message":"bad"}`, map[string]any{"message": "bad"}, http.Header{}, ""),

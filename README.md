@@ -69,6 +69,8 @@ base URLs, model names, and nonblank API keys, are preserved verbatim.
 | Base URL | `WithBaseURL` | `TYPESAFE_BASE_URL` | `https://api.typesafe.ai` |
 | Model | `WithModel` | `TYPESAFE_DEFAULT_MODEL` | `jev-latest` |
 | Timeout (per attempt) | `WithTimeout` | — | `10s` |
+| Maximum response body | `WithMaxResponseBodySize` | — | `16 MiB` |
+| Allow loopback HTTP | `WithAllowInsecureHTTP` | — | disabled |
 | Retry policy | `WithRetry` | — | `DefaultRetryPolicy()` |
 | Default headers | `WithHeaders` | — | — |
 | Underlying HTTP client | `WithHTTPClient` | — | new `http.Client` |
@@ -276,7 +278,7 @@ resp, err := client.SystemOne(ctx, &typesafe.SystemOneParams{
     Timeout:      5 * time.Second,                 // per-call timeout
     Retry:        &policy,                         // per-call retry policy
     ExtraHeaders: map[string]string{"X-Custom": "v"},
-    ExtraBody:    map[string]any{"custom_field": 1}, // last-write-wins; can override "model"
+    ExtraBody:    map[string]any{"custom_field": 1}, // state/model/questions cannot be overridden
 })
 ```
 
@@ -284,14 +286,36 @@ Protected headers (`Authorization`, `Accept`, `Content-Type`, `User-Agent`,
 `X-TypeSafe-*`) are always set by the SDK and cannot be overridden. Retries
 carry `X-TypeSafe-Retry-Count: <n>` (never on the first attempt).
 
+`ExtraBody` is a shallow merge for additional top-level fields. The SDK-owned
+`state`, `model`, and `questions` fields are reserved and attempting to
+override any of them returns a `*typesafe.TypeSafeError` before network I/O.
+
 ## Logging
 
 The SDK logs through `log/slog`, tagged `typesafe_sdk` (the same
 attribution as the Python SDK's logger), and is silent by
 default. Set `TYPESAFE_LOG_LEVEL=debug` for wire dumps (secret headers
 redacted), or take full control of destination, format, and level with
-`typesafe.SetLogger(yourLogger)`. Secret headers are redacted from log
-output; request and response bodies are not.
+`typesafe.SetLogger(yourLogger)`. Request and response bodies are redacted by
+default. Set `TYPESAFE_LOG_BODY=redacted` to preserve JSON structure while
+masking string values, or `TYPESAFE_LOG_BODY=full` (or call
+`typesafe.SetLogBodyMode(typesafe.LogBodyFull)`) only in controlled
+environments; full body logging can expose sensitive payloads. Logged bodies
+are capped at 16 KiB.
+
+## Security
+
+- Responses are bounded to 16 MiB by default. Use
+  `WithMaxResponseBodySize` to select a positive per-client limit; oversized
+  bodies return `ErrResponseTooLarge` / `*ResponseTooLargeError` and are not
+  retried.
+- Base URLs must be absolute `https` URLs without userinfo, query, or
+  fragments. `WithAllowInsecureHTTP` permits `http` only for `localhost` and
+  loopback IP addresses, such as `127.0.0.1` and `::1`, and is intended for
+  local development and tests.
+- `Authorization` and other secret headers remain redacted in wire logs.
+- `ExtraBody` cannot override the reserved `state`, `model`, or `questions`
+  fields.
 
 ## Examples
 
@@ -367,6 +391,10 @@ This port keeps Python v0.7.0 behavior, with deliberate Go adaptations:
    so closing it never evicts other code's connections, and reuse of a
    closed client returns a typed `ErrClientClosed` error rather than a
    transport panic.
+11. **Security hardening** — unlike Python, wire bodies are redacted by
+   default, response bodies have a 16 MiB limit, base URLs require HTTPS
+   (with loopback-only opt-in for HTTP), and `ExtraBody` cannot override
+   SDK-owned fields.
 
 ## License
 

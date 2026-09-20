@@ -2,6 +2,8 @@ package typesafe
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
@@ -37,9 +39,25 @@ func (nopHandler) WithGroup(string) slog.Handler             { return nopHandler
 // pointer so SetLogger stays safe even with requests in flight.
 var loggerPtr atomic.Pointer[slog.Logger]
 
+// LogBodyMode controls whether request and response bodies appear in DEBUG
+// wire logs.
+type LogBodyMode string
+
+const (
+	// LogBodyOff prevents wire bodies from appearing in logs.
+	LogBodyOff LogBodyMode = "off"
+	// LogBodyRedacted logs JSON structure while replacing string values.
+	LogBodyRedacted LogBodyMode = "redacted"
+	// LogBodyFull logs raw wire bodies, subject to the logging size limit.
+	LogBodyFull LogBodyMode = "full"
+)
+
+var logBodyModeValue atomic.Value
+
 func init() {
 	loggerPtr.Store(newLogger())
 	setupLogging()
+	setupLogBodyMode()
 }
 
 // sdkLogger returns the active SDK logger.
@@ -62,6 +80,87 @@ func setupLogging() {
 	}
 	loggerPtr.Store(slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: lvl})).
 		With(slog.String("logger", "typesafe_sdk")))
+}
+
+// SetLogBodyMode configures the body policy used by DEBUG wire logs.
+func SetLogBodyMode(mode LogBodyMode) error {
+	switch mode {
+	case LogBodyOff, LogBodyRedacted, LogBodyFull:
+		logBodyModeValue.Store(mode)
+		return nil
+	default:
+		return newTypeSafeError("unknown log body mode %q.", mode)
+	}
+}
+
+// setupLogBodyMode applies TYPESAFE_LOG_BODY. Invalid and empty values keep
+// the safe default of LogBodyOff.
+func setupLogBodyMode() {
+	mode := LogBodyMode(strings.ToLower(strings.TrimSpace(os.Getenv(EnvLogBody))))
+	if mode != LogBodyRedacted && mode != LogBodyFull {
+		mode = LogBodyOff
+	}
+	_ = SetLogBodyMode(mode)
+}
+
+func logBodyMode() LogBodyMode {
+	return logBodyModeValue.Load().(LogBodyMode)
+}
+
+// formatLoggedBody applies the configured body policy and the wire-log size
+// limit. Empty bodies stay empty in every mode.
+func formatLoggedBody(body []byte) string {
+	if len(body) == 0 {
+		return ""
+	}
+	var formatted string
+	switch logBodyMode() {
+	case LogBodyFull:
+		formatted = string(body)
+	case LogBodyRedacted:
+		var value any
+		if err := json.Unmarshal(body, &value); err != nil {
+			formatted = fmt.Sprintf("<redacted %d bytes>", len(body))
+		} else {
+			if _, ok := value.(string); ok {
+				value = "***"
+			}
+			redactJSONStrings(value)
+			encoded, err := marshalJSONCompact(value)
+			if err != nil {
+				formatted = fmt.Sprintf("<redacted %d bytes>", len(body))
+			} else {
+				formatted = string(encoded)
+			}
+		}
+	default:
+		formatted = "<redacted>"
+	}
+	if len(formatted) > maxLoggedBodyBytes {
+		return formatted[:maxLoggedBodyBytes] + "<truncated>"
+	}
+	return formatted
+}
+
+func redactJSONStrings(value any) {
+	switch typed := value.(type) {
+	case map[string]any:
+		for key, nested := range typed {
+			if _, ok := nested.(string); ok {
+				typed[key] = "***"
+				continue
+			}
+			redactJSONStrings(nested)
+		}
+	case []any:
+		for index, nested := range typed {
+			if _, ok := nested.(string); ok {
+				typed[index] = "***"
+				continue
+			}
+			redactJSONStrings(nested)
+		}
+	}
 }
 
 // SetLogger replaces the SDK's logger, giving full control over output

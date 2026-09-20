@@ -181,13 +181,37 @@ func bufferResponseBody(resp *http.Response) ([]byte, error) {
 		resp.Body = io.NopCloser(bytes.NewReader(nil))
 		return nil, nil
 	}
-	body, err := io.ReadAll(resp.Body)
-	resp.Body.Close()
+	body, err := readResponseBody(resp.Body, DefaultMaxResponseBodySize)
 	if err != nil {
+		if _, tooLarge := err.(*ResponseTooLargeError); tooLarge {
+			return nil, err
+		}
 		return nil, newConnectionError(err)
 	}
 	resp.Body = io.NopCloser(bytes.NewReader(body))
 	return body, nil
+}
+
+// readResponseBody drains and closes body while allowing at most limit bytes.
+// One extra byte is read to distinguish an exactly-at-limit response from an
+// oversized one.
+func readResponseBody(body io.ReadCloser, limit int64) ([]byte, error) {
+	if body == nil {
+		return nil, nil
+	}
+	defer body.Close()
+	probe := limit + 1
+	if limit == math.MaxInt64 {
+		probe = limit
+	}
+	data, err := io.ReadAll(io.LimitReader(body, probe))
+	if err != nil {
+		return nil, err
+	}
+	if int64(len(data)) > limit {
+		return nil, &ResponseTooLargeError{Limit: limit}
+	}
+	return data, nil
 }
 
 // responseStatusError maps a non-2xx response onto the typed error taxonomy.

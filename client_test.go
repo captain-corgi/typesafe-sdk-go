@@ -76,28 +76,58 @@ func TestRoundTripWireBody(t *testing.T) {
 	}
 }
 
-func TestExtraBodyShallowOverride(t *testing.T) {
-	expected := map[string]any{
-		"state":      "hi",
-		"model":      "override-model",
-		"questions":  map[string]any{"q": map[string]any{"type": "noul", "instructions": "?"}},
-		"beam_width": 4.0,
-		"nullable":   nil,
+func TestExtraBodyReservedFields(t *testing.T) {
+	for _, key := range []string{"state", "model", "questions"} {
+		t.Run(key, func(t *testing.T) {
+			client := newDeterministicClient(t, func(req *http.Request) (*http.Response, error) {
+				t.Fatal("reserved ExtraBody must be rejected before network I/O")
+				return nil, nil
+			})
+			_, err := client.SystemOne(t.Context(), &SystemOneParams{
+				State:     "hi",
+				Questions: Questions{"q": RawQuestion{"type": "noul", "instructions": "?"}},
+				ExtraBody: map[string]JSONValue{key: "override"},
+			})
+			want := fmt.Sprintf(`ExtraBody cannot override the reserved field %q.`, key)
+			if err == nil || err.Error() != want {
+				t.Fatalf("error = %v, want %q", err, want)
+			}
+		})
 	}
+}
+
+func TestExtraBodyAllowsAdditionalFields(t *testing.T) {
+	var body map[string]any
 	server := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
 		data, _ := io.ReadAll(r.Body)
-		compareJSON(t, expected, decodeJSONMap(t, data))
+		body = decodeJSONMap(t, data)
 		writeJSON(w, http.StatusOK, resultBody)
 	})
 	client := newLoggedOutClient(t, server.URL)
 	_, err := client.SystemOne(t.Context(), &SystemOneParams{
 		State:     "hi",
 		Questions: Questions{"q": RawQuestion{"type": "noul", "instructions": "?"}},
-		Model:     "call-model",
-		ExtraBody: map[string]JSONValue{"model": "override-model", "beam_width": 4, "nullable": nil},
+		ExtraBody: map[string]JSONValue{"metadata": "value", "custom_field": true},
 	})
 	if err != nil {
 		t.Fatalf("SystemOne: %v", err)
+	}
+	if body["metadata"] != "value" || body["custom_field"] != true {
+		t.Fatalf("allowed ExtraBody fields missing: %v", body)
+	}
+}
+
+func TestExtraBodyEmptyAndNilAllowed(t *testing.T) {
+	server := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		writeJSON(w, http.StatusOK, resultBody)
+	})
+	client := newLoggedOutClient(t, server.URL)
+	for _, extra := range []map[string]JSONValue{nil, {}} {
+		if _, err := client.SystemOne(t.Context(), &SystemOneParams{
+			State: "hi", Questions: Questions{"q": RawQuestion{"type": "noul"}}, ExtraBody: extra,
+		}); err != nil {
+			t.Fatalf("SystemOne with ExtraBody=%v: %v", extra, err)
+		}
 	}
 }
 
@@ -474,7 +504,8 @@ func TestHeaderProtection(t *testing.T) {
 	})
 	client, err := NewClient(
 		WithAPIKey("test-key"),
-		WithBaseURL(server.URL+"/prefix///"),
+		WithBaseURL(server.URL+"/prefix///"), WithAllowInsecureHTTP(),
+		WithAllowInsecureHTTP(),
 		WithHeaders(map[string]string{
 			"Authorization":      protected["Authorization"],
 			"Accept":             protected["Accept"],
@@ -943,7 +974,7 @@ func TestExtraHeadersCaseInsensitive(t *testing.T) {
 	})
 	client, err := NewClient(
 		WithAPIKey("k"),
-		WithBaseURL(server.URL),
+		WithBaseURL(server.URL), WithAllowInsecureHTTP(),
 		WithHeaders(map[string]string{"X-Team": "default"}),
 	)
 	if err != nil {
@@ -981,7 +1012,7 @@ func TestProtectedHeadersCaseVariants(t *testing.T) {
 	})
 	client, err := NewClient(
 		WithAPIKey("k"),
-		WithBaseURL(server.URL),
+		WithBaseURL(server.URL), WithAllowInsecureHTTP(),
 		WithHeaders(map[string]string{
 			"AUTHORIZATION":  "Bearer evil",
 			"uSeR-aGeNt":     "evil",
@@ -1299,7 +1330,7 @@ func TestPerCallOverrideIsolation(t *testing.T) {
 		teamHeaders = append(teamHeaders, r.Header.Get("X-Team"))
 		writeJSON(w, http.StatusOK, resultBody)
 	})
-	client, err := NewClient(WithAPIKey("k"), WithBaseURL(server.URL), WithModel("client-model"),
+	client, err := NewClient(WithAPIKey("k"), WithBaseURL(server.URL), WithAllowInsecureHTTP(), WithModel("client-model"),
 		WithHeaders(map[string]string{"X-Default": "kept"}))
 	if err != nil {
 		t.Fatalf("NewClient: %v", err)
@@ -1416,7 +1447,7 @@ func TestCloseSemantics(t *testing.T) {
 		// Build the SDK client first so its transport snapshot predates the
 		// swap below, then watch the process-default pool through a counting
 		// dialer. Package tests run sequentially, so the swap is safe.
-		client, err := NewClient(WithAPIKey("k"), WithBaseURL(server.URL))
+		client, err := NewClient(WithAPIKey("k"), WithBaseURL(server.URL), WithAllowInsecureHTTP())
 		if err != nil {
 			t.Fatalf("NewClient: %v", err)
 		}
@@ -1500,7 +1531,7 @@ func TestConcurrentCallsWithDistinctOverrides(t *testing.T) {
 	policy.MaxRetries = 1
 	policy.Timeout = 0
 	policy.BackoffInitial = 0
-	client, err := NewClient(WithAPIKey("k"), WithBaseURL(server.URL), WithRetry(policy))
+	client, err := NewClient(WithAPIKey("k"), WithBaseURL(server.URL), WithAllowInsecureHTTP(), WithRetry(policy))
 	if err != nil {
 		t.Fatalf("NewClient: %v", err)
 	}
@@ -1577,21 +1608,19 @@ func textResponseWithHeaders(req *http.Request, status int, body string, headers
 // with a non-retryable error (the Python SDK's URL error also escapes
 // unwrapped and unretried).
 func TestUnparseableBaseURLFailsFast(t *testing.T) {
-	client, err := NewClient(WithAPIKey("k"), WithBaseURL("http://[::1"))
-	if err != nil {
-		t.Fatalf("NewClient: %v", err)
-	}
-	defer client.Close()
-	_, err = client.Models.List(t.Context(), nil)
+	_, err := NewClient(WithAPIKey("k"), WithBaseURL("http://[::1"))
 	if err == nil {
-		t.Fatal("expected an error")
+		t.Fatal("expected NewClient to reject the URL")
 	}
 	var connErr *ConnectionError
 	if errors.As(err, &connErr) {
-		t.Fatalf("URL errors must not classify as ConnectionError (retried): %v", err)
+		t.Fatalf("URL errors must not classify as ConnectionError: %v", err)
 	}
 	var typeSafeErr *TypeSafeError
 	if !errors.As(err, &typeSafeErr) {
 		t.Fatalf("expected *TypeSafeError, got %T: %v", err, err)
+	}
+	if !errors.Is(err, ErrInvalidBaseURL) {
+		t.Fatalf("expected ErrInvalidBaseURL, got %v", err)
 	}
 }

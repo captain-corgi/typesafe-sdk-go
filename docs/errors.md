@@ -48,6 +48,10 @@ classDiagram
         2xx body failed schema validation
         FieldPath dotted path
     }
+    class ResponseTooLargeError {
+        configured response limit exceeded
+        Limit
+    }
     class ConnectionError {
         no HTTP response
         transport cause preserved
@@ -71,6 +75,7 @@ classDiagram
     APIError <|-- RateLimitError
     APIError <|-- InternalServerError
     APIError <|-- ResponseValidationError
+    TypeSafeError <|.. ResponseTooLargeError
     ConnectionError <|-- TimeoutError : Unwrap exposes *ConnectionError
     NetError <|.. TimeoutError : Timeout() / Temporary() true
 ```
@@ -105,6 +110,7 @@ if errors.As(err, &root) { log.Printf("typesafe call failed: %v", root) }
 // SDK-side failures carry sentinels for errors.Is:
 if errors.Is(err, typesafe.ErrMissingAPIKey) { ... }
 if errors.Is(err, typesafe.ErrClientClosed) { ... }
+if errors.Is(err, typesafe.ErrResponseTooLarge) { ... }
 ```
 
 **What is not an SDK error:** caller cancellation and deadline expiry return
@@ -168,3 +174,7 @@ becomes `*TimeoutError`; any other transport failure becomes
 `*ConnectionError` with the cause preserved via `Unwrap`. A caller context
 that ends mid-flight propagates `ctx.Err()` unwrapped instead. Which of these
 get retried is [Retries and timeouts](retries.md)'s subject.
+
+Response bodies exceeding the configured limit return
+`*ResponseTooLargeError`. This deterministic error is not a
+`*ConnectionError` and is not retried by the default policy.

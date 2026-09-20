@@ -57,11 +57,15 @@ flowchart TB
     b0["body = {}"] --> b1["state = params.State"]
     b1 --> b2["model = client default,<br>or params.Model when non-empty"]
     b2 --> b3["questions = normalized map"]
-    b3 --> b4["ExtraBody keys applied in sorted order,<br>shallow last-write-wins —<br>may override state, model, or questions"]
-    b4 --> b5["Marshal once; the encoded bytes are<br>reused verbatim on every retry"]
+    b3 --> b4{"ExtraBody keys validated<br>against reserved state/model/questions"}
+    b4 -->|allowed| b5["Additional keys applied in sorted order,<br>shallow merge"]
+    b4 -->|reserved| bx["*TypeSafeError before network I/O"]
+    b5 --> b6["Marshal once; the encoded bytes are<br>reused verbatim on every retry"]
 ```
 
-`ExtraBody` is a shallow merge: object values are replaced, not deep-merged.
+`ExtraBody` adds top-level fields in sorted order. `state`, `model`, and
+`questions` are reserved; attempting to override one fails before encoding or
+network I/O. Other object values are replaced, not deep-merged.
 
 ## Encoding rules
 
@@ -86,3 +90,7 @@ your own client via `WithHTTPClient` to change that
 
 Defaults (base URL, model, timeout, environment variables) are owned by
 [Configuration](configuration.md) and `constants.go`.
+
+Responses are buffered with a 16 MiB default limit (configurable through
+`WithMaxResponseBodySize`). Oversized responses return
+`*ResponseTooLargeError` and are not retried.

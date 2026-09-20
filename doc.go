@@ -51,6 +51,13 @@
 //	[TYPESAFE_BASE_URL]      API root (default "https://api.typesafe.ai")
 //	[TYPESAFE_DEFAULT_MODEL] default model (default "jev-latest")
 //	[TYPESAFE_LOG_LEVEL]     debug | info | warn | warning | error | off
+//	[TYPESAFE_LOG_BODY]      off | redacted | full (default off)
+//
+// Base URLs must use HTTPS. WithAllowInsecureHTTP permits HTTP only for
+// loopback hosts, which is useful for local development and tests. Responses
+// are limited to 16 MiB by default; WithMaxResponseBodySize changes that
+// per-client limit. Wire request and response bodies are redacted by default;
+// use SetLogBodyMode(LogBodyFull) only in controlled environments.
 //
 // # Errors and retries
 //
@@ -74,6 +81,6 @@
 //
 // The SDK is silent by default. Set TYPESAFE_LOG_LEVEL (debug | info | warn |
 // warning | error | off) for diagnostics on stderr, or take full control of
-// output and format with [SetLogger]. Secret headers are redacted from log
-// output; request and response bodies are not.
+// output and format with [SetLogger]. Secret headers and request/response
+// bodies are redacted from wire log output by default.
 package typesafe

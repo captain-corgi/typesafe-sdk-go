@@ -227,7 +227,7 @@ func (c *Client) attempt(ctx context.Context, req *preparedRequest, attemptNumbe
 	}
 	httpReq.Header = headers
 
-	sdkLogger().Debug("wire", "method", req.method, "path", req.path, "dir", "->", "headers", redactHeaders(headers), "body", string(req.content))
+	sdkLogger().Debug("wire", "method", req.method, "path", req.path, "dir", "->", "headers", redactHeaders(headers), "body", formatLoggedBody(req.content))
 	started := time.Now()
 
 	resp, err := c.httpClient.Do(httpReq)
@@ -244,9 +244,12 @@ func (c *Client) attempt(ctx context.Context, req *preparedRequest, attemptNumbe
 		return attemptOutcome{err: newConnectionError(err)}
 	}
 
-	body, readErr := io.ReadAll(resp.Body)
-	resp.Body.Close()
+	body, readErr := readResponseBody(resp.Body, c.config.maxResponseBodySize)
 	if readErr != nil {
+		var tooLarge *ResponseTooLargeError
+		if errors.As(readErr, &tooLarge) {
+			return attemptOutcome{err: readErr}
+		}
 		sdkLogger().Info("error", "method", req.method, "url", req.url, "error", transportErrorName(readErr))
 		if ctx.Err() != nil {
 			// The caller's context ended (cancellation or its own deadline);
@@ -269,7 +272,7 @@ func (c *Client) attempt(ctx context.Context, req *preparedRequest, attemptNumbe
 		"method", req.method, "url", req.url, "status", resp.StatusCode,
 		"elapsed_ms", math.Round(float64(elapsed)/float64(time.Millisecond)), "request_id", requestID)
 	sdkLogger().Debug("wire", "method", req.method, "path", req.path, "dir", "<-",
-		"status", resp.StatusCode, "headers", redactHeaders(resp.Header), "body", string(body))
+		"status", resp.StatusCode, "headers", redactHeaders(resp.Header), "body", formatLoggedBody(body))
 
 	if err := responseStatusError(resp, body); err != nil {
 		return attemptOutcome{resp: resp, body: body, err: err}

@@ -19,6 +19,14 @@ var ErrMissingAPIKey = errors.New("missing API key")
 // used again.
 var ErrClientClosed = errors.New("client is closed")
 
+// ErrResponseTooLarge is wrapped when a response body exceeds its configured
+// buffering limit.
+var ErrResponseTooLarge = errors.New("response body exceeds configured limit")
+
+// ErrInvalidBaseURL is wrapped when a configured API base URL is unsafe or
+// malformed.
+var ErrInvalidBaseURL = errors.New("invalid base URL")
+
 // TypeSafeError is the root of every SDK error, like the Python SDK's
 // TypeSafeError base class: API failures ([APIError] and its subclasses,
 // including [ResponseValidationError]), transport failures
@@ -200,6 +208,23 @@ func (e *ResponseValidationError) Unwrap() error { return e.APIError }
 type ConnectionError struct {
 	cause error
 	msg   string
+}
+
+// ResponseTooLargeError reports a response body that exceeded the configured
+// maximum size.
+type ResponseTooLargeError struct {
+	Limit int64
+}
+
+func (e *ResponseTooLargeError) Error() string {
+	return fmt.Sprintf("Response body exceeds the maximum size of %d bytes.", e.Limit)
+}
+
+func (e *ResponseTooLargeError) Unwrap() error { return ErrResponseTooLarge }
+
+// As additionally matches the shared SDK root.
+func (e *ResponseTooLargeError) As(target any) bool {
+	return e != nil && asTypeSafeRoot(target, e.Error)
 }
 
 func newConnectionError(cause error) *ConnectionError {

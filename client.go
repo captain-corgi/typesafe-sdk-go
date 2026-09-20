@@ -10,18 +10,26 @@ import (
 
 // clientSettings accumulates functional options during NewClient.
 type clientSettings struct {
-	apiKey        string
-	baseURL       string
-	defaultModel  string
-	timeout       time.Duration
-	retry         *RetryPolicy
-	headers       map[string]string
-	httpClient    *http.Client
-	httpClientSet bool
+	apiKey              string
+	baseURL             string
+	defaultModel        string
+	timeout             time.Duration
+	maxResponseBodySize int64
+	allowInsecureHTTP   bool
+	retry               *RetryPolicy
+	headers             map[string]string
+	httpClient          *http.Client
+	httpClientSet       bool
 }
 
 // Option customizes a [Client] at construction; see the With* functions.
 type Option func(*clientSettings) error
+
+var reservedSystemOneBodyFields = map[string]struct{}{
+	"model":     {},
+	"questions": {},
+	"state":     {},
+}
 
 // WithAPIKey sets the API key, overriding the TYPESAFE_API_KEY environment
 // variable. An empty or whitespace-only value means "unset".
@@ -60,6 +68,27 @@ func WithTimeout(timeout time.Duration) Option {
 		if timeout > 0 {
 			s.timeout = timeout
 		}
+		return nil
+	}
+}
+
+// WithMaxResponseBodySize sets the maximum response body size buffered by
+// this client. Zero uses DefaultMaxResponseBodySize.
+func WithMaxResponseBodySize(size int64) Option {
+	return func(s *clientSettings) error {
+		if size < 0 {
+			return newTypeSafeError("max response body size must be non-negative.")
+		}
+		s.maxResponseBodySize = size
+		return nil
+	}
+}
+
+// WithAllowInsecureHTTP permits http URLs only for loopback hosts. HTTPS
+// remains the default and is required for remote hosts.
+func WithAllowInsecureHTTP() Option {
+	return func(s *clientSettings) error {
+		s.allowInsecureHTTP = true
 		return nil
 	}
 }
@@ -158,7 +187,7 @@ func NewClient(opts ...Option) (*Client, error) {
 		// Inherit the supplied client's timeout, like the Python SDK.
 		timeout = settings.httpClient.Timeout
 	}
-	resolved, err := resolveConfig(settings.apiKey, settings.baseURL, settings.defaultModel, timeout, defaultHeaders)
+	resolved, err := resolveConfig(settings.apiKey, settings.baseURL, settings.defaultModel, timeout, settings.maxResponseBodySize, settings.allowInsecureHTTP, defaultHeaders)
 	if err != nil {
 		return nil, err
 	}
@@ -257,11 +286,9 @@ type SystemOneParams struct {
 	Retry *RetryPolicy
 	// ExtraHeaders are additional request headers for this call.
 	ExtraHeaders map[string]string
-	// ExtraBody holds additional top-level request-body fields,
-	// shallow-merged over the body after state, model, and questions are
-	// set. Merging is last-write-wins: a key that collides with state,
-	// model, or questions overrides it, and object values are replaced
-	// rather than deep-merged.
+	// ExtraBody holds additional top-level request-body fields. SDK-owned
+	// fields (state, model, and questions) cannot be overridden; other fields
+	// are shallow-merged and object values are replaced rather than deep-merged.
 	ExtraBody map[string]JSONValue
 }
 
@@ -276,6 +303,11 @@ func (c *Client) SystemOne(ctx context.Context, params *SystemOneParams) (*Syste
 	questions, err := normalizeQuestions(params.Questions)
 	if err != nil {
 		return nil, err
+	}
+	for _, key := range sortedKeys(params.ExtraBody) {
+		if _, reserved := reservedSystemOneBodyFields[key]; reserved {
+			return nil, newTypeSafeError("ExtraBody cannot override the reserved field %q.", key)
+		}
 	}
 	body := map[string]any{
 		"state":     params.State,

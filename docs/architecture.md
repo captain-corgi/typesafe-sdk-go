@@ -14,7 +14,7 @@ flowchart TB
     end
     subgraph sdk["typesafe package (this repo)"]
         client["Client<br>(safe for concurrent use)"]
-        api["SystemOne / Models.List"]
+        api["SystemOne / Models.List<br>(bounded response buffering)"]
         loopc["prepareRequest + execute<br>(retry loop)"]
         httpc["*http.Client<br>(SDK-owned, or injected via WithHTTPClient)"]
     end
@@ -165,6 +165,10 @@ Decisions that shape everything above, with their rationale:
   return errors (plan §6.3).
 - **Silent-by-default `log/slog`** — libraries must not log unless asked;
   see [Observability](observability.md).
+- **Security defaults** — wire bodies are redacted by default, response
+  buffering is bounded, HTTPS base URLs are required, and SDK-owned body
+  fields cannot be overridden by `ExtraBody`; loopback HTTP is an explicit
+  opt-in.
 
 ## Where to read next
 

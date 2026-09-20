@@ -182,7 +182,7 @@ func TestEndpointStripsDefaultPort(t *testing.T) {
 }
 
 // TestWireLogRedactionEndToEnd: a DEBUG-level capture of a full call must
-// contain the request id and body but never a secret header value.
+// contain the request id and redacted body marker but never a secret value.
 func TestWireLogRedactionEndToEnd(t *testing.T) {
 	var buf bytes.Buffer
 	swapLogger(t, slog.New(slog.NewTextHandler(&buf, &slog.HandlerOptions{Level: slog.LevelDebug})).
@@ -196,7 +196,7 @@ func TestWireLogRedactionEndToEnd(t *testing.T) {
 	})
 	client, err := NewClient(
 		WithAPIKey("test-key"),
-		WithBaseURL(server.URL),
+		WithBaseURL(server.URL), WithAllowInsecureHTTP(),
 		WithHeaders(map[string]string{"X-API-Key": "key-secret", "Cookie": "cookie-secret", "X-Visible": "request-visible"}),
 	)
 	if err != nil {
@@ -216,8 +216,8 @@ func TestWireLogRedactionEndToEnd(t *testing.T) {
 	if !strings.Contains(logged, "req_log") {
 		t.Error("request id should be logged at INFO")
 	}
-	if !strings.Contains(logged, "hello") {
-		t.Error("request body should be logged at DEBUG")
+	if !strings.Contains(logged, "body=<redacted>") {
+		t.Error("request body should be redacted at DEBUG by default")
 	}
 	// Non-secret header values survive redaction on both directions.
 	for _, visible := range []string{"request-visible", "response-visible"} {
@@ -225,9 +225,9 @@ func TestWireLogRedactionEndToEnd(t *testing.T) {
 			t.Errorf("benign header value %q missing from DEBUG dump", visible)
 		}
 	}
-	// The DEBUG response dump carries the response body.
-	if !strings.Contains(logged, "jev-latest") {
-		t.Error("response body should be logged at DEBUG")
+	// The DEBUG response dump carries a redacted body marker.
+	if strings.Count(logged, "body=<redacted>") < 2 {
+		t.Error("request and response bodies should be redacted at DEBUG")
 	}
 }
 
@@ -332,7 +332,7 @@ func TestInfoLoggingShape(t *testing.T) {
 	// disabling backoff keeps the two retries instant instead.
 	immediate := DefaultRetryPolicy()
 	immediate.BackoffInitial = 0
-	client, err := NewClient(WithAPIKey("k"), WithBaseURL(server.URL), WithRetry(immediate))
+	client, err := NewClient(WithAPIKey("k"), WithBaseURL(server.URL), WithAllowInsecureHTTP(), WithRetry(immediate))
 	if err != nil {
 		t.Fatalf("NewClient: %v", err)
 	}
