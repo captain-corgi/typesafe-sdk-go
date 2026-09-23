@@ -456,6 +456,75 @@
     }
     .error-card p { font-size: 0.85rem; color: var(--text-muted); }
 
+    /* ─── EXAMPLES ─── */
+    .examples-stats {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 0.75rem;
+      margin-bottom: 2rem;
+    }
+    .examples-stats span {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 4px 14px;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+    .examples-stats strong { color: var(--text); }
+    .run-bar { max-width: 640px; margin: 0 auto 2.5rem; }
+    .catalogs { display: flex; flex-direction: column; gap: 1rem; }
+    .catalog {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      transition: border-color 0.3s, background-color 0.3s;
+    }
+    .catalog[open] { border-color: var(--accent); }
+    .catalog summary {
+      list-style: none;
+      cursor: pointer;
+      padding: 1.25rem 1.5rem;
+      display: flex;
+      align-items: flex-start;
+      gap: 1rem;
+    }
+    .catalog summary::-webkit-details-marker { display: none; }
+    .catalog summary::after {
+      content: '+';
+      margin-left: auto;
+      color: var(--text-muted);
+      font-size: 1.25rem;
+      line-height: 1;
+    }
+    .catalog[open] summary::after { content: '−'; }
+    .catalog-icon { font-size: 1.3rem; flex-shrink: 0; }
+    .catalog-title h3 { font-size: 1.05rem; font-weight: 600; color: var(--text); }
+    .catalog-title p { font-size: 0.85rem; color: var(--text-muted); margin-top: 0.2rem; }
+    .catalog-count {
+      flex-shrink: 0;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: 999px;
+      background: var(--tint-accent);
+      color: var(--accent);
+      align-self: center;
+    }
+    .catalog-body { padding: 0 1.5rem 1.5rem; }
+    .catalog-body > p { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem; }
+    .example-list {
+      list-style: none;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 0.5rem 1.5rem;
+    }
+    .example-list li { font-size: 0.85rem; color: var(--text-muted); }
+    .example-list a { font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace; font-size: 0.8rem; }
+    .example-list li span { display: block; }
+    .examples-note { color: var(--text-muted); font-size: 0.85rem; margin-top: 1.5rem; text-align: center; }
+
     /* ─── DOCS GRID ─── */
     .docs-grid {
       display: grid;
@@ -532,6 +601,7 @@
       <a href="#quickstart">Quick Start</a>
       <a href="#types">Question Types</a>
       <a href="#errors">Errors</a>
+      <a href="#examples">Examples</a>
       <a href="#docs">Docs</a>
       <!-- Theme toggle -->
       <div class="theme-toggle" role="radiogroup" aria-label="Color theme">
@@ -743,6 +813,208 @@ resp.<span class="hl-fn">Nouls</span>()[<span class="hl-str">"urgent"</span>].No
 <span class="hl-kw">if</span> errors.<span class="hl-fn">As</span>(err, &amp;rl) &amp;&amp; rl.RetryAfterMs != <span class="hl-kw">nil</span> {
     fmt.<span class="hl-fn">Println</span>(<span class="hl-str">"retry after ms:"</span>, *rl.RetryAfterMs)
 }</code></pre>
+</section>
+
+<div class="divider"></div>
+
+<!-- ═══════ EXAMPLES ═══════ -->
+<section id="examples">
+  <div class="section-header">
+    <h2>91 runnable examples</h2>
+    <p>Copy-paste starting points. Each is a single <code>package main</code> using only the standard library plus this SDK, and runs against the live API.</p>
+  </div>
+  <div class="examples-stats">
+    <span><strong>2</strong> basics</span>
+    <span><strong>19</strong> automation use cases</span>
+    <span><strong>10</strong> task categories</span>
+    <span><strong>20</strong> Go software</span>
+    <span><strong>10</strong> REST &amp; GraphQL APIs</span>
+    <span><strong>10</strong> relational databases</span>
+    <span><strong>20</strong> testing</span>
+  </div>
+  <div class="run-bar">
+    <pre><code><span class="hl-kw">export</span> TYPESAFE_API_KEY=ts_live_...
+go run ./examples/quickstart
+go run ./examples/go-software-use-cases/01-semantic-command-switch</code></pre>
+  </div>
+
+  <div class="catalogs">
+    <details class="catalog" open>
+      <summary>
+        <span class="catalog-icon">🚀</span>
+        <span class="catalog-title"><h3>Basics</h3><p>Start here: the minimal client and the error and retry toolkit.</p></span>
+        <span class="catalog-count">2</span>
+      </summary>
+      <div class="catalog-body">
+        <ul class="example-list">
+          <li><a href="https://github.com/captain-corgi/typesafe-sdk-go/tree/master/examples/quickstart" target="_blank" rel="noopener">quickstart</a><span>One call with all three primitives; typed answers, probabilities, confidence, usage.</span></li>
+          <li><a href="https://github.com/captain-corgi/typesafe-sdk-go/tree/master/examples/retries-errors" target="_blank" rel="noopener">retries-errors</a><span><code>errors.As</code> across the taxonomy, custom <code>RetryPolicy</code>, per-call options, debug logging.</span></li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="catalog">
+      <summary>
+        <span class="catalog-icon">🧩</span>
+        <span class="catalog-title"><h3>Go software use cases</h3><p>Go keeps dispatch, validation, and side effects; the API answers bounded questions about meaning.</p></span>
+        <span class="catalog-count">20</span>
+      </summary>
+      <div class="catalog-body">
+        <ul class="example-list">
+          <li><a href="https://github.com/captain-corgi/typesafe-sdk-go/tree/master/examples/go-software-use-cases/01-semantic-command-switch" target="_blank" rel="noopener">01-semantic-command-switch</a><span>Route natural-language commands with a semantic <code>switch</code>.</span></li>
+          <li><a href="https://github.com/captain-corgi/typesafe-sdk-go/tree/master/examples/go-software-use-cases/02-bind-closed-set-arguments" target="_blank" rel="noopener">02-bind-closed-set-arguments</a><span>Bind allowlisted functions and enum arguments.</span></li>
+          <li><a href="https://github.com/captain-corgi/typesafe-sdk-go/tree/master/examples/go-software-use-cases/03-semantic-lint" target="_blank" rel="noopener">03-semantic-lint</a><span>Review Go diffs against team conventions.</span></li>
+          <li><a href="https://github.com/captain-corgi/typesafe-sdk-go/tree/master/examples/go-software-use-cases/04-select-runtime-strategy" target="_blank" rel="noopener">04-select-runtime-strategy</a><span>Select a runtime strategy from several signals.</span></li>
+          <li><a href="https://github.com/captain-corgi/typesafe-sdk-go/tree/master/examples/go-software-use-cases/05-rerank-search-shortlist" target="_blank" rel="noopener">05-rerank-search-shortlist</a><span>Rerank a search shortlist.</span></li>
+          <li><a href="https://github.com/captain-corgi/typesafe-sdk-go/tree/master/examples/go-software-use-cases/06-classify-ci-failures" target="_blank" rel="noopener">06-classify-ci-failures</a><span>Classify CI failures before diagnostics.</span></li>
+          <li><a href="https://github.com/captain-corgi/typesafe-sdk-go/tree/master/examples/go-software-use-cases/07-correlate-duplicate-reports" target="_blank" rel="noopener">07-correlate-duplicate-reports</a><span>Suggest duplicate bug or incident reports.</span></li>
+          <li><a href="https://github.com/captain-corgi/typesafe-sdk-go/tree/master/examples/go-software-use-cases/08-compare-acceptance-tests" target="_blank" rel="noopener">08-compare-acceptance-tests</a><span>Compare acceptance criteria with tests.</span></li>
+          <li><a href="https://github.com/captain-corgi/typesafe-sdk-go/tree/master/examples/go-software-use-cases/09-semantic-reviewer-routing" target="_blank" rel="noopener">09-semantic-reviewer-routing</a><span>Add a semantic reviewer to path-based ownership.</span></li>
+          <li><a href="https://github.com/captain-corgi/typesafe-sdk-go/tree/master/examples/go-software-use-cases/10-normalize-release-notes" target="_blank" rel="noopener">10-normalize-release-notes</a><span>Normalize release notes into bounded records.</span></li>
+          <li><a href="https://github.com/captain-corgi/typesafe-sdk-go/tree/master/examples/go-software-use-cases/11-select-id-from-log" target="_blank" rel="noopener">11-select-id-from-log</a><span>Select an exact ID extracted from a log.</span></li>
+          <li><a href="https://github.com/captain-corgi/typesafe-sdk-go/tree/master/examples/go-software-use-cases/12-parse-relative-dates" target="_blank" rel="noopener">12-parse-relative-dates</a><span>Resolve relative dates against a Go clock.</span></li>
+          <li><a href="https://github.com/captain-corgi/typesafe-sdk-go/tree/master/examples/go-software-use-cases/13-navigate-codebase" target="_blank" rel="noopener">13-navigate-codebase</a><span>Navigate an existing codebase hierarchy.</span></li>
+          <li><a href="https://github.com/captain-corgi/typesafe-sdk-go/tree/master/examples/go-software-use-cases/14-suggest-tool" target="_blank" rel="noopener">14-suggest-tool</a><span>Suggest an installed tool from a registry.</span></li>
+          <li><a href="https://github.com/captain-corgi/typesafe-sdk-go/tree/master/examples/go-software-use-cases/15-screen-untrusted-input" target="_blank" rel="noopener">15-screen-untrusted-input</a><span>Screen untrusted text before an LLM call.</span></li>
+          <li><a href="https://github.com/captain-corgi/typesafe-sdk-go/tree/master/examples/go-software-use-cases/16-check-generated-output" target="_blank" rel="noopener">16-check-generated-output</a><span>Check generated output before returning it.</span></li>
+          <li><a href="https://github.com/captain-corgi/typesafe-sdk-go/tree/master/examples/go-software-use-cases/17-filter-retrieved-context" target="_blank" rel="noopener">17-filter-retrieved-context</a><span>Filter retrieved context before generation.</span></li>
+          <li><a href="https://github.com/captain-corgi/typesafe-sdk-go/tree/master/examples/go-software-use-cases/18-verify-proposed-tool-call" target="_blank" rel="noopener">18-verify-proposed-tool-call</a><span>Check a proposed tool call against the request.</span></li>
+          <li><a href="https://github.com/captain-corgi/typesafe-sdk-go/tree/master/examples/go-software-use-cases/19-check-documentation-citations" target="_blank" rel="noopener">19-check-documentation-citations</a><span>Check citations in generated documentation.</span></li>
+          <li><a href="https://github.com/captain-corgi/typesafe-sdk-go/tree/master/examples/go-software-use-cases/20-incident-semantic-features" target="_blank" rel="noopener">20-incident-semantic-features</a><span>Produce features for incident analytics.</span></li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="catalog">
+      <summary>
+        <span class="catalog-icon">🌐</span>
+        <span class="catalog-title"><h3>REST &amp; GraphQL API use cases</h3><p>Where a semantic decision fits after the usual request, schema, and authorization checks.</p></span>
+        <span class="catalog-count">10</span>
+      </summary>
+      <div class="catalog-body">
+        <ul class="example-list">
+          <li><a href="https://github.com/captain-corgi/typesafe-sdk-go/tree/master/examples/api-use-cases/narrative-field-agreement" target="_blank" rel="noopener">narrative-field-agreement</a><span>Check a request narrative against structured fields.</span></li>
+          <li><a href="https://github.com/captain-corgi/typesafe-sdk-go/tree/master/examples/api-use-cases/natural-language-filters" target="_blank" rel="noopener">natural-language-filters</a><span>Translate a search hint into bounded filters.</span></li>
+          <li><a href="https://github.com/captain-corgi/typesafe-sdk-go/tree/master/examples/api-use-cases/legacy-webhook-routing" target="_blank" rel="noopener">legacy-webhook-routing</a><span>Route a verified legacy webhook with an underspecified payload.</span></li>
+          <li><a href="https://github.com/captain-corgi/typesafe-sdk-go/tree/master/examples/api-use-cases/upstream-problem-types" target="_blank" rel="noopener">upstream-problem-types</a><span>Map upstream error prose to stable problem types.</span></li>
+          <li><a href="https://github.com/captain-corgi/typesafe-sdk-go/tree/master/examples/api-use-cases/openapi-description-drift" target="_blank" rel="noopener">openapi-description-drift</a><span>Review semantic drift in an OpenAPI change.</span></li>
+          <li><a href="https://github.com/captain-corgi/typesafe-sdk-go/tree/master/examples/api-use-cases/graphql-report-category" target="_blank" rel="noopener">graphql-report-category</a><span>Resolve a GraphQL enum from stored prose.</span></li>
+          <li><a href="https://github.com/captain-corgi/typesafe-sdk-go/tree/master/examples/api-use-cases/graphql-legacy-union" target="_blank" rel="noopener">graphql-legacy-union</a><span>Resolve a union for legacy records.</span></li>
+          <li><a href="https://github.com/captain-corgi/typesafe-sdk-go/tree/master/examples/api-use-cases/graphql-claim-predicate" target="_blank" rel="noopener">graphql-claim-predicate</a><span>Add a semantic predicate to a query result.</span></li>
+          <li><a href="https://github.com/captain-corgi/typesafe-sdk-go/tree/master/examples/api-use-cases/graphql-topic-subscription" target="_blank" rel="noopener">graphql-topic-subscription</a><span>Filter a subscription stream by event meaning.</span></li>
+          <li><a href="https://github.com/captain-corgi/typesafe-sdk-go/tree/master/examples/api-use-cases/graphql-deprecated-field" target="_blank" rel="noopener">graphql-deprecated-field</a><span>Suggest replacements for deprecated fields.</span></li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="catalog">
+      <summary>
+        <span class="catalog-icon">🗄️</span>
+        <span class="catalog-title"><h3>Relational database use cases</h3><p>PostgreSQL patterns: answers become allowlisted SQL and arguments for your own driver. No driver required.</p></span>
+        <span class="catalog-count">10</span>
+      </summary>
+      <div class="catalog-body">
+        <ul class="example-list">
+          <li><a href="https://github.com/captain-corgi/typesafe-sdk-go/tree/master/examples/relational-db-use-cases/allowlisted-select" target="_blank" rel="noopener">allowlisted-select</a><span>Natural-language filters to a tenant-scoped, parameterized <code>SELECT</code>.</span></li>
+          <li><a href="https://github.com/captain-corgi/typesafe-sdk-go/tree/master/examples/relational-db-use-cases/controlled-dimension" target="_blank" rel="noopener">controlled-dimension</a><span>Normalize prose to an existing dimension row.</span></li>
+          <li><a href="https://github.com/captain-corgi/typesafe-sdk-go/tree/master/examples/relational-db-use-cases/semantic-tags" target="_blank" rel="noopener">semantic-tags</a><span>Populate a many-to-many tag table.</span></li>
+          <li><a href="https://github.com/captain-corgi/typesafe-sdk-go/tree/master/examples/relational-db-use-cases/semantic-sort-column" target="_blank" rel="noopener">semantic-sort-column</a><span>Materialize an ordered semantic column.</span></li>
+          <li><a href="https://github.com/captain-corgi/typesafe-sdk-go/tree/master/examples/relational-db-use-cases/entity-alignment" target="_blank" rel="noopener">entity-alignment</a><span>Propose matches before an import merge.</span></li>
+          <li><a href="https://github.com/captain-corgi/typesafe-sdk-go/tree/master/examples/relational-db-use-cases/existing-foreign-key" target="_blank" rel="noopener">existing-foreign-key</a><span>Resolve prose to an existing foreign-key target.</span></li>
+          <li><a href="https://github.com/captain-corgi/typesafe-sdk-go/tree/master/examples/relational-db-use-cases/typed-join-relation" target="_blank" rel="noopener">typed-join-relation</a><span>Label a relationship represented by a join row.</span></li>
+          <li><a href="https://github.com/captain-corgi/typesafe-sdk-go/tree/master/examples/relational-db-use-cases/structured-update-guard" target="_blank" rel="noopener">structured-update-guard</a><span>Check a prose update against structured columns.</span></li>
+          <li><a href="https://github.com/captain-corgi/typesafe-sdk-go/tree/master/examples/relational-db-use-cases/version-contradictions" target="_blank" rel="noopener">version-contradictions</a><span>Flag contradictions across versioned rows.</span></li>
+          <li><a href="https://github.com/captain-corgi/typesafe-sdk-go/tree/master/examples/relational-db-use-cases/migration-worklist" target="_blank" rel="noopener">migration-worklist</a><span>Build a review worklist for a data migration.</span></li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="catalog">
+      <summary>
+        <span class="catalog-icon">🧪</span>
+        <span class="catalog-title"><h3>Testing use cases</h3><p>Opt-in live evaluation and review commands. A semantic answer can flag a case, but never makes a failing test pass.</p></span>
+        <span class="catalog-count">20</span>
+      </summary>
+      <div class="catalog-body">
+        <ul class="example-list">
+          <li><a href="https://github.com/captain-corgi/typesafe-sdk-go/tree/master/examples/testing-use-cases/requirement-coverage-review" target="_blank" rel="noopener">requirement-coverage-review</a><span>Link a behavior requirement to its test.</span></li>
+          <li><a href="https://github.com/captain-corgi/typesafe-sdk-go/tree/master/examples/testing-use-cases/negative-case-gaps" target="_blank" rel="noopener">negative-case-gaps</a><span>Find missing negative cases in a test plan.</span></li>
+          <li><a href="https://github.com/captain-corgi/typesafe-sdk-go/tree/master/examples/testing-use-cases/duplicate-scenarios" target="_blank" rel="noopener">duplicate-scenarios</a><span>Suggest semantically duplicate cases.</span></li>
+          <li><a href="https://github.com/captain-corgi/typesafe-sdk-go/tree/master/examples/testing-use-cases/test-name-assertions" target="_blank" rel="noopener">test-name-assertions</a><span>Compare a test name with its assertions.</span></li>
+          <li><a href="https://github.com/captain-corgi/typesafe-sdk-go/tree/master/examples/testing-use-cases/mock-fixture-intent" target="_blank" rel="noopener">mock-fixture-intent</a><span>Check that a mock fixture depicts the intended scenario.</span></li>
+          <li><a href="https://github.com/captain-corgi/typesafe-sdk-go/tree/master/examples/testing-use-cases/error-message-contract" target="_blank" rel="noopener">error-message-contract</a><span>Review error prose against a semantic contract.</span></li>
+          <li><a href="https://github.com/captain-corgi/typesafe-sdk-go/tree/master/examples/testing-use-cases/cli-help-meaning" target="_blank" rel="noopener">cli-help-meaning</a><span>Review CLI help and diagnostics.</span></li>
+          <li><a href="https://github.com/captain-corgi/typesafe-sdk-go/tree/master/examples/testing-use-cases/localized-message" target="_blank" rel="noopener">localized-message</a><span>Check meaning across localized messages.</span></li>
+          <li><a href="https://github.com/captain-corgi/typesafe-sdk-go/tree/master/examples/testing-use-cases/router-fixture-evaluation" target="_blank" rel="noopener">router-fixture-evaluation</a><span>Evaluate a router on labeled fixtures.</span></li>
+          <li><a href="https://github.com/captain-corgi/typesafe-sdk-go/tree/master/examples/testing-use-cases/question-regression-evaluation" target="_blank" rel="noopener">question-regression-evaluation</a><span>Compare question or model changes with a baseline.</span></li>
+          <li><a href="https://github.com/captain-corgi/typesafe-sdk-go/tree/master/examples/testing-use-cases/rest-message-result" target="_blank" rel="noopener">rest-message-result</a><span>Compare REST response prose with result fields.</span></li>
+          <li><a href="https://github.com/captain-corgi/typesafe-sdk-go/tree/master/examples/testing-use-cases/graphql-error-code" target="_blank" rel="noopener">graphql-error-code</a><span>Compare GraphQL error prose with a stable code.</span></li>
+          <li><a href="https://github.com/captain-corgi/typesafe-sdk-go/tree/master/examples/testing-use-cases/workflow-narrative" target="_blank" rel="noopener">workflow-narrative</a><span>Check narrative continuity across services.</span></li>
+          <li><a href="https://github.com/captain-corgi/typesafe-sdk-go/tree/master/examples/testing-use-cases/audit-note-state" target="_blank" rel="noopener">audit-note-state</a><span>Compare an audit note with committed state.</span></li>
+          <li><a href="https://github.com/captain-corgi/typesafe-sdk-go/tree/master/examples/testing-use-cases/webhook-route-review" target="_blank" rel="noopener">webhook-route-review</a><span>Check webhook narrative routing in an end-to-end fixture.</span></li>
+          <li><a href="https://github.com/captain-corgi/typesafe-sdk-go/tree/master/examples/testing-use-cases/fuzz-seed-curation" target="_blank" rel="noopener">fuzz-seed-curation</a><span>Curate reviewed fuzz seeds from bug reports.</span></li>
+          <li><a href="https://github.com/captain-corgi/typesafe-sdk-go/tree/master/examples/testing-use-cases/fuzz-failure-triage" target="_blank" rel="noopener">fuzz-failure-triage</a><span>Classify a minimized fuzz failure.</span></li>
+          <li><a href="https://github.com/captain-corgi/typesafe-sdk-go/tree/master/examples/testing-use-cases/fuzz-symptom-clusters" target="_blank" rel="noopener">fuzz-symptom-clusters</a><span>Suggest groups of related fuzz failures.</span></li>
+          <li><a href="https://github.com/captain-corgi/typesafe-sdk-go/tree/master/examples/testing-use-cases/test-log-triage" target="_blank" rel="noopener">test-log-triage</a><span>Triage intermittent test logs.</span></li>
+          <li><a href="https://github.com/captain-corgi/typesafe-sdk-go/tree/master/examples/testing-use-cases/surviving-mutation-review" target="_blank" rel="noopener">surviving-mutation-review</a><span>Review a surviving code mutation.</span></li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="catalog">
+      <summary>
+        <span class="catalog-icon">⚙️</span>
+        <span class="catalog-title"><h3>Automation use cases</h3><p>One program per entry of the docs use-case map's example automation list.</p></span>
+        <span class="catalog-count">19</span>
+      </summary>
+      <div class="catalog-body">
+        <ul class="example-list">
+          <li><a href="https://github.com/captain-corgi/typesafe-sdk-go/tree/master/examples/automation-use-cases/search-and-retrieval" target="_blank" rel="noopener">search-and-retrieval</a><span>Per-passage answer gate + relevance score; ranked RAG context.</span></li>
+          <li><a href="https://github.com/captain-corgi/typesafe-sdk-go/tree/master/examples/automation-use-cases/scientific-discovery" target="_blank" rel="noopener">scientific-discovery</a><span>Inclusion/exclusion battery; include / exclude / review verdict.</span></li>
+          <li><a href="https://github.com/captain-corgi/typesafe-sdk-go/tree/master/examples/automation-use-cases/model-routing" target="_blank" rel="noopener">model-routing</a><span>Intent, difficulty, and reasoning signals; cheapest-model routing.</span></li>
+          <li><a href="https://github.com/captain-corgi/typesafe-sdk-go/tree/master/examples/automation-use-cases/llm-guardrails" target="_blank" rel="noopener">llm-guardrails</a><span>Hazard battery + severity; block / review / support / pass.</span></li>
+          <li><a href="https://github.com/captain-corgi/typesafe-sdk-go/tree/master/examples/automation-use-cases/semantic-code-linting" target="_blank" rel="noopener">semantic-code-linting</a><span>Team-convention battery; CI-style findings with nonzero exit.</span></li>
+          <li><a href="https://github.com/captain-corgi/typesafe-sdk-go/tree/master/examples/automation-use-cases/predictive-features" target="_blank" rel="noopener">predictive-features</a><span>Free text to a deterministic feature row for a classical model.</span></li>
+          <li><a href="https://github.com/captain-corgi/typesafe-sdk-go/tree/master/examples/automation-use-cases/recruiting" target="_blank" rel="noopener">recruiting</a><span>Competency scores, hard requirements, recommendation.</span></li>
+          <li><a href="https://github.com/captain-corgi/typesafe-sdk-go/tree/master/examples/automation-use-cases/lead-generation" target="_blank" rel="noopener">lead-generation</a><span>Weighted composite score and priority buckets.</span></li>
+          <li><a href="https://github.com/captain-corgi/typesafe-sdk-go/tree/master/examples/automation-use-cases/customer-support" target="_blank" rel="noopener">customer-support</a><span>Six questions in one call, incl. a <code>RawQuestion</code>; SLA decision tree.</span></li>
+          <li><a href="https://github.com/captain-corgi/typesafe-sdk-go/tree/master/examples/automation-use-cases/insurance-claims" target="_blank" rel="noopener">insurance-claims</a><span>Straight-through / adjuster review / SIU referral.</span></li>
+          <li><a href="https://github.com/captain-corgi/typesafe-sdk-go/tree/master/examples/automation-use-cases/financial-crime" target="_blank" rel="noopener">financial-crime</a><span>Typology, entity resolution, risk; investigator routing.</span></li>
+          <li><a href="https://github.com/captain-corgi/typesafe-sdk-go/tree/master/examples/automation-use-cases/legal-compliance" target="_blank" rel="noopener">legal-compliance</a><span>Prohibited claims and disclaimers; approve / revise / escalate.</span></li>
+          <li><a href="https://github.com/captain-corgi/typesafe-sdk-go/tree/master/examples/automation-use-cases/ecommerce-marketplaces" target="_blank" rel="noopener">ecommerce-marketplaces</a><span>Listing normalization; publish / hold / remove.</span></li>
+          <li><a href="https://github.com/captain-corgi/typesafe-sdk-go/tree/master/examples/automation-use-cases/moderation-trust-safety" target="_blank" rel="noopener">moderation-trust-safety</a><span>Trust &amp; safety battery; allow / warn / review / block.</span></li>
+          <li><a href="https://github.com/captain-corgi/typesafe-sdk-go/tree/master/examples/automation-use-cases/advertising" target="_blank" rel="noopener">advertising</a><span>Brand safety, claims, creative score, audience fit.</span></li>
+          <li><a href="https://github.com/captain-corgi/typesafe-sdk-go/tree/master/examples/automation-use-cases/gaming" target="_blank" rel="noopener">gaming</a><span>Cheating, toxicity, frustration, churn; sorted actions.</span></li>
+          <li><a href="https://github.com/captain-corgi/typesafe-sdk-go/tree/master/examples/automation-use-cases/risk-assessment" target="_blank" rel="noopener">risk-assessment</a><span>Risk type, severity, controls; priority register entry.</span></li>
+          <li><a href="https://github.com/captain-corgi/typesafe-sdk-go/tree/master/examples/automation-use-cases/demand-forecasting" target="_blank" rel="noopener">demand-forecasting</a><span>Map-reduce demand signals into a forecast adjustment.</span></li>
+          <li><a href="https://github.com/captain-corgi/typesafe-sdk-go/tree/master/examples/automation-use-cases/knowledge-graphs" target="_blank" rel="noopener">knowledge-graphs</a><span>Relation and contradiction per triple; commit / flag / queue.</span></li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="catalog">
+      <summary>
+        <span class="catalog-icon">🏷️</span>
+        <span class="catalog-title"><h3>Task categories</h3><p>One program per row of the docs use-case map's task category table.</p></span>
+        <span class="catalog-count">10</span>
+      </summary>
+      <div class="catalog-body">
+        <ul class="example-list">
+          <li><a href="https://github.com/captain-corgi/typesafe-sdk-go/tree/master/examples/task-categories/classification" target="_blank" rel="noopener">classification</a><span>One category wins; confidence gate to a human queue.</span></li>
+          <li><a href="https://github.com/captain-corgi/typesafe-sdk-go/tree/master/examples/task-categories/detection" target="_blank" rel="noopener">detection</a><span>Spam/phishing battery with per-signal thresholds.</span></li>
+          <li><a href="https://github.com/captain-corgi/typesafe-sdk-go/tree/master/examples/task-categories/scoring" target="_blank" rel="noopener">scoring</a><span>Response-quality rubric score; ticket next step.</span></li>
+          <li><a href="https://github.com/captain-corgi/typesafe-sdk-go/tree/master/examples/task-categories/routing" target="_blank" rel="noopener">routing</a><span>Intent routing with human / confirm / auto-act gates.</span></li>
+          <li><a href="https://github.com/captain-corgi/typesafe-sdk-go/tree/master/examples/task-categories/search" target="_blank" rel="noopener">search</a><span>Per-item match probability; threshold to a matched set.</span></li>
+          <li><a href="https://github.com/captain-corgi/typesafe-sdk-go/tree/master/examples/task-categories/retrieval" target="_blank" rel="noopener">retrieval</a><span>Best-first RAG context packing under a word budget.</span></li>
+          <li><a href="https://github.com/captain-corgi/typesafe-sdk-go/tree/master/examples/task-categories/ranking" target="_blank" rel="noopener">ranking</a><span>Map-reduce re-ranking with top-k reduce.</span></li>
+          <li><a href="https://github.com/captain-corgi/typesafe-sdk-go/tree/master/examples/task-categories/verification" target="_blank" rel="noopener">verification</a><span>Citation support and overstatement; verified / review / FAIL.</span></li>
+          <li><a href="https://github.com/captain-corgi/typesafe-sdk-go/tree/master/examples/task-categories/ml-feature-extraction" target="_blank" rel="noopener">ml-feature-extraction</a><span>Review to one deterministic model-input row.</span></li>
+          <li><a href="https://github.com/captain-corgi/typesafe-sdk-go/tree/master/examples/task-categories/structured-data-extraction" target="_blank" rel="noopener">structured-data-extraction</a><span>Known fields from unstructured input; low-confidence review.</span></li>
+        </ul>
+      </div>
+    </details>
+  </div>
+  <p class="examples-note">Thresholds in the examples illustrate control flow. Measure them on labeled application data before production use. Full index: <a href="https://github.com/captain-corgi/typesafe-sdk-go/blob/master/examples/README.md" target="_blank" rel="noopener">examples/README.md</a>.</p>
 </section>
 
 <div class="divider"></div>
