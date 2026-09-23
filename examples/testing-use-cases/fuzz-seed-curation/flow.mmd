@@ -1,0 +1,11 @@
+flowchart TD
+  S[/"Bug report text"/]:::state
+  M[/"Pre-reviewed seeds map (4)<br/>empty · invalid_utf8 · nested · oversized"/]:::state
+  S --> C(["client.SystemOne"]):::sdk
+  C --> Q1["boundary · Choice<br/>empty_input · invalid_utf8 · nested_delimiter<br/>oversized_field · other"]:::choice
+  C -. "request error" .-> E1("INCONCLUSIVE: design a seed manually"):::fail
+  Q1 --> P1["look up seeds[choice]"]:::policy
+  M --> P1
+  P1 --> P2{"seed found and<br/>confidence ≥ 0.85?"}:::policy
+  P2 -- no --> O1("INCONCLUSIVE boundary:<br/>design a seed manually"):::outcome
+  P2 -- yes --> O2("REVIEW seed: print f.Add snippet;<br/>keep existing corpus"):::outcome

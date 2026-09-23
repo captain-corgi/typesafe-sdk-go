@@ -1,0 +1,10 @@
+flowchart TD
+  S1[/"Query: ANC over-ear, under $200, 30h+"/]:::state
+  S1 --> S2[/"for each product item (4)"/]:::state
+  S2 --> C(["client.SystemOne"]):::sdk
+  C --> Q1["matches · Noul<br/>meets every stated requirement"]:::noul
+  Q1 --> P1{"p(match) ≥ 0.60?"}:::policy
+  P1 -- yes --> P2["Mark MATCH, add to matched list"]:::policy
+  P1 -- no --> P3["Mark no"]:::policy
+  P2 --> O1("Print matched N of 4 items"):::outcome
+  P3 --> O1

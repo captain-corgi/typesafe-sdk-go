@@ -1,0 +1,19 @@
+flowchart TD
+  S[/"Signed webhook body + HMAC signature"/]:::state
+  S --> P0{"size, HMAC signature, JSON valid?"}:::policy
+  P0 -- no --> O0("reject_payload / reject_signature"):::outcome
+  P0 -- yes --> P1{"event ID already seen?"}:::policy
+  P1 -- yes --> O1("duplicate"):::outcome
+  P1 -- no --> P2{"switch event type"}:::policy
+  P2 -- "created · modified · removed" --> O2("route: provider event type"):::outcome
+  P2 -- other --> O3("reconcile"):::outcome
+  P2 -- change --> C(["client.SystemOne"]):::sdk
+  C --> Q1["change · Choice<br/>created · modified · removed · other"]:::choice
+  C --> Q2["reversal · Noul"]:::noul
+  C -. "request error" .-> E1("reconcile"):::fail
+  Q1 --> P3{"confidence ≥ 0.80<br/>and change is not other?"}:::policy
+  P3 -- no --> O3
+  P3 -- yes --> P4{"reversal above 0.20?"}:::policy
+  Q2 --> P4
+  P4 -- yes --> O4("reconcile_reversal"):::outcome
+  P4 -- no --> O5("route: chosen change"):::outcome

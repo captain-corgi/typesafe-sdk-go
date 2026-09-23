@@ -1,0 +1,15 @@
+flowchart TD
+  S[/"Query + 4 docs"/]:::state
+  S --> P0["Lexical match on 4 terms<br/>keep hits, sort by lexical count"]:::policy
+  P0 --> L[/"for each shortlisted doc"/]:::state
+  L --> C(["client.SystemOne"]):::sdk
+  C --> Q1["answers · Noul"]:::noul
+  C --> Q2["relevance · Score<br/>unrelated · related · direct"]:::score
+  C -. "request error" .-> E1("Keep lexical order; print top 2"):::fail
+  Q1 --> P1{"relevance conf ≥ 0.65<br/>and answers ≥ 0.65?"}:::policy
+  Q2 --> P1
+  P1 -- yes --> P2["semantic = relevance score"]:::policy
+  P1 -- no --> P3["semantic stays 0"]:::policy
+  P2 --> P4["Stable sort by semantic score"]:::policy
+  P3 --> P4
+  P4 --> O1("Print top 2 results"):::outcome

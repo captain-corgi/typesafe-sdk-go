@@ -1,0 +1,16 @@
+flowchart TD
+  S[/"Deprecated field + current fields (3)"/]:::state
+  S --> P0["Exact Go checks: return type, arguments,<br/>leaf, selection set"]:::policy
+  P0 --> P1{"any eligible candidate?"}:::policy
+  P1 -- no --> O0("Manual migration review required"):::outcome
+  P1 -- yes --> C1(["client.SystemOne"]):::sdk
+  C1 --> Q1["replacement · Choice<br/>eligible field IDs · none"]:::choice
+  C1 -. "request error" .-> E1("Manual migration review required"):::fail
+  Q1 --> P2{"eligible and confidence ≥ 0.80?"}:::policy
+  P2 -- no --> O0
+  P2 -- yes --> C2(["client.SystemOne"]):::sdk
+  C2 --> Q2["same_semantics · Noul"]:::noul
+  C2 -. "request error" .-> E1
+  Q2 --> P3{"same_semantics ≥ 0.80?"}:::policy
+  P3 -- no --> O0
+  P3 -- yes --> O1("Review suggestion: old to proposed field"):::outcome

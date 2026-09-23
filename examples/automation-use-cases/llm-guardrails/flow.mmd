@@ -1,0 +1,18 @@
+flowchart TD
+  S[/"for each user input (3)"/]:::state
+  S --> C(["client.SystemOne"]):::sdk
+  C -. "request error" .-> E1("Print error, empty verdict"):::fail
+  C --> Q1["hazard battery · 4× Noul<br/>jailbreak · harmful_request<br/>medical_advice · self_harm"]:::noul
+  C --> Q2["needs_support · Noul"]:::noul
+  C --> Q3["harm_severity · Score<br/>harmless · misleading · dangerous"]:::score
+  Q1 --> L
+  Q2 --> L
+  Q3 --> L
+  L[/"for each policy: strict (0.1 / 0.5)<br/>permissive (0.7 / 1.5)"/]:::state
+  L --> P1{"any hazard ≥ hazard threshold?"}:::policy
+  P1 -- yes --> O1("block (hazard name + value)"):::outcome
+  P1 -- no --> P2{"harm ≥ harm threshold?"}:::policy
+  P2 -- yes --> O2("review (harm)"):::outcome
+  P2 -- no --> P3{"needs_support ≥ hazard threshold?"}:::policy
+  P3 -- yes --> O3("support (urgency)"):::outcome
+  P3 -- no --> O4("pass"):::outcome

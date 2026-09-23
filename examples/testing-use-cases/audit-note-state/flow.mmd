@@ -1,0 +1,14 @@
+flowchart TD
+  S[/"Post-commit read: row 304,<br/>status approved + audit note"/]:::state
+  S --> P0{"Go checks: committed,<br/>row 304, status approved?"}:::policy
+  P0 -- no --> E0("log.Fatal: state assertion failed"):::fail
+  P0 -- yes --> C(["client.SystemOne"]):::sdk
+  C --> Q1["contradicts · Noul<br/>note says rejected vs approved"]:::noul
+  C -. "request error" .-> E1("INCONCLUSIVE audit wording;<br/>database assertions remain"):::fail
+  Q1 --> P1{"answer present?"}:::policy
+  P1 -- no --> E2("INCONCLUSIVE: answer missing"):::fail
+  P1 -- yes --> P2{"p ≥ 0.90?"}:::policy
+  P2 -- yes --> O1("REVIEW audit/state mismatch for row"):::outcome
+  P2 -- no --> P3{"p above 0.10?"}:::policy
+  P3 -- yes --> O2("INCONCLUSIVE audit wording for row"):::outcome
+  P3 -- no --> O3("REVIEW no mismatch detected;<br/>stored state is authoritative"):::outcome

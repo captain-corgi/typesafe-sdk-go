@@ -1,0 +1,18 @@
+flowchart TD
+  S[/"for each AML alert (2)<br/>narrative + entity name variants"/]:::state
+  S --> C(["client.SystemOne"]):::sdk
+  C -. "request error" .-> E1("Print error, skip to next alert"):::fail
+  C --> Q1["typology_match · Noul<br/>laundering pattern vs ordinary payments"]:::noul
+  C --> Q2["same_entity · Noul"]:::noul
+  C --> Q3["alert_class · Choice<br/>false positive · suspicious · urgent"]:::choice
+  C --> Q4["risk · Score<br/>low · medium · high"]:::score
+  Q1 --> P1{"urgent or risk ≥ 1.5?"}:::policy
+  Q2 --> P1
+  Q3 --> P1
+  Q4 --> P1
+  P1 -- yes --> O1("route: senior investigator, same day"):::outcome
+  P1 -- no --> P2{"suspicious or typology ≥ 0.5?"}:::policy
+  P2 -- yes --> O2("route: investigation queue"):::outcome
+  P2 -- no --> P3{"same_entity below 0.5?"}:::policy
+  P3 -- yes --> O3("route: entity-resolution desk"):::outcome
+  P3 -- no --> O4("route: auto-close (false positive)"):::outcome

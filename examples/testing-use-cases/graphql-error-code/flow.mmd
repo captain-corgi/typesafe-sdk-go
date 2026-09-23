@@ -1,0 +1,12 @@
+flowchart TD
+  S[/"GraphQL fixture: data.item null,<br/>one error, code UNAUTHORIZED"/]:::state
+  S --> P0{"Go checks: JSON, 1 error,<br/>item null, code, path?"}:::policy
+  P0 -- no --> E0("log.Fatal: GraphQL assertion failed"):::fail
+  P0 -- yes --> C(["client.SystemOne"]):::sdk
+  C --> Q1["meaning · Choice<br/>not_found · unauthorized · validation · other"]:::choice
+  C -. "request error" .-> E1("INCONCLUSIVE error prose;<br/>GraphQL checks remain"):::fail
+  Q1 --> P1{"confidence below 0.85<br/>or choice other?"}:::policy
+  P1 -- yes --> O1("INCONCLUSIVE error meaning"):::outcome
+  P1 -- no --> P2{"choice is unauthorized?"}:::policy
+  P2 -- no --> O2("REVIEW code/prose mismatch"):::outcome
+  P2 -- yes --> O3("REVIEW code/prose agreement;<br/>structure stays a Go assertion"):::outcome

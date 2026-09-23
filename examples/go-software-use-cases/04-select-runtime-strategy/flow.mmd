@@ -1,0 +1,18 @@
+flowchart TD
+  S[/"Task text (os.Args or default)"/]:::state
+  S --> C(["client.SystemOne"]):::sdk
+  C --> Q1["family · Choice<br/>rewrite · analysis · code · other"]:::choice
+  C --> Q2["difficulty · Score<br/>routine · judgment · detailed"]:::score
+  C --> Q3["multistep · Noul"]:::noul
+  C -. "request error" .-> E1("route: standard-review (failed)"):::fail
+  Q1 --> P1{"family conf ≥ 0.70, difficulty<br/>conf ≥ 0.65, family not other?"}:::policy
+  Q2 --> P1
+  P1 -- no --> O0("route: standard-review (uncertain)"):::outcome
+  P1 -- yes --> P2{"rewrite, difficulty below 0.7<br/>and multistep below 0.3?"}:::policy
+  Q3 --> P2
+  P2 -- yes --> O1("route: fast"):::outcome
+  P2 -- no --> P3{"difficulty ≥ 1.5 or<br/>multistep ≥ 0.70?"}:::policy
+  P3 -- no --> O2("route: standard"):::outcome
+  P3 -- yes --> P4{"specialist capacity and budget?"}:::policy
+  P4 -- yes --> O3("route: specialist"):::outcome
+  P4 -- no --> O4("route: standard-review"):::outcome

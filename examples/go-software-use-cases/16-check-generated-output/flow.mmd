@@ -1,0 +1,13 @@
+flowchart TD
+  S[/"Draft + output policy"/]:::state
+  S --> C(["client.SystemOne"]):::sdk
+  C --> Q1["forbidden_claim · private_info<br/>outside_scope · 3× Noul"]:::noul
+  C --> Q2["harm · Score<br/>none · confusion · material harm"]:::score
+  C -. "request error" .-> E1("Held for review; safe fallback"):::fail
+  Q1 & Q2 --> P1{"harm confidence ≥ 0.70?"}:::policy
+  P1 -- no --> O1("Held for review; safe fallback"):::outcome
+  P1 -- yes --> P2{"harm ≥ 1.5 and<br/>any flag ≥ 0.80?"}:::policy
+  P2 -- yes --> O2("Replaced with fixed fallback"):::outcome
+  P2 -- no --> P3{"harm ≤ 0.5 and<br/>all flags ≤ 0.20?"}:::policy
+  P3 -- yes --> O3("Return draft"):::outcome
+  P3 -- no --> O4("Held for review; safe fallback"):::outcome

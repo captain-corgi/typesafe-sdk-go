@@ -1,0 +1,12 @@
+flowchart TD
+  S1[/"Query: rotate a leaked access token"/]:::state
+  S1 --> S2[/"for each KB passage (4)"/]:::state
+  S2 --> C(["client.SystemOne"]):::sdk
+  C --> Q1["relevance · Score<br/>irrelevant · background · on point"]:::score
+  Q1 --> P1["Sort passages by relevance, best first"]:::policy
+  P1 --> P2{"relevance ≥ 1.0?"}:::policy
+  P2 -- no --> O0("Skip passage"):::outcome
+  P2 -- yes --> P3{"fits the 60-word budget?"}:::policy
+  P3 -- no --> O0
+  P3 -- yes --> P4["Add passage to context"]:::policy
+  P4 --> O1("Print assembled context and words used"):::outcome

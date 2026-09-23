@@ -1,0 +1,13 @@
+flowchart TD
+  S[/"Narrative + measured row INC-482<br/>needs_review = true"/]:::state
+  S --> C(["client.SystemOne"]):::sdk
+  C --> Q1["dependency_regression · Noul"]:::noul
+  C --> Q2["customer_visible · Noul"]:::noul
+  C --> Q3["impact · Score<br/>negligible · degraded · outage"]:::score
+  C -. "request error" .-> E1("Log error; keep row with needs_review"):::fail
+  Q1 & Q2 & Q3 --> P1{"impact confidence ≥ 0.70?"}:::policy
+  P1 -- yes --> P2["fill probabilities, impact ÷ 2<br/>needs_review = false"]:::policy
+  P1 -- no --> P3["keep semantic fields null"]:::policy
+  P2 --> O1("Print JSON feature row"):::outcome
+  P3 --> O1
+  E1 --> O1

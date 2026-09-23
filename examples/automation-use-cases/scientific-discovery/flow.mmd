@@ -1,0 +1,19 @@
+flowchart TD
+  S[/"for each paper (2): title + abstract"/]:::state
+  S --> C(["client.SystemOne"]):::sdk
+  C -. "request error" .-> E1("Print error, skip to next paper"):::fail
+  C --> Q1["meets_inclusion · Noul"]:::noul
+  C --> Q2["violates_exclusion · Noul"]:::noul
+  C --> Q3["missing_methodology · Noul"]:::noul
+  C --> Q4["relevance · Score<br/>tangential · related · on-topic"]:::score
+  Q1 --> P1
+  Q2 --> P1
+  Q3 --> P1
+  Q4 --> P1
+  P1{"violates_exclusion ≥ 0.5?"}:::policy
+  P1 -- yes --> O1("exclude (hits an exclusion criterion)"):::outcome
+  P1 -- no --> P2{"meets_inclusion below 0.5?"}:::policy
+  P2 -- yes --> O2("exclude (fails inclusion criteria)"):::outcome
+  P2 -- no --> P3{"relevance ≥ 1.0 and<br/>missing_methodology below 0.5?"}:::policy
+  P3 -- yes --> O3("include"):::outcome
+  P3 -- no --> O4("needs review (incomplete reporting)"):::outcome

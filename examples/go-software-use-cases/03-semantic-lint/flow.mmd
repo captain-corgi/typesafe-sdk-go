@@ -1,0 +1,14 @@
+flowchart TD
+  S[/"Convention + changed Go code"/]:::state
+  S --> P0{"go/parser syntax check passes?"}:::policy
+  P0 -- no --> E0("Compiler-side syntax check failed"):::fail
+  P0 -- yes --> C(["client.SystemOne"]):::sdk
+  C --> Q1["bypasses_validation · Noul"]:::noul
+  C --> Q2["severity · Score<br/>none · review · production risk"]:::score
+  C -. "request error" .-> E1("Lint unavailable; send to review"):::fail
+  Q1 --> P1{"p ≥ 0.85, severity conf ≥ 0.65<br/>and severity ≥ 1.5?"}:::policy
+  Q2 --> P1
+  P1 -- yes --> O1("Flag for review: validation bypass"):::outcome
+  P1 -- no --> P2{"p ≤ 0.20 and<br/>severity conf ≥ 0.65?"}:::policy
+  P2 -- yes --> O2("No finding; run gofmt, vet, tests"):::outcome
+  P2 -- no --> O3("Uncertain; send change to review"):::outcome

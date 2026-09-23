@@ -180,7 +180,9 @@ Conventions shared by every example:
 - a header comment naming the pattern and its run command;
 - readable stdout showing the answer and the Go policy applied to it;
 - both plain-string and structured-map `State` values across the catalog;
-- live SDK calls with no network mocking, including an error or uncertain path.
+- live SDK calls with no network mocking, including an error or uncertain path;
+- a `flow.mmd` Mermaid diagram of the flow, rendered on the project's GitHub
+  Pages site (see [CONTRIBUTING.md](../CONTRIBUTING.md) for the node classes).
 
 Thresholds in the examples illustrate control flow. Measure them on labeled
 application data before using them for production decisions.

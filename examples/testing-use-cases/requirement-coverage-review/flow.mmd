@@ -1,0 +1,13 @@
+flowchart TD
+  S[/"Requirement AUTH-17 + TestInvalidToken excerpt"/]:::state
+  S --> V{"ID set and name starts with Test?"}:::policy
+  V -- no --> E0("Exit: invalid review input"):::fail
+  V -- yes --> C(["client.SystemOne"]):::sdk
+  C --> Q1["covers · Noul<br/>checks error and handler not called"]:::noul
+  C -. "request error" .-> E1("INCONCLUSIVE: request error"):::fail
+  Q1 -- answer missing --> E2("INCONCLUSIVE: answer missing"):::fail
+  Q1 --> P1{"p ≤ 0.10?"}:::policy
+  P1 -- yes --> O1("REVIEW: likely coverage mismatch"):::outcome
+  P1 -- no --> P2{"p ≥ 0.90?"}:::policy
+  P2 -- yes --> O2("REVIEW: possible coverage;<br/>run exact Go assertions"):::outcome
+  P2 -- no --> O3("INCONCLUSIVE: reviewer must inspect"):::outcome

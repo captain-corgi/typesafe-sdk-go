@@ -1,0 +1,19 @@
+flowchart TD
+  M[/"Pinned TYPESAFE_EVAL_MODEL +<br/>optional reviewed baseline path"/]:::state
+  M --> B{"Baseline given: reviewed, same fixtures,<br/>thresholds and consistent metrics?"}:::policy
+  B -- invalid --> E0("Exit: incompatible baseline"):::fail
+  B -- ok or none --> S[/"for each labeled fixture (10)"/]:::state
+  S --> C(["client.SystemOne"]):::sdk
+  C --> Q1["failed_retry · Noul<br/>retry-failure-v2"]:::noul
+  C -. "request error or missing answer" .-> E1("inconclusive: abstentions++"):::fail
+  Q1 --> P1{"p ≥ 0.90 retry_failure<br/>p ≤ 0.10 not_retry_failure?"}:::policy
+  P1 -- between --> E1
+  P1 -- prediction --> P2{"prediction == label?"}:::policy
+  P2 -- yes --> P3["agreement_for_review"]:::policy
+  P2 -- no --> P4["disagreement_for_review<br/>errors++"]:::policy
+  P3 --> O1("Write JSON artifact; print per-class<br/>error and abstention rates"):::outcome
+  P4 --> O1
+  E1 --> O1
+  O1 --> P5{"baseline loaded?"}:::policy
+  P5 -- no --> O2("comparison unavailable"):::outcome
+  P5 -- yes --> O3("Print rate increases and<br/>question/model changes"):::outcome

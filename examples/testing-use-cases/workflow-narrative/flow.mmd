@@ -1,0 +1,14 @@
+flowchart TD
+  S[/"Trace IDs, timestamps, delivery,<br/>state change + two event excerpts"/]:::state
+  S --> P0{"Go checks: same trace, ordered,<br/>delivered, state changed?"}:::policy
+  P0 -- no --> E0("log.Fatal: workflow assertion failed"):::fail
+  P0 -- yes --> C(["client.SystemOne"]):::sdk
+  C --> Q1["same_operation · Noul<br/>upstream vs downstream excerpt"]:::noul
+  C -. "request error" .-> E1("INCONCLUSIVE narrative;<br/>workflow checks remain"):::fail
+  Q1 --> P1{"answer present?"}:::policy
+  P1 -- no --> E2("INCONCLUSIVE: answer missing"):::fail
+  P1 -- yes --> P2{"p ≤ 0.10?"}:::policy
+  P2 -- yes --> O1("REVIEW narrative drift"):::outcome
+  P2 -- no --> P3{"p below 0.90?"}:::policy
+  P3 -- yes --> O2("INCONCLUSIVE narrative"):::outcome
+  P3 -- no --> O3("REVIEW continuity candidate;<br/>trace/order/state proven by Go"):::outcome

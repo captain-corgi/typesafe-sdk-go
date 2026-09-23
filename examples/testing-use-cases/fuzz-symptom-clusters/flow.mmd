@@ -1,0 +1,12 @@
+flowchart TD
+  S[/"Two failures A, B: input hash,<br/>stack hash, summary"/]:::state
+  S --> P0{"same input hash?"}:::policy
+  P0 -- yes --> O0("Retain both paths until<br/>deterministic dedup review"):::outcome
+  P0 -- no --> P1{"same stack hash?"}:::policy
+  P1 -- yes --> O1("Exact cluster candidate;<br/>retain both inputs"):::outcome
+  P1 -- no --> C(["client.SystemOne"]):::sdk
+  C --> Q1["symptom · Choice<br/>same_symptom · different_symptoms · unclear"]:::choice
+  C -. "request error" .-> E1("INCONCLUSIVE: retain both inputs"):::fail
+  Q1 --> P2{"confidence below 0.85<br/>or choice unclear?"}:::policy
+  P2 -- yes --> O2("INCONCLUSIVE: retain A and B"):::outcome
+  P2 -- no --> O3("REVIEW A and B: symptom label;<br/>retain both until tests prove redundancy"):::outcome

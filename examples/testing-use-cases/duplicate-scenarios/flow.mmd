@@ -1,0 +1,10 @@
+flowchart TD
+  S[/"Scenarios A and B: name, input, assertion"/]:::state
+  S --> P0{"Same input and same assertion?"}:::policy
+  P0 -- yes --> O0("Exact duplicate candidate;<br/>reviewer decides"):::outcome
+  P0 -- no --> C(["client.SystemOne"]):::sdk
+  C --> Q1["relationship · Choice<br/>the_same_behavior · different_behaviors<br/>insufficient_context"]:::choice
+  C -. "request error" .-> E1("INCONCLUSIVE: retain both tests"):::fail
+  Q1 --> P1{"confidence below 0.85 or<br/>insufficient_context?"}:::policy
+  P1 -- yes --> O1("INCONCLUSIVE: retain both tests"):::outcome
+  P1 -- no --> O2("REVIEW relationship;<br/>retain both pending human decision"):::outcome

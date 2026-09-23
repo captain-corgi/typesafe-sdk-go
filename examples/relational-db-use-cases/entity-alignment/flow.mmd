@@ -1,0 +1,15 @@
+flowchart TD
+  S0[/"Shortlist SQL: similar catalog_items LIMIT 5"/]:::state
+  S0 --> S[/"for each candidate (901, 902)<br/>vs imported Acme Router AX-6"/]:::state
+  S --> C(["client.SystemOne"]):::sdk
+  C --> Q1["identity · Score<br/>different · uncertain · same"]:::score
+  C --> Q2["same_type · Noul"]:::noul
+  C --> Q3["same_brand · Noul"]:::noul
+  C -. "request error" .-> E1("Keep candidate unmerged, continue"):::fail
+  Q1 --> P1{"score ≥ 1.8, confidence ≥ 0.90,<br/>same_type ≥ 0.95, same_brand ≥ 0.95?"}:::policy
+  Q2 --> P1
+  Q3 --> P1
+  P1 -- no --> P2["review_state = needs_review"]:::policy
+  P1 -- yes --> P3["review_state = plausible_match"]:::policy
+  P2 --> O1("INSERT INTO import_match_proposals …<br/>ON CONFLICT DO NOTHING + args"):::outcome
+  P3 --> O1

@@ -1,0 +1,19 @@
+flowchart TD
+  S[/"Report request (os.Args or default)"/]:::state
+  S --> C(["client.SystemOne"]):::sdk
+  C --> Q1["function · Choice<br/>show_errors · show_latency · other"]:::choice
+  C --> Q2["resolution · Choice<br/>hour · day · unspecified"]:::choice
+  C --> Q3["window · Choice<br/>day · week · month · unspecified"]:::choice
+  C --> Q4["deploys · Noul"]:::noul
+  C -. "request error" .-> E1("Report request needs manual handling"):::fail
+  Q1 --> P1{"function conf ≥ 0.75 and<br/>resolution, window conf ≥ 0.65?"}:::policy
+  Q2 --> P1
+  Q3 --> P1
+  P1 -- no --> O0("Ask to clarify report, resolution, window"):::outcome
+  P1 -- yes --> P2{"function is show_errors<br/>or show_latency?"}:::policy
+  P2 -- no --> O3("No supported report selected"):::outcome
+  P2 -- yes --> P3["unspecified resolution/window → day<br/>includeDeploys = deploys ≥ 0.80"]:::policy
+  Q4 --> P3
+  P3 --> P4{"switch function.Choice"}:::policy
+  P4 -- show_errors --> O1("showErrors(resolution, window, deploys)"):::outcome
+  P4 -- show_latency --> O2("showLatency(resolution, window, deploys)"):::outcome

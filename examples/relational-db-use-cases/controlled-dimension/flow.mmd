@@ -1,0 +1,9 @@
+flowchart TD
+  S[/"Description + tenant categories<br/>billing 11 · access 12 · reliability 13"/]:::state
+  S --> C(["client.SystemOne"]):::sdk
+  C --> Q1["category · Choice<br/>billing · access · reliability · other"]:::choice
+  C -. "request error" .-> E1("Save unclassified record for review"):::fail
+  Q1 --> P1{"known category and<br/>confidence ≥ 0.85?"}:::policy
+  P1 -- no --> O1("INSERT INTO records … category_id NULL,<br/>state 'pending'"):::outcome
+  P1 -- yes --> P2["Map code to existing category ID"]:::policy
+  P2 --> O2("BEGIN; INSERT INTO records … category_id $3,<br/>state 'classified'; COMMIT"):::outcome

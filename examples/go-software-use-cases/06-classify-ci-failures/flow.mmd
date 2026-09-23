@@ -1,0 +1,11 @@
+flowchart TD
+  S[/"CI job ci-4821: exit status + log excerpt"/]:::state
+  S --> C(["client.SystemOne"]):::sdk
+  C --> Q1["kind · Choice<br/>compile · test_assertion · dependency<br/>environment · timeout · other"]:::choice
+  C --> Q2["intermittent · Noul"]:::noul
+  C -. "request error" .-> E1("Manual triage; classification unavailable"):::fail
+  Q1 --> P1{"kind conf ≥ 0.70 and<br/>kind has a runbook?"}:::policy
+  P1 -- no --> O0("Manual triage with original log"):::outcome
+  P1 -- yes --> P2["Look up runbook for kind<br/>intermittent evidence = Noul ≥ 0.80"]:::policy
+  Q2 --> P2
+  P2 --> O1("Print kind, runbook, intermittent flag"):::outcome

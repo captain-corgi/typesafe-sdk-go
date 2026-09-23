@@ -1,0 +1,19 @@
+flowchart TD
+  S[/"Command + fixed clock 2026-09-23 09:00 +07"/]:::state
+  S --> P0{"ISO date YYYY-MM-DD in text?"}:::policy
+  P0 -- yes --> P1{"valid and not past?"}:::policy
+  P1 -- no --> O0("Invalid or past ISO date; clarify"):::outcome
+  P1 -- yes --> O1("scheduled: ISO date 09:00"):::outcome
+  P0 -- no --> C(["client.SystemOne"]):::sdk
+  C --> Q1["kind · Choice<br/>relative_weekday · none · other"]:::choice
+  C --> Q2["weekday · Choice<br/>mon..sun · none"]:::choice
+  C --> Q3["week · Choice<br/>this · next · after_next · other"]:::choice
+  C -. "request error" .-> E1("Ask for an ISO date"):::fail
+  Q1 & Q2 & Q3 --> P2{"kind = relative_weekday and<br/>all confidences ≥ 0.75?"}:::policy
+  P2 -- no --> O2("Date parts uncertain; ask for ISO date"):::outcome
+  P2 -- yes --> P3{"weekday and week supported?"}:::policy
+  P3 -- no --> O3("Unsupported parts; ask for ISO date"):::outcome
+  P3 -- yes --> P4["Monday 09:00 + 7×week + day"]:::policy
+  P4 --> P5{"after the clock?"}:::policy
+  P5 -- no --> O4("Resolved date is past; clarify"):::outcome
+  P5 -- yes --> O5("scheduled: RFC3339 date"):::outcome

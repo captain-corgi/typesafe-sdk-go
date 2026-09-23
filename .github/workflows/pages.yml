@@ -27,6 +27,16 @@ jobs:
       - name: Checkout
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
+      - name: Setup Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+
+      # examples.json is generated, not committed: it embeds every example's
+      # source and flow.mmd diagram, and fails the build if one is missing.
+      - name: Generate example catalog
+        run: go run ./tools/pagegen
+
       - name: Setup Pages
         uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5
 
