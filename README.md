@@ -323,16 +323,14 @@ are capped at 16 KiB.
 
 ## Examples
 
-Runnable cookbook programs live in [`examples/`](examples/README.md),
-mirroring the docs [use-case map](https://docs.typesafe.ai/concepts/use-case-map)
-one-for-one: `examples/automation-use-cases/` holds one program per example
-automation use case (search & retrieval, model routing, guardrails,
-moderation, insurance claims, risk assessment, ...), and
-`examples/task-categories/` one per example task category (classification,
-detection, scoring, routing, search, retrieval, ranking, verification, ML
-feature extraction, structured data extraction). Two basics — `quickstart`
-and `retries-errors` — sit at the root. Each runs against the live API with
-`TYPESAFE_API_KEY` set:
+Runnable cookbook programs live in [`examples/`](examples/README.md).
+The `automation-use-cases/` and `task-categories/` catalogs mirror the docs
+[use-case map](https://docs.typesafe.ai/concepts/use-case-map). Additional
+`go-software-use-cases/`, `api-use-cases/`, `relational-db-use-cases/`, and
+`testing-use-cases/` catalogs implement the proposed patterns in
+[`plans/20260923-jev-go-software-use-cases/`](plans/20260923-jev-go-software-use-cases/).
+Two basics — `quickstart` and `retries-errors` — sit at the root. Each example
+runs against the live API with `TYPESAFE_API_KEY` set:
 
 ```sh
 TYPESAFE_API_KEY=... go run ./examples/quickstart
