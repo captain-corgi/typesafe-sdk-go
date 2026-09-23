@@ -1,0 +1,10 @@
+flowchart TD
+  S[/"Adjacent versions 5001 → 5002 of record 100"/]:::state
+  S --> C(["client.SystemOne"]):::sdk
+  C --> Q1["contradiction · Noul"]:::noul
+  C --> Q2["retraction · Noul"]:::noul
+  C -. "request error" .-> E1("Leave unresolved; preserve both versions"):::fail
+  Q1 --> P1{"contradiction ≥ 0.90 and<br/>retraction ≤ 0.10?"}:::policy
+  Q2 --> P1
+  P1 -- no --> O1("Retain both immutable versions"):::outcome
+  P1 -- yes --> O2("INSERT INTO version_conflicts … 'pending'<br/>ON CONFLICT DO NOTHING + args"):::outcome

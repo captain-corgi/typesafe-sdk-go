@@ -15,6 +15,11 @@ but the package is named `typesafe` (like `go-openai`). Requires Go 1.27+.
 - `examples/` — cookbook programs, each `package main` + stdlib only. They hit
   the **live API** (no mocking) and need `TYPESAFE_API_KEY`; offline behavior
   is the test suite's job.
+- `docs/github-page/index.html` — the GitHub Pages site. `tools/pagegen`
+  (stdlib-only `package main`) generates its gitignored `examples.json` from
+  `examples/README.md`, each `main.go`, and the required `flow.mmd` diagram
+  next to it; its test fails if any example lacks a diagram or README row.
+  `pages.yml` runs the generator on the `github-page` branch.
 - `plans/2026-09-19-typesafe-sdk-go/` — `plan.md` (design, file-by-file spec)
   and `contracts.md` (behavioral contracts distilled from the reference SDKs:
   wire forms, headers, error message extraction, retry semantics). Read

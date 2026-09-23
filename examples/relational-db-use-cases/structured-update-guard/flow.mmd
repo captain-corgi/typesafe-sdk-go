@@ -1,0 +1,10 @@
+flowchart TD
+  S[/"Incident 810: investigating → resolved<br/>+ resolution note"/]:::state
+  S --> P0{"proposed status in enum?"}:::policy
+  P0 -- yes --> C(["client.SystemOne"]):::sdk
+  C --> Q1["contradicts_status · Noul"]:::noul
+  C -. "request error" .-> E1("Queue review: API failure<br/>INSERT INTO incident_update_reviews"):::fail
+  Q1 --> P1{"contradiction ≥ 0.10?"}:::policy
+  P1 -- yes --> O1("Keep incident unchanged<br/>INSERT INTO incident_update_reviews"):::outcome
+  P1 -- no --> O2("BEGIN; UPDATE incidents SET status …<br/>WHERE … AND status = $6 (old status)"):::outcome
+  O2 --> O3("COMMIT only if RowsAffected = 1<br/>and audit row written"):::outcome

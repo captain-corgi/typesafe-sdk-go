@@ -1,0 +1,10 @@
+flowchart TD
+  S[/"Support ticket: charged twice"/]:::state
+  S --> C(["client.SystemOne"]):::sdk
+  C --> Q1["department · Choice<br/>billing · technical · sales"]:::choice
+  C --> Q2["frustration · Score<br/>calm · annoyed · upset"]:::score
+  C --> Q3["is_urgent · Noul"]:::noul
+  Q1 --> O1("Print department, confidence, p per label"):::outcome
+  Q2 --> O2("Print frustration score and p per level"):::outcome
+  Q3 --> O3("Print is_urgent probability"):::outcome
+  C --> O4("Print token usage and request id"):::outcome

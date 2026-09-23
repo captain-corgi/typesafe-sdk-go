@@ -1,0 +1,12 @@
+flowchart TD
+  S[/"Report summary + stored category"/]:::state
+  S --> P0{"stored category declared?"}:::policy
+  P0 -- yes --> O0("Return stored category"):::outcome
+  P0 -- no --> P1{"summary 1-1000 chars?"}:::policy
+  P1 -- no --> E1("UNKNOWN"):::fail
+  P1 -- yes --> C(["client.SystemOne"]):::sdk
+  C --> Q1["category · Choice<br/>INCIDENT · MAINTENANCE · REQUEST · UNKNOWN"]:::choice
+  C -. "request error" .-> E1
+  Q1 --> P2{"confidence ≥ 0.80<br/>and declared value?"}:::policy
+  P2 -- no --> O1("UNKNOWN"):::outcome
+  P2 -- yes --> O2("Report category: chosen enum"):::outcome

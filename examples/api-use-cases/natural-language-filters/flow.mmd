@@ -1,0 +1,20 @@
+flowchart TD
+  S[/"Search hint + authenticated tenant-42"/]:::state
+  S --> C(["client.SystemOne"]):::sdk
+  C --> Q1["kind · Choice<br/>deployment · build · other"]:::choice
+  C --> Q2["status · Choice<br/>failed · succeeded · any"]:::choice
+  C --> Q3["has_time_window · Noul"]:::noul
+  C -. "request error" .-> E1("Ask the user to clarify the hint"):::fail
+  Q1 --> P1{"kind and status confidence ≥ 0.80<br/>and kind is not other?"}:::policy
+  Q2 --> P1
+  P1 -- no --> E2("Ask the user to clarify the hint"):::fail
+  P1 -- yes --> P2{"has_time_window"}:::policy
+  Q3 --> P2
+  P2 -- "≥ 0.80 and last 7 days" --> P3["since = now minus 7 days"]:::policy
+  P2 -- "≥ 0.80 and today" --> P4["since = start of today"]:::policy
+  P2 -- "≤ 0.20" --> P5["since = now minus 30 days"]:::policy
+  P2 -- otherwise --> E2
+  P3 --> P6["search events: tenant, kind, status,<br/>since, limit 20"]:::policy
+  P4 --> P6
+  P5 --> P6
+  P6 --> O1("Print filters and matching event IDs"):::outcome

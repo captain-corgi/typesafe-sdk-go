@@ -1,0 +1,11 @@
+flowchart TD
+  S[/"for each caller utterance (3)"/]:::state
+  S --> C(["client.SystemOne"]):::sdk
+  C --> Q1["intent · Choice<br/>check_balance · approve_transfer<br/>transaction_history · other"]:::choice
+  C -. "request error" .-> E1("Print the error, next utterance"):::fail
+  Q1 --> P1["intentRunner: map intent to action"]:::policy
+  P1 --> P2{"confidence ≥ 0.85?"}:::policy
+  P2 -- yes --> O1("Route: auto, run the action"):::outcome
+  P2 -- no --> P3{"confidence below 0.60?"}:::policy
+  P3 -- yes --> O2("Route: human agent"):::outcome
+  P3 -- no --> O3("Ask user to confirm before running"):::outcome

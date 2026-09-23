@@ -1,0 +1,20 @@
+flowchart TD
+  S[/"for each ad creative (2)<br/>headline, body, landing page, placement"/]:::state
+  S --> C(["client.SystemOne"]):::sdk
+  C -. "request error" .-> E1("Print error, skip to next creative"):::fail
+  C --> Q1["brand_safety · Noul"]:::noul
+  C --> Q2["unsubstantiated_claim · Noul"]:::noul
+  C --> Q3["ad_page_alignment · Noul"]:::noul
+  C --> Q4["creative_quality · Score<br/>weak · solid · exceptional"]:::score
+  C --> Q5["audience_fit · Choice<br/>broad · niche · mismatched"]:::choice
+  Q1 --> P1{"brand_safety ≥ 0.5?"}:::policy
+  P1 -- yes --> O1("decision: reject (brand safety)"):::outcome
+  P1 -- no --> P2{"unsubstantiated ≥ 0.5 or<br/>alignment below 0.5 or mismatched?"}:::policy
+  Q2 --> P2
+  Q3 --> P2
+  Q5 --> P2
+  P2 -- yes --> O2("decision: revise"):::outcome
+  P2 -- no --> P3{"creative_quality ≥ 1.5?"}:::policy
+  Q4 --> P3
+  P3 -- yes --> O3("decision: approve and scale spend"):::outcome
+  P3 -- no --> O4("decision: approve at baseline spend"):::outcome

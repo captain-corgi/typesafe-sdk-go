@@ -1,0 +1,24 @@
+flowchart TD
+  S[/"Role (hard reqs, bar 0.6) + resume"/]:::state
+  S --> C(["client.SystemOne"]):::sdk
+  C --> Q1["backend_depth · Score"]:::score
+  C --> Q2["design_skills · Score"]:::score
+  C --> Q3["meets_experience_bar · Noul"]:::noul
+  C --> Q4["has_domain · Noul"]:::noul
+  C --> Q5["recommendation · Choice<br/>advance to onsite · phone screen · decline"]:::choice
+  Q1 --> P1["composite = 0.6·backend + 0.4·design<br/>(each normalized to 0–1)"]:::policy
+  Q2 --> P1
+  Q3 --> P2
+  Q4 --> P2
+  P1 --> P2{"experience or domain below 0.5?"}:::policy
+  P2 -- yes --> R1["rubric: decline"]:::policy
+  P2 -- no --> P3{"composite ≥ 0.6?"}:::policy
+  P3 -- yes --> R2["rubric: advance to onsite"]:::policy
+  P3 -- no --> R3["rubric: phone screen"]:::policy
+  R1 --> P4{"conservative merge with model rec:<br/>both advance? either decline?"}:::policy
+  R2 --> P4
+  R3 --> P4
+  Q5 --> P4
+  P4 -- both advance --> O1("final: advance to onsite"):::outcome
+  P4 -- either decline --> O2("final: decline"):::outcome
+  P4 -- otherwise --> O3("final: phone screen"):::outcome

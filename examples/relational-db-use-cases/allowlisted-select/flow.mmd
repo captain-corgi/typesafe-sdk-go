@@ -1,0 +1,16 @@
+flowchart TD
+  S[/"Request: unresolved regressions last week"/]:::state
+  S --> C(["client.SystemOne"]):::sdk
+  C --> Q1["status · Choice<br/>open · closed · unspecified"]:::choice
+  C --> Q2["kind · Choice<br/>regression · feature · other · unspecified"]:::choice
+  C --> Q3["window · Choice<br/>last_week · last_month · unspecified"]:::choice
+  C -. "request error" .-> E1("Ask for clarification"):::fail
+  Q1 --> P1{"all confidences ≥ 0.80?"}:::policy
+  Q2 --> P1
+  Q3 --> P1
+  P1 -- no --> O0("Ask for clarification"):::outcome
+  P1 -- yes --> P2["Start with tenant_id = $1 (tenant 42)"]:::policy
+  P2 --> P3{"kind = other?"}:::policy
+  P3 -- yes --> O1("Ask for clarification: kind not allowed"):::outcome
+  P3 -- no --> P4["Add fixed clauses for status, kind<br/>UTC half-open window from Go"]:::policy
+  P4 --> O2("SELECT … FROM issues WHERE tenant_id = $1<br/>AND … ORDER BY opened_at DESC + args"):::outcome

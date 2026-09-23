@@ -1,0 +1,15 @@
+flowchart TD
+  S[/"Release note (os.Args or default)"/]:::state
+  S --> R["Default record: kind other,<br/>needs_review true"]:::policy
+  R --> C(["client.SystemOne"]):::sdk
+  C --> Q1["kind · Choice<br/>feature · fix · breaking_change · other"]:::choice
+  C --> Q2["migration · Noul"]:::noul
+  C --> Q3["impact · Score<br/>internal · some · many users"]:::score
+  C -. "request error" .-> E1("Log error; keep default record"):::fail
+  Q1 --> P1{"kind conf ≥ 0.75, impact conf ≥ 0.65,<br/>kind not other, and breaking or<br/>migration ≤ 0.25 or ≥ 0.80?"}:::policy
+  Q2 --> P1
+  Q3 --> P1
+  P1 -- yes --> P2["Set kind, impact; migration =<br/>breaking or migration ≥ 0.80;<br/>needs_review false"]:::policy
+  P1 -- no --> O0("Emit default record as JSON"):::outcome
+  E1 --> O0
+  P2 --> O1("Emit normalized record as JSON"):::outcome

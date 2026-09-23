@@ -1,0 +1,13 @@
+flowchart TD
+  S[/"Missing API key error message"/]:::state
+  S --> V{"errors.Is ErrMissingAPIKey, mentions<br/>TYPESAFE_API_KEY, no sk_live_?"}:::policy
+  V -- no --> E0("Exit: deterministic error contract failed"):::fail
+  V -- yes --> C(["client.SystemOne"]):::sdk
+  C --> Q1["clear · Noul<br/>says key is missing and how to supply it"]:::noul
+  C -. "request error" .-> E1("INCONCLUSIVE wording"):::fail
+  Q1 -- answer missing --> E2("INCONCLUSIVE: answer missing"):::fail
+  Q1 --> P1{"p ≤ 0.10?"}:::policy
+  P1 -- yes --> O1("REVIEW possible wording regression"):::outcome
+  P1 -- no --> P2{"p below 0.90?"}:::policy
+  P2 -- yes --> O2("INCONCLUSIVE wording"):::outcome
+  P2 -- no --> O3("REVIEW wording appears clear;<br/>exact Go checks still required"):::outcome

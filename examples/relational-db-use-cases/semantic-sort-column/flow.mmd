@@ -1,0 +1,9 @@
+flowchart TD
+  S[/"Work item 604 summary"/]:::state
+  S --> C(["client.SystemOne"]):::sdk
+  C --> Q1["reproducibility · Score<br/>4 levels: none … clear repro steps"]:::score
+  C -. "request error" .-> E1("Leave score NULL, deterministic ordering"):::fail
+  Q1 --> P1{"confidence ≥ 0.80?"}:::policy
+  P1 -- no --> O1("Keep review_priority_score NULL"):::outcome
+  P1 -- yes --> O2("UPDATE work_items SET review_priority_score …<br/>WHERE tenant_id … AND summary = $6"):::outcome
+  O2 --> O3("Read: ORDER BY review_priority_score<br/>DESC NULLS LAST, created_at, id"):::outcome

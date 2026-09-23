@@ -1,0 +1,12 @@
+flowchart TD
+  S[/"test_cases: 3 case descriptions"/]:::state
+  S --> C(["client.SystemOne"]):::sdk
+  C --> Q1["3× Noul<br/>missing_credentials · malformed_content<br/>conflicting_state"]:::noul
+  C -. "request error" .-> E1("INCONCLUSIVE: review all negative requirements"):::fail
+  Q1 --> L[/"for each of the 3 keys"/]:::state
+  L -- answer missing --> E2("INCONCLUSIVE key: answer missing"):::fail
+  L --> P1{"p ≤ 0.10?"}:::policy
+  P1 -- yes --> O1("REVIEW missing row:<br/>suggested case for key"):::outcome
+  P1 -- no --> P2{"p ≥ 0.90?"}:::policy
+  P2 -- yes --> O2("REVIEW possible coverage;<br/>Go must assert exact outcome"):::outcome
+  P2 -- no --> O3("INCONCLUSIVE key"):::outcome

@@ -1,0 +1,14 @@
+flowchart TD
+  S[/"Unstructured bio text"/]:::state
+  S --> C(["client.SystemOne"]):::sdk
+  C --> Q1["job_family · Choice<br/>engineering · design · product · marketing"]:::choice
+  C --> Q2["seniority · Choice<br/>junior · mid · senior · leadership"]:::choice
+  C --> Q3["works_remotely · leads_team · 2× Noul"]:::noul
+  C --> Q4["experience_band · Score<br/>under 3 · 3-5 · 6-9 · 10 or more"]:::score
+  Q4 --> P1["Round score to nearest bucket, cap at 3"]:::policy
+  Q1 --> P2{"confidence below 0.60?"}:::policy
+  Q2 --> P2
+  P1 --> P2
+  P2 -- yes --> O1("Print field with [needs review]"):::outcome
+  P2 -- no --> O2("Print field value"):::outcome
+  Q3 --> O3("Print p(true), never flagged"):::outcome

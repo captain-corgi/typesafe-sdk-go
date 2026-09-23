@@ -1,0 +1,15 @@
+flowchart TD
+  S[/"Log text (os.Args or default)"/]:::state
+  S --> P0["regexp build-N → unique IDs"]:::policy
+  P0 --> P1{"ID count?"}:::policy
+  P1 -- "0" --> O0("No build ID found; inspect the log"):::outcome
+  P1 -- "more than 8" --> O1("Too many IDs; narrow the excerpt"):::outcome
+  P1 -- "1 to 8" --> C(["client.SystemOne"]):::sdk
+  C --> Q1["failed_build · Choice<br/>candidate_0..N · none"]:::choice
+  C -. "request error" .-> E1("Could not select; inspect candidates"):::fail
+  Q1 --> P2{"confidence ≥ 0.75<br/>and choice ≠ none?"}:::policy
+  P2 -- no --> O2("Failed build uncertain; inspect candidates"):::outcome
+  P2 -- yes --> P3["map candidate_i to exact regexp ID"]:::policy
+  P3 --> P4{"ID in build database?"}:::policy
+  P4 -- no --> O3("Absent from build database; inspect"):::outcome
+  P4 -- yes --> O4("failed build: selected ID"):::outcome

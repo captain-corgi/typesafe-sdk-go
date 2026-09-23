@@ -1,0 +1,11 @@
+flowchart TD
+  S[/"TestRetryStopsAfterThreeAttempts<br/>setup + assertion"/]:::state
+  S --> C(["client.SystemOne"]):::sdk
+  C --> Q1["overpromises · Noul<br/>name promises unchecked retry count"]:::noul
+  C -. "request error" .-> E1("INCONCLUSIVE: inspect manually"):::fail
+  Q1 -- answer missing --> E2("INCONCLUSIVE: answer missing"):::fail
+  Q1 --> P1{"p ≥ 0.90?"}:::policy
+  P1 -- yes --> O1("REVIEW: add attempt-count<br/>assertion or rename"):::outcome
+  P1 -- no --> P2{"p ≤ 0.10?"}:::policy
+  P2 -- yes --> O2("REVIEW: no mismatch detected"):::outcome
+  P2 -- no --> O3("INCONCLUSIVE"):::outcome

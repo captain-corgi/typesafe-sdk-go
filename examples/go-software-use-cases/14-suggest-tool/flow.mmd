@@ -1,0 +1,14 @@
+flowchart TD
+  S[/"Request + tool registry (rg, gofmt, go_test)"/]:::state
+  S --> C1(["client.SystemOne"]):::sdk
+  C1 --> Q1["needed · Noul"]:::noul
+  C1 --> Q2["tool · Choice<br/>rg · gofmt · go_test · none"]:::choice
+  C1 -. "request error" .-> E1("No tool proposed; inspect manually"):::fail
+  Q1 & Q2 --> P1{"needed ≥ 0.80, confidence ≥ 0.70,<br/>known, installed, allowed?"}:::policy
+  P1 -- no --> O1("No tool proposed; inspect manually"):::outcome
+  P1 -- yes --> C2(["client.SystemOne (fit check)"]):::sdk
+  C2 --> Q3["fits · Noul"]:::noul
+  C2 -. "request error" .-> E2("Tool fit uncertain; inspect manually"):::fail
+  Q3 --> P2{"fits ≥ 0.80?"}:::policy
+  P2 -- no --> O2("Tool fit uncertain; inspect manually"):::outcome
+  P2 -- yes --> O3("proposed installed tool"):::outcome

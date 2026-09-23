@@ -1,0 +1,16 @@
+flowchart TD
+  S[/"Ad copy + channel + 3 policies"/]:::state
+  S --> C(["client.SystemOne"]):::sdk
+  C --> Q1["guarantees_outcome · Noul"]:::noul
+  C --> Q2["medical_claim · Noul"]:::noul
+  C --> Q3["missing_disclaimer · Noul"]:::noul
+  C --> Q4["severity · Score<br/>minor · material · severe"]:::score
+  Q1 --> P1["count violations (each Noul ≥ 0.5)"]:::policy
+  Q2 --> P1
+  Q3 --> P1
+  P1 --> P2{"violations found = 0?"}:::policy
+  Q4 --> P3
+  P2 -- yes --> O1("decision: approve for publication"):::outcome
+  P2 -- no --> P3{"severity ≥ 1.5?"}:::policy
+  P3 -- yes --> O2("decision: escalate to legal"):::outcome
+  P3 -- no --> O3("decision: request revision"):::outcome

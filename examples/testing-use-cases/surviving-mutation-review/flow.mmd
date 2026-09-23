@@ -1,0 +1,14 @@
+flowchart TD
+  S[/"Requirement + before/after code<br/>compiled, suite passed"/]:::state
+  S --> P0{"compiled, suite passed,<br/>code changed?"}:::policy
+  P0 -- no --> E0("log.Fatal: not a surviving mutation"):::fail
+  P0 -- yes --> C(["client.SystemOne"]):::sdk
+  C --> Q1["material · Noul<br/>allows a fourth attempt?"]:::noul
+  C -. "request error" .-> E1("INCONCLUSIVE; survivor stays open"):::fail
+  Q1 --> P1{"answer present?"}:::policy
+  P1 -- no --> E2("INCONCLUSIVE: answer missing"):::fail
+  P1 -- yes --> P2{"p ≥ 0.90?"}:::policy
+  P2 -- yes --> O1("REVIEW likely material survivor:<br/>add fourth-attempt assertion"):::outcome
+  P2 -- no --> P3{"p above 0.10?"}:::policy
+  P3 -- yes --> O2("INCONCLUSIVE: developer must inspect"):::outcome
+  P3 -- no --> O3("REVIEW possible equivalent mutant;<br/>equivalence unproven"):::outcome

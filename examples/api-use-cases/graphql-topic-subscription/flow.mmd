@@ -1,0 +1,17 @@
+flowchart TD
+  S[/"for each event (3) · tenant-42 · outages"/]:::state
+  S --> P0{"verified and same tenant?"}:::policy
+  P0 -- no --> O0("Skip event"):::outcome
+  P0 -- yes --> P1{"typed topic present?"}:::policy
+  P1 -- yes --> P2{"typed topic matches?"}:::policy
+  P2 -- yes --> O1("deliver"):::outcome
+  P2 -- no --> O0
+  P1 -- no --> P3{"summary 1-500 chars?"}:::policy
+  P3 -- no --> O2("reconcile"):::outcome
+  P3 -- yes --> C(["client.SystemOne"]):::sdk
+  C --> Q1["matches · Noul"]:::noul
+  C -. "request error" .-> E1("reconcile"):::fail
+  Q1 --> P4{"matches probability"}:::policy
+  P4 -- "≥ 0.80" --> O1
+  P4 -- "above 0.20" --> O2
+  P4 -- "≤ 0.20" --> O0

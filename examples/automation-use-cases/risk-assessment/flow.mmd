@@ -1,0 +1,23 @@
+flowchart TD
+  S[/"for each incident report (2)<br/>id RSK-0001, RSK-0002"/]:::state
+  S --> C(["client.SystemOne"]):::sdk
+  C -. "request error" .-> E1("Print error, skip to next incident"):::fail
+  C --> Q1["risk_type · Choice<br/>security · operational · financial · compliance"]:::choice
+  C --> Q2["severity · Score<br/>low · medium · high · critical"]:::score
+  C --> Q3["control_failure · Noul"]:::noul
+  C --> Q4["recurrence_likely · Noul"]:::noul
+  Q2 --> P1{"severity band"}:::policy
+  P1 -- "≥ 2.5" --> R1["P1"]:::policy
+  P1 -- "≥ 1.5" --> R2["P2"]:::policy
+  P1 -- "≥ 0.5" --> R3["P3"]:::policy
+  P1 -- "below 0.5" --> R4["P4"]:::policy
+  R3 --> P2{"recurrence ≥ 0.5 and<br/>control_failure ≥ 0.5?"}:::policy
+  R4 --> P2
+  Q3 --> P2
+  Q4 --> P2
+  P2 -- yes --> R5["bump to P2"]:::policy
+  R1 --> O1("register entry: id · risk type · severity · priority"):::outcome
+  R2 --> O1
+  R5 --> O1
+  P2 -- no --> O1
+  Q1 --> O1

@@ -1,0 +1,11 @@
+flowchart TD
+  S[/"Note + record 208<br/>tags: retry_failure 31 · compatibility_break 32"/]:::state
+  S --> C(["client.SystemOne"]):::sdk
+  C --> Q1["retry_failure · Noul"]:::noul
+  C --> Q2["compatibility_break · Noul"]:::noul
+  C -. "request error" .-> E1("Leave tags absent, queue record for review"):::fail
+  Q1 --> L[/"for each tag (2)"/]:::state
+  Q2 --> L
+  L --> P1{"probability ≥ 0.90?"}:::policy
+  P1 -- no --> O1("Leave tag absent or review"):::outcome
+  P1 -- yes --> O2("INSERT INTO record_tags (record_id, tag_id)<br/>ON CONFLICT DO NOTHING + args"):::outcome

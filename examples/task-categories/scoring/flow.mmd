@@ -1,0 +1,12 @@
+flowchart TD
+  S[/"for each ticket (2): issue + response"/]:::state
+  S --> C(["client.SystemOne"]):::sdk
+  C --> Q1["quality · Score<br/>unhelpful · partial · complete"]:::score
+  C --> Q2["resolves_issue · Noul"]:::noul
+  C -. "request error" .-> E1("Print the error, next ticket"):::fail
+  Q1 --> P1{"quality ≥ 1.5 and resolves ≥ 0.5?"}:::policy
+  Q2 --> P1
+  P1 -- yes --> O1("Close the ticket, schedule CSAT survey"):::outcome
+  P1 -- no --> P2{"quality ≥ 0.5?"}:::policy
+  P2 -- yes --> O2("Keep open, send follow-up"):::outcome
+  P2 -- no --> O3("Reassign to senior support, coach author"):::outcome

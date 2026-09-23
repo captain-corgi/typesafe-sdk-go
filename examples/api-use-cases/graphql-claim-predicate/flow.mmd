@@ -1,0 +1,11 @@
+flowchart TD
+  S[/"Authorized document excerpt + claim"/]:::state
+  S --> P0{"excerpt ≤ 1500 and claim ≤ 300 chars?"}:::policy
+  P0 -- no --> E1("supportsClaim: null + GraphQL error"):::fail
+  P0 -- yes --> C(["client.SystemOne"]):::sdk
+  C --> Q1["supports · Noul<br/>entails vs not established"]:::noul
+  C -. "request error" .-> E1
+  Q1 --> P1{"supports probability"}:::policy
+  P1 -- "≥ 0.80" --> O1("supportsClaim: true"):::outcome
+  P1 -- "≤ 0.20" --> O2("supportsClaim: false"):::outcome
+  P1 -- "between" --> E1

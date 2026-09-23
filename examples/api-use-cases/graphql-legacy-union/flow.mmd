@@ -1,0 +1,12 @@
+flowchart TD
+  S[/"Legacy record description + reliable type"/]:::state
+  S --> P0{"reliable type is a union member?"}:::policy
+  P0 -- yes --> O0("__typename from reliable type"):::outcome
+  P0 -- no --> P1{"description 1-1000 chars?"}:::policy
+  P1 -- no --> E1("UnknownRecord"):::fail
+  P1 -- yes --> C(["client.SystemOne"]):::sdk
+  C --> Q1["record_type · Choice<br/>incident · maintenance_notice · unknown"]:::choice
+  C -. "request error" .-> E1
+  Q1 --> P2{"union member and confidence ≥ 0.80?"}:::policy
+  P2 -- no --> O1("UnknownRecord"):::outcome
+  P2 -- yes --> O2("__typename: Incident or MaintenanceNotice"):::outcome
