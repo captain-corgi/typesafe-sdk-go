@@ -136,7 +136,7 @@
     .hero .wrap { display: grid; grid-template-columns: .9fr 1.1fr; gap: 3rem; align-items: center; }
     .hero pre.code { font-size: .8rem; }
     .hero h1 { font-size: clamp(2.2rem, 5vw, 3.4rem); line-height: 1.08; letter-spacing: -.035em; margin: 1rem 0 1.25rem; }
-    .hero h1 span { color: var(--go); }
+    .hero h1 span { color: light-dark(#007c9a, #22c3e6); }
     .hero p { color: var(--muted); font-size: 1.12rem; max-width: 52ch; }
     .cta { display: flex; flex-wrap: wrap; gap: .75rem; margin: 2rem 0 1.5rem; }
     .install {
@@ -165,6 +165,13 @@
       display: inline-block; width: 2.4em; margin-right: 1.25em;
       text-align: right; color: var(--faint); user-select: none;
     }
+
+    /* ─── Intro slides ─── */
+    .intro-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 1rem 2rem; }
+    kbd { font-size: .8em; padding: .1em .45em; border: 1px solid var(--border-strong); border-bottom-width: 2px; border-radius: 5px; background: var(--surface); color: var(--fg); }
+    .deck-frame { aspect-ratio: 16 / 10; max-height: max(420px, calc(100vh - 110px)); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; background: var(--bg); box-shadow: 0 1px 2px rgb(15 23 42 / .04), 0 12px 32px -12px rgb(15 23 42 / .12); }
+    .deck-frame iframe { display: block; width: 100%; height: 100%; border: 0; color-scheme: normal; }
+    @media (max-width: 720px) { .deck-frame { aspect-ratio: 2 / 3; } }
 
     /* ─── Features ─── */
     .features { display: grid; grid-template-columns: repeat(3, 1fr); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
@@ -331,6 +338,7 @@
     <a href="#top" class="brand"><svg class="i" aria-hidden="true"><use href="#i-shield"/></svg>TypeSafe SDK for Go <small>v0.7.0</small></a>
     <button class="nav-toggle" aria-label="Menu" aria-expanded="false" aria-controls="nav-links"><svg class="i" aria-hidden="true"><use href="#i-menu"/></svg></button>
     <nav class="nav-links" id="nav-links" aria-label="Primary">
+      <a href="#intro">Intro</a>
       <a href="#features">Features</a>
       <a href="#how">How it works</a>
       <a href="#quickstart">Quick start</a>
@@ -394,6 +402,23 @@ anger := resp.Scores()["anger"]  // .Score 1.4</code></pre>
       </div>
     </div>
   </div>
+
+  <!-- ═══ Intro slides ═══ -->
+  <section id="intro">
+    <div class="wrap">
+      <div class="head intro-head">
+        <div>
+          <span class="eyebrow">Introduction</span>
+          <h2>The SDK in eight slides</h2>
+          <p class="lead">Use the arrow keys or swipe to move between slides. Press <kbd>F</kbd> for full screen.</p>
+        </div>
+        <a class="btn" href="slides.html" target="_blank" rel="noopener">Open in new tab <svg class="i" aria-hidden="true"><use href="#i-external"/></svg></a>
+      </div>
+      <div class="deck-frame">
+        <iframe src="slides.html" title="TypeSafe SDK for Go introduction slides" loading="lazy" allow="fullscreen" allowfullscreen></iframe>
+      </div>
+    </div>
+  </section>
 
   <!-- ═══ Features ═══ -->
   <section id="features">
