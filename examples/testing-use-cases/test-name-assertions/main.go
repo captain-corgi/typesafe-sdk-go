@@ -35,7 +35,12 @@ func main() {
 		fmt.Println("INCONCLUSIVE: inspect name and assertion manually;", err)
 		return
 	}
-	p := resp.Nouls()["overpromises"].Noul
+	answer, ok := resp.Nouls()["overpromises"]
+	if !ok {
+		fmt.Printf("INCONCLUSIVE %s: requested answer is missing\n", testName)
+		return
+	}
+	p := answer.Noul
 	if p >= 0.90 {
 		fmt.Printf("REVIEW %s: add an attempt-count assertion or rename (%.2f)\n", testName, p)
 	} else if p <= 0.10 {

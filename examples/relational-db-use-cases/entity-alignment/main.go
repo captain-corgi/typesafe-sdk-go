@@ -35,7 +35,7 @@ func main() {
 
 	// The application runs this indexed, tenant-scoped query first. Candidate
 	// IDs below are example rows it returned, not IDs produced by Jev.
-	fmt.Println("shortlist SQL: SELECT id, name, manufacturer FROM catalog_items WHERE tenant_id = $1 AND search_name % $2 ORDER BY similarity(search_name, $2) DESC LIMIT 5")
+	fmt.Println("shortlist SQL: SELECT id, name, manufacturer, product_type FROM catalog_items WHERE tenant_id = $1 AND search_name % $2 ORDER BY similarity(search_name, $2) DESC LIMIT 5")
 	fmt.Printf("shortlist args: %#v\n", []any{int64(42), "Acme Router AX-6"})
 	candidates := []candidate{
 		{id: 901, name: "Acme AX6 Wi-Fi Router", manufacturer: "Acme", productType: "router"},

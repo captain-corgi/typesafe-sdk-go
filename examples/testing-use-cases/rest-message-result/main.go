@@ -43,7 +43,12 @@ func main() {
 		fmt.Println("INCONCLUSIVE prose; structural assertions remain;", err)
 		return
 	}
-	p := resp.Nouls()["contradicts"].Noul
+	answer, ok := resp.Nouls()["contradicts"]
+	if !ok {
+		fmt.Println("INCONCLUSIVE prose; requested answer is missing, structural assertions remain")
+		return
+	}
+	p := answer.Noul
 	if p >= 0.90 {
 		fmt.Printf("REVIEW response contradiction (%.2f)\n", p)
 	} else if p > 0.10 {

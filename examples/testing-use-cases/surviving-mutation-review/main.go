@@ -39,7 +39,12 @@ func main() {
 		fmt.Println("INCONCLUSIVE mutation; survivor remains open for review;", err)
 		return
 	}
-	p := resp.Nouls()["material"].Noul
+	answer, ok := resp.Nouls()["material"]
+	if !ok {
+		fmt.Println("INCONCLUSIVE mutation; requested answer is missing, survivor remains open for review")
+		return
+	}
+	p := answer.Noul
 	if p >= 0.90 {
 		fmt.Printf("REVIEW likely material survivor (%.2f): add an exact fourth-attempt regression assertion\n", p)
 	} else if p > 0.10 {

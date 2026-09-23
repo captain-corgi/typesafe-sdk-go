@@ -36,7 +36,12 @@ func main() {
 		fmt.Println("INCONCLUSIVE wording; deterministic checks passed;", err)
 		return
 	}
-	p := resp.Nouls()["clear"].Noul
+	answer, ok := resp.Nouls()["clear"]
+	if !ok {
+		fmt.Println("INCONCLUSIVE wording; requested answer is missing, deterministic checks passed")
+		return
+	}
+	p := answer.Noul
 	if p <= 0.10 {
 		fmt.Printf("REVIEW possible wording regression (%.2f)\n", p)
 	} else if p < 0.90 {

@@ -45,10 +45,10 @@ func main() {
 	})
 	if err == nil {
 		kind, impact, migration := resp.Choices()["kind"], resp.Scores()["impact"], resp.Nouls()["migration"].Noul
-		if kind.Confidence >= 0.75 && impact.Confidence >= 0.65 && kind.Choice != "other" && (migration <= 0.25 || migration >= 0.80) {
+		if kind.Confidence >= 0.75 && impact.Confidence >= 0.65 && kind.Choice != "other" && (kind.Choice == "breaking_change" || migration <= 0.25 || migration >= 0.80) {
 			record.Kind = kind.Choice
 			record.Impact = impact.Score
-			record.MigrationRequired = migration >= 0.80
+			record.MigrationRequired = kind.Choice == "breaking_change" || migration >= 0.80
 			record.NeedsReview = false
 		}
 	} else {

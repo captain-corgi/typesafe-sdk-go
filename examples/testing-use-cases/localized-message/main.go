@@ -38,7 +38,12 @@ func main() {
 		fmt.Println("INCONCLUSIVE translation; bilingual review needed;", err)
 		return
 	}
-	p := resp.Nouls()["preserves"].Noul
+	answer, ok := resp.Nouls()["preserves"]
+	if !ok {
+		fmt.Println("INCONCLUSIVE translation; requested answer is missing, bilingual review needed")
+		return
+	}
+	p := answer.Noul
 	if p <= 0.10 {
 		fmt.Printf("REVIEW likely semantic drift (%.2f)\n", p)
 	} else if p < 0.90 {

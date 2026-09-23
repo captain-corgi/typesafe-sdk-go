@@ -40,7 +40,12 @@ func main() {
 		"conflicting_state":   "duplicate item -> ErrConflict, unchanged record",
 	}
 	for _, key := range []string{"missing_credentials", "malformed_content", "conflicting_state"} {
-		p := resp.Nouls()[key].Noul
+		answer, ok := resp.Nouls()[key]
+		if !ok {
+			fmt.Printf("INCONCLUSIVE %s: requested answer is missing\n", key)
+			continue
+		}
+		p := answer.Noul
 		switch {
 		case p <= 0.10:
 			fmt.Printf("REVIEW missing row: %s (coverage %.2f)\n", suggestions[key], p)

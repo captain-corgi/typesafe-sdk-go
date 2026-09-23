@@ -41,7 +41,12 @@ func main() {
 		fmt.Println("INCONCLUSIVE narrative; deterministic workflow checks remain;", err)
 		return
 	}
-	p := resp.Nouls()["same_operation"].Noul
+	answer, ok := resp.Nouls()["same_operation"]
+	if !ok {
+		fmt.Println("INCONCLUSIVE narrative; requested answer is missing, deterministic workflow checks remain")
+		return
+	}
+	p := answer.Noul
 	if p <= 0.10 {
 		fmt.Printf("REVIEW narrative drift (%.2f)\n", p)
 	} else if p < 0.90 {

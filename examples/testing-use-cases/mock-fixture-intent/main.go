@@ -37,7 +37,12 @@ func main() {
 		fmt.Println("INCONCLUSIVE fixture prose; deterministic checks passed;", err)
 		return
 	}
-	p := resp.Nouls()["fits"].Noul
+	answer, ok := resp.Nouls()["fits"]
+	if !ok {
+		fmt.Println("INCONCLUSIVE fixture prose; requested answer is missing, deterministic checks passed")
+		return
+	}
+	p := answer.Noul
 	if p <= 0.10 {
 		fmt.Printf("REVIEW fixture drift (%.2f)\n", p)
 	} else if p < 0.90 {

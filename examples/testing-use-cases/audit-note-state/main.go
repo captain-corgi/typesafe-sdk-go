@@ -36,7 +36,12 @@ func main() {
 		fmt.Println("INCONCLUSIVE audit wording; database assertions remain;", err)
 		return
 	}
-	p := resp.Nouls()["contradicts"].Noul
+	answer, ok := resp.Nouls()["contradicts"]
+	if !ok {
+		fmt.Println("INCONCLUSIVE audit wording; requested answer is missing, database assertions remain authoritative")
+		return
+	}
+	p := answer.Noul
 	if p >= 0.90 {
 		fmt.Printf("REVIEW audit/state mismatch for row %d (%.2f)\n", rowID, p)
 	} else if p > 0.10 {

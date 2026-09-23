@@ -40,7 +40,12 @@ func main() {
 		fmt.Printf("INCONCLUSIVE %s/%s: %v\n", requirementID, testName, err)
 		return
 	}
-	p := resp.Nouls()["covers"].Noul
+	answer, ok := resp.Nouls()["covers"]
+	if !ok {
+		fmt.Printf("INCONCLUSIVE %s/%s: requested answer is missing\n", requirementID, testName)
+		return
+	}
+	p := answer.Noul
 	switch {
 	case p <= 0.10:
 		fmt.Printf("REVIEW %s/%s: likely coverage mismatch (%.2f); inspect missing assertions\n", requirementID, testName, p)
