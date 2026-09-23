@@ -199,7 +199,7 @@ func validateBaseline(previous, current report) error {
 		return fmt.Errorf("fixture IDs, texts, labels, or order changed")
 	}
 	if previous.PositiveAt != current.PositiveAt || previous.NegativeAt != current.NegativeAt {
-		return fmt.Errorf("Noul thresholds changed; error and abstention rates are not comparable")
+		return fmt.Errorf("noul thresholds changed; error and abstention rates are not comparable")
 	}
 	oldCriteria, err := json.Marshal(previous.Criteria)
 	if err != nil {
