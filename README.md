@@ -299,11 +299,21 @@ attribution as the Python SDK's logger), and is silent by
 default. Set `TYPESAFE_LOG_LEVEL=debug` for wire dumps (secret headers
 redacted), or take full control of destination, format, and level with
 `typesafe.SetLogger(yourLogger)`. Request and response bodies are redacted by
-default. Set `TYPESAFE_LOG_BODY=redacted` to preserve JSON structure while
-masking string values, or `TYPESAFE_LOG_BODY=full` (or call
+default. Use `TYPESAFE_LOG_BODY=strict` or
+`typesafe.SetLogBodyMode(typesafe.LogBodyStrict)` to log only body size,
+concealing all field names and values, including malformed bodies.
+`TYPESAFE_LOG_BODY=redacted` preserves JSON structure and masks string values,
+but **exposes field names, numbers, booleans, and nulls**; do not use it for
+sensitive data in those positions. Use `TYPESAFE_LOG_BODY=full` (or call
 `typesafe.SetLogBodyMode(typesafe.LogBodyFull)`) only in controlled
 environments; full body logging can expose sensitive payloads. Logged bodies
 are capped at 16 KiB.
+
+API-key header spellings such as `X-ApiKey`, `X-APIKEY`, and `X-Api-Key`
+are concealed in request and response logs. Call
+`typesafe.SetSensitiveHeaders("X-Credential")` to replace the additional
+case-insensitive names to conceal (including default and per-call headers).
+Calling it without names resets the additions; built-in redaction always applies.
 
 ## Security
 
@@ -318,6 +328,9 @@ are capped at 16 KiB.
   loopback IP addresses, such as `127.0.0.1` and `::1`, and is intended for
   local development and tests.
 - `Authorization` and other secret headers remain redacted in wire logs.
+- Supplied HTTP clients may follow same-origin redirects; the SDK rejects
+  changes to scheme, host, or effective port, including callback URL rewrites.
+  The default client continues to surface redirects without following them.
 - `ExtraBody` cannot override the reserved `state`, `model`, or `questions`
   fields.
 
@@ -396,7 +409,9 @@ This port keeps Python v0.7.0 behavior, with deliberate Go adaptations:
 11. **Security hardening** — unlike Python, wire bodies are redacted by
    default, response bodies have a 16 MiB limit, base URLs require HTTPS
    (with loopback-only opt-in for HTTP), and `ExtraBody` cannot override
-   SDK-owned fields.
+   SDK-owned fields. Supplied HTTP clients cannot redirect outside the original
+   origin. Strict size-only body logs and custom sensitive header names are
+   available; common API-key header spellings are always redacted.
 
 ## License
 

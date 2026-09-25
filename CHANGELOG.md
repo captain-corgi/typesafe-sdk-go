@@ -29,6 +29,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
+- Supplied HTTP clients reject redirects outside the initial origin, including
+  HTTPS downgrades and redirect callback rewrites.
+- Wire logs conceal common API-key header spellings; `SetSensitiveHeaders`
+  supports additional names. `LogBodyStrict` / `TYPESAFE_LOG_BODY=strict` logs
+  only body size. Existing `redacted` mode remains compatible and is explicitly
+  documented as exposing keys and nonstring values.
+- Local CIP HTML rendering escapes brand, metadata, and filename text. Local
+  icon generation validates colors and rejects active SVG before saving.
+
 - Deliberate hardening behavior changes: wire body logging is redacted by
   default, response buffering is bounded to 16 MiB, base URLs require HTTPS
   (with loopback-only HTTP opt-in), and `ExtraBody` cannot override `state`,

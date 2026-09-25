@@ -46,13 +46,28 @@ type LogBodyMode string
 const (
 	// LogBodyOff prevents wire bodies from appearing in logs.
 	LogBodyOff LogBodyMode = "off"
-	// LogBodyRedacted logs JSON structure while replacing string values.
+	// LogBodyRedacted replaces string values, but exposes keys and nonstring
+	// scalars. Use LogBodyStrict for bodies containing sensitive identifiers.
 	LogBodyRedacted LogBodyMode = "redacted"
+	// LogBodyStrict logs only the body size, concealing all keys and values.
+	LogBodyStrict LogBodyMode = "strict"
 	// LogBodyFull logs raw wire bodies, subject to the logging size limit.
 	LogBodyFull LogBodyMode = "full"
 )
 
 var logBodyModeValue atomic.Value
+var sensitiveHeaderNames atomic.Pointer[map[string]struct{}]
+
+// SetSensitiveHeaders replaces the additional case-insensitive header names
+// concealed in request and response wire logs. Built-in redaction always applies.
+// Names are copied; pass no names to reset. Safe to call with requests in flight.
+func SetSensitiveHeaders(names ...string) {
+	next := make(map[string]struct{}, len(names))
+	for _, name := range names {
+		next[strings.ToLower(strings.TrimSpace(name))] = struct{}{}
+	}
+	sensitiveHeaderNames.Store(&next)
+}
 
 func init() {
 	loggerPtr.Store(newLogger())
@@ -85,7 +100,7 @@ func setupLogging() {
 // SetLogBodyMode configures the body policy used by DEBUG wire logs.
 func SetLogBodyMode(mode LogBodyMode) error {
 	switch mode {
-	case LogBodyOff, LogBodyRedacted, LogBodyFull:
+	case LogBodyOff, LogBodyRedacted, LogBodyStrict, LogBodyFull:
 		logBodyModeValue.Store(mode)
 		return nil
 	default:
@@ -97,7 +112,7 @@ func SetLogBodyMode(mode LogBodyMode) error {
 // the safe default of LogBodyOff.
 func setupLogBodyMode() {
 	mode := LogBodyMode(strings.ToLower(strings.TrimSpace(os.Getenv(EnvLogBody))))
-	if mode != LogBodyRedacted && mode != LogBodyFull {
+	if mode != LogBodyRedacted && mode != LogBodyStrict && mode != LogBodyFull {
 		mode = LogBodyOff
 	}
 	_ = SetLogBodyMode(mode)
@@ -115,6 +130,8 @@ func formatLoggedBody(body []byte) string {
 	}
 	var formatted string
 	switch logBodyMode() {
+	case LogBodyStrict:
+		formatted = fmt.Sprintf("<redacted %d bytes>", len(body))
 	case LogBodyFull:
 		formatted = string(body)
 	case LogBodyRedacted:
@@ -181,6 +198,15 @@ func SetLogger(l *slog.Logger) {
 // (all case-insensitive).
 func isSecretHeader(name string) bool {
 	lowered := strings.ToLower(name)
+	if names := sensitiveHeaderNames.Load(); names != nil {
+		if _, ok := (*names)[lowered]; ok {
+			return true
+		}
+	}
+	compact := strings.NewReplacer("-", "", "_", "").Replace(lowered)
+	if strings.Contains(compact, "apikey") {
+		return true
+	}
 	if _, ok := secretHeaders[lowered]; ok {
 		return true
 	}

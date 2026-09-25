@@ -4,6 +4,8 @@ import (
 	"context"
 	"math/rand/v2"
 	"net/http"
+	"net/url"
+	"strings"
 	"sync/atomic"
 	"time"
 )
@@ -123,8 +125,10 @@ func WithHeaders(headers map[string]string) Option {
 // timeout always governs the whole attempt through its context: the SDK
 // sends on its own copy of the client with the outer Timeout disabled, so an
 // explicit SDK timeout longer than the supplied client's Timeout is honored
-// in full and the caller's client is never modified. The client's Transport,
-// Jar, and CheckRedirect are shared, and its idle connections are closed by
+// in full and the caller's client is never modified. The client's Transport
+// and Jar are shared; CheckRedirect is wrapped to reject redirects outside
+// the initial origin (including HTTPS downgrades), even after callback edits.
+// Its idle connections are closed by
 // [Client.Close]. A nil client is rejected. Note that the SDK's default
 // client does not follow redirects (3xx responses surface as errors, like
 // the other TypeSafe SDKs); supply your own client here if you want
@@ -214,10 +218,12 @@ func NewClient(opts ...Option) (*Client, error) {
 		// Timeout only when WithTimeout is unset) is enforced through the
 		// attempt context, so a longer SDK timeout is never silently capped
 		// by the injected client's own deadline. The caller's client is
-		// never mutated; Transport, Jar, and CheckRedirect stay shared, so
+		// never mutated; Transport and Jar stay shared, so
 		// CloseIdleConnections still reaches the supplied transport.
 		copied := *settings.httpClient
 		copied.Timeout = 0
+		origin, _ := url.Parse(resolved.baseURL) // Already validated by resolveConfig.
+		copied.CheckRedirect = safeRedirectPolicy(*origin, copied.CheckRedirect)
 		httpClient = &copied
 	}
 
@@ -230,6 +236,45 @@ func NewClient(opts ...Option) (*Client, error) {
 	}
 	client.Models = &Models{client: client}
 	return client, nil
+}
+
+// safeRedirectPolicy keeps credentials on the original origin, even when a
+// supplied callback rewrites the redirect request. It preserves Go's default
+// ten-request limit when no callback is supplied.
+func safeRedirectPolicy(origin url.URL, check func(*http.Request, []*http.Request) error) func(*http.Request, []*http.Request) error {
+	return func(req *http.Request, via []*http.Request) error {
+		validate := func() error {
+			if req.URL == nil || req.URL.User != nil || !sameOrigin(&origin, req.URL) ||
+				(req.Host != "" && !strings.EqualFold(req.Host, origin.Host)) {
+				return newTypeSafeError("redirect must remain on the original origin.")
+			}
+			return nil
+		}
+		if err := validate(); err != nil {
+			return err
+		}
+		if check != nil {
+			if err := check(req, via); err != nil {
+				return err
+			}
+		} else if len(via) >= 10 {
+			return newTypeSafeError("stopped after 10 redirects.")
+		}
+		return validate()
+	}
+}
+
+func sameOrigin(a, b *url.URL) bool {
+	port := func(u *url.URL) string {
+		if p := u.Port(); p != "" {
+			return p
+		}
+		if strings.EqualFold(u.Scheme, "https") {
+			return "443"
+		}
+		return "80"
+	}
+	return strings.EqualFold(a.Scheme, b.Scheme) && strings.EqualFold(a.Hostname(), b.Hostname()) && port(a) == port(b)
 }
 
 // sleepWithContext waits for the duration or until the context ends.

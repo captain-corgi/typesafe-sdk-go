@@ -14,7 +14,7 @@ const (
 	// (debug | info | warn | warning | error | off).
 	EnvLogLevel = "TYPESAFE_LOG_LEVEL"
 	// EnvLogBody is the environment variable selecting wire-body logging
-	// (off | redacted | full).
+	// (off | strict | redacted | full).
 	EnvLogBody = "TYPESAFE_LOG_BODY"
 
 	// DefaultBaseURL is the default API base URL.
