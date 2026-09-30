@@ -19,7 +19,15 @@ but the package is named `typesafe` (like `go-openai`). Requires Go 1.27+.
   (stdlib-only `package main`) generates its gitignored `examples.json` from
   `examples/README.md`, each `main.go`, and the required `flow.mmd` diagram
   next to it; its test fails if any example lacks a diagram or README row.
-  `pages.yml` runs the generator on the `github-page` branch.
+  `pages.yml` runs the generator on the `github-page` branch. The example
+  detail also has a lazy-loaded step-through walkthrough tab; its
+  hand-maintained per-example data lives in `docs/github-page/data/<leaf>.js`
+  (shape documented in `docs/github-page/data/README.md`), separate from
+  pagegen's `examples.json`. Each example's
+  detail view also has a lazy-loaded step-through walkthrough tab; its
+  hand-maintained data lives in `docs/github-page/data/<leaf>.js` (shape
+  documented in `docs/github-page/data/README.md`), separate from pagegen's
+  generated `examples.json`.
 - `plans/2026-09-19-typesafe-sdk-go/` — `plan.md` (design, file-by-file spec)
   and `contracts.md` (behavioral contracts distilled from the reference SDKs:
   wire forms, headers, error message extraction, retry semantics). Read
