@@ -56,7 +56,6 @@
       --e-control: light-dark(#8d97ad, #6d778e);
       --e-error: light-dark(#d23b4e, #f2788a);
       --radius: 12px;
-      --max: 1200px;
       --sans: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
       --mono: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', Consolas, monospace;
     }
@@ -88,12 +87,12 @@
     .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
     .skip { position: absolute; left: 1rem; top: -3rem; z-index: 200; background: var(--fg); color: var(--bg); padding: .5rem 1rem; border-radius: 8px; }
     .skip:focus { top: .75rem; }
-    .wrap { max-width: var(--max); margin: 0 auto; padding: 0 1.5rem; }
+    .wrap { margin: 0 auto; padding: 0 1.5rem; }
     section { padding: 5rem 0; scroll-margin-top: 64px; }
     section + section { border-top: 1px solid var(--border); }
     .eyebrow { font: 600 .75rem/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
     h2 { font-size: clamp(1.6rem, 3vw, 2.1rem); line-height: 1.2; letter-spacing: -.02em; margin: .6rem 0 .75rem; }
-    .lead { color: var(--muted); font-size: 1.05rem; max-width: 62ch; }
+    .lead { color: var(--muted); font-size: 1.05rem; }
     .head { margin-bottom: 2.5rem; }
 
     /* ─── Buttons ─── */
@@ -148,10 +147,10 @@
     .hero pre.code { font-size: .8rem; }
     .hero h1 { font-size: clamp(2.2rem, 5vw, 3.4rem); line-height: 1.08; letter-spacing: -.035em; margin: 1rem 0 1.25rem; }
     .hero h1 span { color: light-dark(#007c9a, #22c3e6); }
-    .hero p { color: var(--muted); font-size: 1.12rem; max-width: 52ch; }
+    .hero p { color: var(--muted); font-size: 1.12rem; }
     .cta { display: flex; flex-wrap: wrap; gap: .75rem; margin: 2rem 0 1.5rem; }
     .install {
-      display: flex; align-items: center; gap: .75rem; max-width: 520px;
+      display: flex; align-items: center; gap: .75rem;
       background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
       padding: .35rem .35rem .35rem 1rem; font: .88rem var(--mono);
     }
@@ -266,7 +265,7 @@
     .detail-head h3 { font-size: clamp(1.35rem, 2.4vw, 1.75rem); letter-spacing: -.02em; line-height: 1.2; }
     .detail-head .path { font: .82rem var(--mono); color: var(--muted); overflow-wrap: anywhere; }
     .detail-head .desc { font-size: 1.02rem; }
-    .detail-head .summary { color: var(--muted); font-size: .95rem; max-width: 75ch; }
+    .detail-head .summary { color: var(--muted); font-size: .95rem; }
     .tags { display: flex; flex-wrap: wrap; gap: .4rem; }
     .panel { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; background: var(--surface); }
     .panel-bar { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; padding: .45rem .5rem .45rem 1rem; border-bottom: 1px solid var(--border); }
