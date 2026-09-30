@@ -45,6 +45,16 @@
       --score-bg: light-dark(#f3e8ff, rgb(168 85 247 / .16));
       --raw: light-dark(#c2410c, #fdba74);
       --raw-bg: light-dark(#ffedd5, rgb(249 115 22 / .16));
+      /* Step-through walkthrough kinds */
+      --k-setup: light-dark(#5b6478, #9aa4bc);    --k-setup-bg: light-dark(#edf0f6, #232a3a);
+      --k-request: light-dark(#4653e8, #93a0ff);  --k-request-bg: light-dark(#e8ebfe, #26305a);
+      --k-response: light-dark(#0e8a76, #3ec9ad); --k-response-bg: light-dark(#e2f6f1, #12352e);
+      --k-decision: light-dark(#b26205, #e0a04f); --k-decision-bg: light-dark(#fdf0dc, #3a2c14);
+      --k-error: light-dark(#d23b4e, #f2788a);    --k-error-bg: light-dark(#fdeaec, #401b22);
+      --k-output: light-dark(#7a3ff2, #b58cff);   --k-output-bg: light-dark(#f1e9fe, #2d2350);
+      --e-data: light-dark(#4653e8, #8e9bff);
+      --e-control: light-dark(#8d97ad, #6d778e);
+      --e-error: light-dark(#d23b4e, #f2788a);
       --radius: 12px;
       --max: 1200px;
       --sans: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
@@ -98,6 +108,7 @@
     .btn:hover { text-decoration: none; border-color: var(--fg); }
     .btn-primary { background: var(--fg); color: var(--bg); border-color: var(--fg); }
     .btn-primary:hover { background: color-mix(in srgb, var(--fg) 86%, var(--bg)); }
+    .btn:disabled { opacity: .45; cursor: not-allowed; }
     .icon-btn {
       display: inline-flex; align-items: center; justify-content: center; gap: .4rem;
       min-height: 36px; padding: 0 .7rem; border-radius: 8px;
@@ -285,6 +296,111 @@
       .side:not([data-open="true"]) .ex-list { display: none; }
       .side .side-top { border-top: 1px solid var(--border); }
       .ex-list { max-height: 60vh; }
+    }
+
+    /* ─── Walkthrough (step-through view) ─── */
+    #pane-flow-walk { background: var(--bg); }
+    .flow-layout { display: grid; grid-template-columns: minmax(0, 1fr) 350px; gap: 1.25rem; align-items: start; }
+    .flow-stage { overflow: auto; padding: 1.5rem 1rem; }
+    .flow-canvas { position: relative; margin: 0 auto; }
+    .edge-svg, .label-svg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+    /* Edge labels live in their own SVG layered above the node cards
+       (nodes are z-index: 1) so labels of edges that span one or more
+       steps stay visible instead of hiding behind an intermediate card. */
+    .label-svg { z-index: 2; }
+
+    .node {
+      position: absolute; z-index: 1;
+      background: var(--surface);
+      border: 1px solid var(--border-strong); border-left-width: 4px;
+      border-radius: 10px; padding: 9px 12px 10px;
+      cursor: pointer;
+      transition: box-shadow .15s, opacity .2s, border-color .15s;
+    }
+    .node:hover { border-color: var(--accent); }
+    .node-head { display: flex; align-items: center; gap: 8px; margin-bottom: 3px; }
+    .node-num {
+      display: inline-flex; align-items: center; justify-content: center;
+      min-width: 22px; height: 22px; border-radius: 999px;
+      font: 700 .72rem var(--mono);
+      /* Saturated light-mode kind chips take white numerals; the pastel
+         dark-mode ones take the page ink. */
+      color: light-dark(#ffffff, #0b1120);
+      background: var(--node-color, var(--accent));
+    }
+    .node-kind { font: 700 .68rem var(--mono); letter-spacing: .05em; text-transform: uppercase; color: var(--node-color, var(--accent)); }
+    .node-title { font-size: .92rem; font-weight: 600; line-height: 1.35; text-wrap: balance; }
+    /* Kind accents: left border, number chip, badge (before :hover in source
+       order would let the hover color clobber the kind left border). */
+    .node.k-setup     { --node-color: var(--k-setup);     border-left-color: var(--k-setup); }
+    .node.k-request   { --node-color: var(--k-request);   border-left-color: var(--k-request); }
+    .node.k-response  { --node-color: var(--k-response);  border-left-color: var(--k-response); }
+    .node.k-decision  { --node-color: var(--k-decision);  border-left-color: var(--k-decision); }
+    .node.k-error     { --node-color: var(--k-error);     border-left-color: var(--k-error); }
+    .node.k-output    { --node-color: var(--k-output);    border-left-color: var(--k-output); }
+    .node.current { border-color: var(--node-color, var(--accent)); box-shadow: 0 0 0 3px var(--bg), 0 0 0 6px var(--node-color, var(--accent)); }
+    .flow-canvas.playing .node:not(.current) { opacity: .45; }
+    .flow-canvas.playing .edge:not(.active) { opacity: .3; }
+
+    /* Edge paths: marching-ants animation (the -240px offset loops cleanly
+       for every dash pattern below: 240 % 16, % 10, % 12 === 0) */
+    .edge { fill: none; stroke-width: 1.8; animation: ants 4s linear infinite; }
+    .edge.k-data    { stroke: var(--e-data);    stroke-dasharray: 10 6; }
+    .edge.k-control { stroke: var(--e-control); stroke-dasharray: 4 6; }
+    .edge.k-error   { stroke: var(--e-error);   stroke-dasharray: 7 5; }
+    .edge.active { stroke-width: 3.2; animation-duration: 1.1s; }
+    @keyframes ants { to { stroke-dashoffset: -240; } }
+    .marker-fill-data    { fill: var(--e-data); }
+    .marker-fill-control { fill: var(--e-control); }
+    .marker-fill-error   { fill: var(--e-error); }
+    /* Edge labels: text with a halo so it stays readable across lines */
+    .edge-label {
+      font-family: var(--sans); font-size: 11px; font-weight: 600;
+      text-anchor: middle; paint-order: stroke;
+      stroke: var(--bg); stroke-width: 4px; stroke-linejoin: round;
+    }
+    .edge-label.k-data    { fill: var(--e-data); }
+    .edge-label.k-control { fill: var(--muted); }
+    .edge-label.k-error   { fill: var(--e-error); }
+    .edge-label.active { fill: var(--accent); opacity: 1; font-weight: 700; }
+
+    .flow-panel { position: sticky; top: 76px; display: flex; flex-direction: column; gap: .75rem; }
+    .panel-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: .9rem 1rem; }
+    .panel-controls { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; }
+    .panel-controls .btn { padding: .45rem .9rem; font-size: .85rem; }
+    .panel-controls .btn-primary { min-width: 84px; }
+    .step-pos { margin-left: auto; font: 500 .78rem var(--mono); color: var(--faint); }
+    .panel-body { display: flex; flex-direction: column; gap: .6rem; }
+    .step-kind-badge { align-self: flex-start; font: 700 .68rem var(--mono); letter-spacing: .05em; text-transform: uppercase; border-radius: 999px; padding: 3px 11px; }
+    .step-kind-badge.k-setup    { color: var(--k-setup);    background: var(--k-setup-bg); }
+    .step-kind-badge.k-request  { color: var(--k-request);  background: var(--k-request-bg); }
+    .step-kind-badge.k-response { color: var(--k-response); background: var(--k-response-bg); }
+    .step-kind-badge.k-decision { color: var(--k-decision); background: var(--k-decision-bg); }
+    .step-kind-badge.k-error    { color: var(--k-error);    background: var(--k-error-bg); }
+    .step-kind-badge.k-output   { color: var(--k-output);   background: var(--k-output-bg); }
+    .step-title { font-size: 1.05rem; font-weight: 700; letter-spacing: -.01em; line-height: 1.35; }
+    .step-detail { font-size: .92rem; color: var(--muted); }
+    .step-code { max-height: 280px; overflow: auto; background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px; }
+    .step-code pre.code { margin: 0; padding: .75rem .9rem; font-size: .78rem; }
+    .step-loc { font: 400 .78rem var(--mono); color: var(--faint); }
+    .panel-hint { font-size: .78rem; color: var(--faint); }
+    .wt-error { padding: 1.5rem; }
+    .wt-error h3 { font-size: 1rem; margin-bottom: .5rem; }
+    .wt-error .summary { color: var(--muted); font-size: .95rem; }
+
+    .walk-legend { display: flex; flex-wrap: wrap; gap: .5rem 1.1rem; align-items: center; padding: .7rem 1rem; border-top: 1px solid var(--border); font-size: .75rem; color: var(--muted); }
+    .walk-legend-group { display: flex; flex-wrap: wrap; gap: .5rem .9rem; align-items: center; }
+    .walk-legend-item { display: inline-flex; align-items: center; gap: 6px; }
+    .walk-legend-dot { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+    .walk-legend-line { display: inline-block; }
+    .walk-legend-sep { width: 1px; height: 18px; background: var(--border); }
+
+    @media (max-width: 900px) {
+      /* minmax(0, 1fr) lets the track shrink below the diagram's fixed
+         min-width so the stage scrolls internally instead of stretching
+         the page horizontally on phone-width viewports. */
+      .flow-layout { grid-template-columns: minmax(0, 1fr); }
+      .flow-panel { position: static; }
     }
 
     /* ─── Docs ─── */
@@ -864,7 +980,8 @@ func main() {
     $('.browse-toggle').setAttribute('aria-expanded', String(open));
   }
 
-  function renderDetail(ex) {
+  function renderDetail(ex, walkOn = false) {
+    stopPlayback();
     const pos = state.filtered.indexOf(ex);
     const seq = pos >= 0 ? state.filtered : state.all;
     const i = seq.indexOf(ex);
@@ -880,9 +997,17 @@ func main() {
         ${ex.summary ? `<p class="summary">${md(ex.summary)}</p>` : ''}
       </header>
       <div class="panel">
-        <div class="panel-bar"><h4>Flow</h4></div>
-        <div class="diagram" role="img" aria-label="Flow diagram for ${esc(ex.name)}"><span class="diagram-status">Rendering diagram…</span></div>
-        <div class="legend" aria-hidden="true">${LEGEND.map(([c, label]) => `<span><i data-legend="${c}"></i>${label}</span>`).join('')}</div>
+        <div class="panel-bar">
+          <div class="tabs" role="tablist" aria-label="Flow view">
+            <button class="tab" role="tab" id="tab-flow" aria-controls="pane-flow-diagram" aria-selected="true">Diagram</button>
+            <button class="tab" role="tab" id="tab-walk" aria-controls="pane-flow-walk" aria-selected="false" tabindex="-1">Step-through</button>
+          </div>
+        </div>
+        <div role="tabpanel" id="pane-flow-diagram" aria-labelledby="tab-flow">
+          <div class="diagram" role="img" aria-label="Flow diagram for ${esc(ex.name)}"><span class="diagram-status">Rendering diagram…</span></div>
+          <div class="legend" aria-hidden="true">${LEGEND.map(([c, label]) => `<span><i data-legend="${c}"></i>${label}</span>`).join('')}</div>
+        </div>
+        <div role="tabpanel" id="pane-flow-walk" aria-labelledby="tab-walk" hidden></div>
       </div>
       <div class="panel">
         <div class="panel-bar">
@@ -902,10 +1027,35 @@ func main() {
         ${next ? `<a href="#/examples/${esc(next.id)}" style="text-align:right"><span>Next<br><b>${esc(next.name)}</b></span>${icon('right')}</a>` : '<span></span>'}
       </nav>`;
     paintLegend();
-    renderDiagram($('.diagram', detail), ex.id, ex.diagram);
+    wireFlowTabs(ex, walkOn);
     highlightInto($('#pane-src', detail), ex.id, ex.source, 'go', true);
     highlightInto($('#pane-run', detail), ex.id + '#run', run, 'shellscript', false);
     wireTabs(ex, run);
+  }
+
+  // The Mermaid diagram renders on first selection of the Diagram tab: a
+  // /walkthrough deep link never downloads the Mermaid module at all.
+  function ensureFlowDiagram(ex) {
+    const d = $('.diagram', detail);
+    if (d && !d._src) renderDiagram(d, ex.id, ex.diagram);
+  }
+
+  let flowTabSelect = null;
+  function wireFlowTabs(ex, walkOn) {
+    const panel = $('#pane-flow-diagram', detail).closest('.panel');
+    const tabs = $$('.tab', panel);
+    flowTabSelect = makeTablist(tabs, panel, (tab) => {
+      const on = tab.id === 'tab-walk';
+      setFlowView(on);
+      if (!on) ensureFlowDiagram(ex);
+    });
+    // Tab clicks write the hash so the view is shareable and browser
+    // back/forward flips between Diagram and Step-through.
+    tabs.forEach((t) => t.addEventListener('click', () => {
+      const h = '#/examples/' + ex.id + (t.id === 'tab-walk' ? '/walkthrough' : '');
+      if (location.hash !== h) location.hash = h;
+    }));
+    flowTabSelect(walkOn ? $('#tab-walk', panel) : $('#tab-flow', panel));
   }
 
   async function highlightInto(pane, key, code, lang, ln) {
@@ -916,17 +1066,17 @@ func main() {
     } catch (e) { console.warn('highlight failed', e); }
   }
 
-  function wireTabs(ex, run) {
-    const tabs = $$('.tab', detail);
+  // Shared tablist behavior (click + arrow-key rotation) for the flow and
+  // source panels; returns the select function for programmatic switching.
+  function makeTablist(tabs, scope, onSelect) {
     const select = (tab) => {
       tabs.forEach((t) => {
         const on = t === tab;
         t.setAttribute('aria-selected', String(on));
         t.tabIndex = on ? 0 : -1;
-        $('#' + t.getAttribute('aria-controls'), detail).hidden = !on;
+        $('#' + t.getAttribute('aria-controls'), scope).hidden = !on;
       });
-      const isRun = tab.id === 'tab-run';
-      $('[data-copy-current]', detail).setAttribute('aria-label', isRun ? 'Copy run command' : 'Copy main.go');
+      if (onSelect) onSelect(tab);
     };
     tabs.forEach((t) => {
       t.addEventListener('click', () => select(t));
@@ -935,6 +1085,15 @@ func main() {
         const other = tabs[(tabs.indexOf(t) + 1) % tabs.length];
         select(other); other.focus();
       });
+    });
+    return select;
+  }
+
+  function wireTabs(ex, run) {
+    const panel = $('#pane-src', detail).closest('.panel');
+    makeTablist($$('.tab', panel), panel, (tab) => {
+      const isRun = tab.id === 'tab-run';
+      $('[data-copy-current]', detail).setAttribute('aria-label', isRun ? 'Copy run command' : 'Copy main.go');
     });
     $('[data-copy-current]', detail).addEventListener('click', (e) => {
       const isRun = $('#tab-run', detail).getAttribute('aria-selected') === 'true';
@@ -950,7 +1109,1010 @@ func main() {
     });
   }
 
-  function select(id, { scroll = false, focus = false } = {}) {
+  /* ─── Walkthrough (step-through view) ───
+     Ported from the former standalone gallery. A layered ("Sugiyama-lite")
+     layout draws each example's steps as nodes colored by kind, connected by
+     animated SVG edges; a side panel plays the walkthrough step by step.
+     Data loads lazily: one data/<leaf>.js script per example on first demand. */
+  const STEP_KINDS = ['setup', 'request', 'response', 'decision', 'error', 'output'];
+  const EDGE_KINDS = ['data', 'control', 'error'];
+  const STEP_MS = 2400;          // playback dwell time per step
+  const DIAGRAM = {
+    pad: 12,                     // canvas padding
+    laneGap: 28,                 // horizontal gap between lanes within a row
+    layerGap: 56,                // vertical gap between layer rows (edge fans)
+    nodeMaxW: 420,               // widest node card
+    nodeAbsMinW: 168,            // narrowest card; below this the stage scrolls
+    gutterMin: 48,               // gutter width for one or two edge lanes
+    gutterLane: 17,              // x spacing between parallel gutter lanes
+    escape: 16,                  // card edge → band jog for gutter escapes
+    approach: 18,                // band jog distance above a target card
+    sideFrac: 0.30,              // bottom/top port fan-out spread (× node width)
+    estGutter: 62,               // gutter allowance when fitting the node width
+  };
+  const motionOK = !matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function el(tag, attrs, text) {
+    const node = document.createElement(tag);
+    if (attrs) {
+      Object.keys(attrs).forEach(function (k) {
+        if (k === 'class') node.className = attrs[k];
+        else node.setAttribute(k, attrs[k]);
+      });
+    }
+    if (text !== undefined) node.textContent = text;
+    return node;
+  }
+  const SVG_NS = 'http://www.w3.org/2000/svg';
+  function svgEl(tag, attrs) {
+    const node = document.createElementNS(SVG_NS, tag);
+    if (attrs) Object.keys(attrs).forEach(function (k) { node.setAttribute(k, attrs[k]); });
+    return node;
+  }
+  // Cubic bezier midpoint at t = 0.5 (used to place edge labels).
+  function cubicMid(p0, p1, p2, p3) {
+    return {
+      x: (p0.x + 3 * p1.x + 3 * p2.x + p3.x) / 8,
+      y: (p0.y + 3 * p1.y + 3 * p2.y + p3.y) / 8,
+    };
+  }
+  function debounce(fn, ms) {
+    let t = null;
+    return function () { clearTimeout(t); t = setTimeout(fn, ms); };
+  }
+
+  /* Lazy data loading: data/<leaf>.js assigns into a shared global; plain
+     script tags (not fetch) so file:// and the Pages subpath both work. */
+  const FLOWS = (window.__TYPESAFE_FLOWS__ = window.__TYPESAFE_FLOWS__ || {});
+  const flowLoads = new Map();               // leaf → Promise<data | null>
+  function loadFlow(leaf) {
+    if (!flowLoads.has(leaf)) {
+      flowLoads.set(leaf, new Promise((resolve) => {
+        const s = document.createElement('script');
+        s.src = 'data/' + encodeURIComponent(leaf) + '.js';
+        s.onload = () => resolve(FLOWS[leaf] || null);
+        s.onerror = () => resolve(null);     // 404 / network error
+        document.head.appendChild(s);
+      }));
+    }
+    return flowLoads.get(leaf);
+  }
+
+  const walk = { pane: null, leaf: null, ex: null, flow: null, currentStep: 0, playing: false, timer: 0, edgeEls: [], nodeEls: [], playOrder: [], rankOf: [] };
+  const walkActive = () => !!(walk.pane && walk.pane.isConnected && !walk.pane.hidden && walk.flow);
+  const walkCanvas = () => (walk.pane ? $('.flow-canvas', walk.pane) : null);
+  const leafOf = (id) => id.substring(id.lastIndexOf('/') + 1);
+
+  function buildWalkLegend() {
+    const legend = el('div', { class: 'walk-legend' });
+    const steps = el('div', { class: 'walk-legend-group' });
+    STEP_KINDS.forEach(function (k) {
+      const item = el('span', { class: 'walk-legend-item' });
+      const dot = el('span', { class: 'walk-legend-dot' });
+      dot.style.background = 'var(--k-' + k + ')';
+      item.appendChild(dot);
+      item.appendChild(document.createTextNode(k));
+      steps.appendChild(item);
+    });
+    legend.appendChild(steps);
+    legend.appendChild(el('span', { class: 'walk-legend-sep' }));
+    const edges = el('div', { class: 'walk-legend-group' });
+    EDGE_KINDS.forEach(function (k) {
+      const item = el('span', { class: 'walk-legend-item' });
+      const svg = svgEl('svg', { width: '26', height: '8', class: 'walk-legend-line', 'aria-hidden': 'true' });
+      svg.appendChild(svgEl('line', { x1: '1', y1: '4', x2: '25', y2: '4', class: 'edge k-' + k }));
+      item.appendChild(svg);
+      item.appendChild(document.createTextNode(k));
+      edges.appendChild(item);
+    });
+    legend.appendChild(edges);
+    return legend;
+  }
+
+  function buildWalkPanel() {
+    const panel = el('aside', { class: 'flow-panel' });
+
+    const controls = el('div', { class: 'panel-card panel-controls' });
+    const playBtn = el('button', { class: 'btn btn-primary', 'data-wt': 'play', 'aria-pressed': 'false' }, 'Play');
+    const prevBtn = el('button', { class: 'btn', 'data-wt': 'prev' }, '‹ Prev');
+    const nextBtn = el('button', { class: 'btn', 'data-wt': 'next' }, 'Next ›');
+    playBtn.addEventListener('click', togglePlay);
+    prevBtn.addEventListener('click', function () { pausePlayback(); setCurrent(stepInOrder(walk.currentStep, -1), { scroll: true }); });
+    nextBtn.addEventListener('click', function () { pausePlayback(); setCurrent(stepInOrder(walk.currentStep, 1), { scroll: true }); });
+    controls.appendChild(playBtn);
+    controls.appendChild(prevBtn);
+    controls.appendChild(nextBtn);
+    controls.appendChild(el('span', { class: 'step-pos', 'data-wt': 'pos' }));
+    panel.appendChild(controls);
+
+    const body = el('div', { class: 'panel-card panel-body', 'aria-live': 'polite' });
+    body.appendChild(el('span', { class: 'step-kind-badge', 'data-wt': 'badge' }));
+    body.appendChild(el('h3', { class: 'step-title', 'data-wt': 'title' }));
+    body.appendChild(el('p', { class: 'step-detail', 'data-wt': 'detail' }));
+    const codeWrap = el('div', { class: 'step-code', 'data-wt': 'code' });
+    codeWrap.appendChild(el('pre', { class: 'code' })).appendChild(el('code'));
+    body.appendChild(codeWrap);
+    body.appendChild(el('p', { class: 'step-loc', 'data-wt': 'loc' }));
+    panel.appendChild(body);
+
+    panel.appendChild(el('p', { class: 'panel-hint' }, 'Click a node to jump · ← → to step · Space toggles playback'));
+    return panel;
+  }
+
+  function mountWalkthrough(ex, pane, flow) {
+    walk.ex = ex;
+    walk.flow = flow;
+    walk.currentStep = 0;
+    walk.edgeEls = [];
+    walk.nodeEls = [];
+    walk.playOrder = [];
+    walk.rankOf = [];
+    pane.textContent = '';
+    const layout = el('div', { class: 'flow-layout' });
+    const stage = el('div', { class: 'flow-stage' });
+    stage.appendChild(el('div', { class: 'flow-canvas', role: 'group', 'aria-label': 'Step-by-step diagram' }));
+    layout.appendChild(stage);
+    layout.appendChild(buildWalkPanel());
+    pane.appendChild(layout);
+    pane.appendChild(buildWalkLegend());
+    buildWalkDiagram();
+    // Start on the drawing's first step (the layout's topological order).
+    setCurrent(walk.playOrder.length ? walk.playOrder[0] : 0, { scroll: false });
+  }
+
+  /* ─── Walkthrough diagram layout + SVG edges ───
+     a. Layers — longest-path layering over forward edges (an edge is
+        forward when its target has a later data index; backward and self
+        edges are ignored), iterated to a fixpoint; sources land at layer 0.
+     b. Ordering — rows start in data order, then barycenter sweeps over
+        adjacent layers reduce edge crossings.
+     c. Geometry — a row's nodes sit side by side in lanes (uniform node
+        width per diagram: shrunk to fit the stage, floored, and when even
+        the floor cannot fit, the stage scrolls internally so the page
+        never scrolls horizontally). Every row is centered; y advances by
+        the row's tallest card plus a generous layer gap. A branchy flow
+        whose layering collapses to single-node rows (a chain with skip or
+        back edges) is staggered into two columns instead of rendering as
+        one linear column.
+     d. Routing — next-layer edges run bottom port → top port as S-curves
+        through the node-free inter-row band; spanning edges (skipping a
+        layer) route through the left or right gutter on per-edge lanes;
+        backward and self edges keep a right-side bow on per-source lanes.
+        Whenever a side exit would cross a neighbouring card, the edge
+        escapes vertically through a band first. Edge kinds keep their
+        distinct strokes and arrowheads (see .edge.k-* above).
+     Labels are placed with their centre inside an inter-row band or inside
+     the gutter — never on a card — and a light de-collision pass keeps
+     labels from stacking. Edge paths paint below the cards (z-order), label
+     text above them. */
+  // Round to 2 decimals to keep path strings compact.
+  function r2(v) { return Math.round(v * 100) / 100; }
+
+  // Polyline through pts with rounded corners (quadratic beziers).
+  function roundedPath(pts, rad) {
+    if (pts.length < 2) return '';
+    let d = 'M ' + r2(pts[0].x) + ' ' + r2(pts[0].y);
+    for (let k = 1; k < pts.length - 1; k++) {
+      const p = pts[k], a = pts[k - 1], b = pts[k + 1];
+      const d1 = Math.hypot(p.x - a.x, p.y - a.y) || 1;
+      const d2 = Math.hypot(b.x - p.x, b.y - p.y) || 1;
+      const r1 = Math.min(rad, d1 / 2), r2v = Math.min(rad, d2 / 2);
+      d += ' L ' + r2(p.x - (p.x - a.x) / d1 * r1) + ' ' + r2(p.y - (p.y - a.y) / d1 * r1) +
+           ' Q ' + r2(p.x) + ' ' + r2(p.y) + ', ' +
+           r2(p.x + (b.x - p.x) / d2 * r2v) + ' ' + r2(p.y + (b.y - p.y) / d2 * r2v);
+    }
+    const last = pts[pts.length - 1];
+    return d + ' L ' + r2(last.x) + ' ' + r2(last.y);
+  }
+
+  // Stable in-place sort of list by key(value); ties keep the current order.
+  function sortSlots(list, key) {
+    const decorated = list.map(function (v, k) { return { v: v, k: k, key: key(v) }; });
+    decorated.sort(function (a, b) { return (a.key - b.key) || (a.k - b.k); });
+    for (let i = 0; i < list.length; i++) list[i] = decorated[i].v;
+  }
+
+  function makeMarker(id, fillClass, size) {
+    const m = svgEl('marker', {
+      id: id, viewBox: '0 0 10 10', refX: '8.5', refY: '5',
+      markerWidth: String(size), markerHeight: String(size),
+      orient: 'auto', markerUnits: 'userSpaceOnUse',
+    });
+    m.appendChild(svgEl('path', { d: 'M0 0 L10 5 L0 10 Z', class: fillClass }));
+    return m;
+  }
+
+  function buildWalkDiagram() {
+    const diagram = walkCanvas();
+    if (!diagram || !walk.flow) return;
+    const stage = diagram.parentElement;
+    diagram.textContent = '';
+    walk.edgeEls = [];
+    walk.nodeEls = [];
+    walk.playOrder = [];
+    walk.rankOf = [];
+
+    const D = DIAGRAM;
+    const steps = walk.flow.steps;
+    const n = steps.length;
+    if (!n) return;
+    const index = {};                        // step id → data index
+    steps.forEach(function (s, i) { index[s.id] = i; });
+    const edges = walk.flow.flows.filter(function (e) {
+      return index[e.from] !== undefined && index[e.to] !== undefined;
+    });
+
+    // -- (a) Layer assignment: longest-path layering over forward edges --------
+    const layer = new Array(n).fill(0);
+    let changed = true;
+    for (let guard = 0; changed && guard <= n; guard++) {
+      changed = false;
+      edges.forEach(function (e) {
+        const a = index[e.from], b = index[e.to];
+        if (b > a && layer[b] < layer[a] + 1) { layer[b] = layer[a] + 1; changed = true; }
+      });
+    }
+
+    // Dead-end branches (error handlers that exit the program) must not consume
+    // a row on the main spine: pull each terminal up beside its deepest
+    // predecessor so the spine reads as a straight column with side off-ramps.
+    // Terminals on the deepest row are the walkthrough's output and stay put.
+    const succCount = new Array(n).fill(0);
+    edges.forEach(function (e) { succCount[index[e.from]]++; });
+    const deepest = Math.max.apply(null, layer);
+    for (let i = 0; i < n; i++) {
+      if (succCount[i] === 0 && layer[i] > 0 && layer[i] < deepest) {
+        let best = -1;
+        edges.forEach(function (e) {
+          const a = index[e.from], b = index[e.to];
+          if (b === i && layer[a] > best) best = layer[a];
+        });
+        if (best >= 0) layer[i] = best;
+      }
+    }
+    const layerCount = Math.max.apply(null, layer) + 1;
+
+    // -- (b) Within-layer ordering: data order + barycenter sweeps -------------
+    const rows = [];
+    for (let l = 0; l < layerCount; l++) rows.push([]);
+    for (let i = 0; i < n; i++) rows[layer[i]].push(i);
+    const pos = new Array(n);
+    const repos = function () {
+      rows.forEach(function (row) { row.forEach(function (i, k) { pos[i] = k; }); });
+    };
+    repos();
+    const upNbr = [], downNbr = [];          // neighbours in the adjacent layer
+    for (let i = 0; i < n; i++) { upNbr.push([]); downNbr.push([]); }
+    edges.forEach(function (e) {
+      const a = index[e.from], b = index[e.to];
+      if (layer[b] === layer[a] + 1) { upNbr[b].push(a); downNbr[a].push(b); }
+    });
+    function bary(i, nbrs) {
+      if (!nbrs[i].length) return pos[i];    // no neighbours: keep current slot
+      let sum = 0;
+      nbrs[i].forEach(function (j) { sum += pos[j]; });
+      return sum / nbrs[i].length;
+    }
+    for (let sweep = 0; sweep < 2; sweep++) {
+      for (let l = 1; l < layerCount; l++) {
+        sortSlots(rows[l], function (i) { return bary(i, upNbr); });
+        repos();
+      }
+      for (let l = layerCount - 2; l >= 0; l--) {
+        sortSlots(rows[l], function (i) { return bary(i, downNbr); });
+        repos();
+      }
+    }
+    // The data's first step is the walkthrough's entry point; keep it first
+    // in row 0 so the numbered walk (and Play) starts at the top-left.
+    const anchor = rows[0].indexOf(0);
+    if (anchor > 0) { rows[0].splice(anchor, 1); rows[0].unshift(0); repos(); }
+
+    // Draw lanes: pulled-up dead-end terminals take the left lanes of their
+    // row so the spine nodes read as the continuation of the flow.
+    const isSide = function (i, l) { return succCount[i] === 0 && l < deepest; };
+    rows.forEach(function (row, l) {
+      const sides = row.filter(function (i) { return isSide(i, l); });
+      const rest = row.filter(function (i) { return !isSide(i, l); });
+      if (sides.length && rest.length) {
+        row.length = 0;
+        sides.forEach(function (i) { row.push(i); });
+        rest.forEach(function (i) { row.push(i); });
+      }
+    });
+    repos();
+
+    // -- Play order: the layout's topological order (layer by layer, left to
+    // right within a layer). Step numbers, playback and the arrow keys all
+    // follow it, so Play walks the drawing naturally.
+    rows.forEach(function (row, l) {
+      const rest = row.filter(function (i) { return !isSide(i, l); });
+      const sides = row.filter(function (i) { return isSide(i, l); });
+      rest.forEach(function (i) { walk.playOrder.push(i); });
+      sides.forEach(function (i) { walk.playOrder.push(i); });
+    });
+    walk.rankOf = new Array(n);
+    walk.playOrder.forEach(function (i, k) { walk.rankOf[i] = k; });
+
+    // -- Route families ----------------------------------------------------------
+    //   next — drops exactly one layer (bottom→top S-curve)
+    //   span — skips at least one layer (through the left/right gutter)
+    //   back — same layer or upward, incl. self loops (right-side bow)
+    const rowLen = rows.map(function (r) { return r.length; });
+    const spanSide = { left: 0, right: 0 };
+    const routes = edges.map(function (e) {
+      const i = index[e.from], j = index[e.to];
+      const dl = layer[j] - layer[i];
+      if (dl === 0 && i !== j) {
+        // Same-row edge: a pulled-up off-ramp hanging off its parent. Route as
+        // a short bridge under the two cards through the band below the row.
+        return { kind: 'bridge', dir: pos[j] < pos[i] ? 'left' : 'right' };
+      }
+      if (dl === 1) return { kind: 'next' };
+      if (dl >= 2) {
+        // Gutter side follows the edge's horizontal midpoint; ties balance.
+        const fr = (rowLen[layer[i]] > 1 ? pos[i] / (rowLen[layer[i]] - 1) : 0.5) * 0.5 +
+                   (rowLen[layer[j]] > 1 ? pos[j] / (rowLen[layer[j]] - 1) : 0.5) * 0.5;
+        const side = fr > 0.5 ? 'right' : fr < 0.5 ? 'left'
+          : (spanSide.left <= spanSide.right ? 'left' : 'right');
+        spanSide[side]++;
+        return { kind: 'span', side: side };
+      }
+      return { kind: 'back', side: 'right' };
+    });
+    const needLeft = spanSide.left > 0;
+    const needRight = spanSide.right > 0 ||
+      routes.some(function (r) { return r.kind === 'back'; });
+
+    // A branchy flow must never render as a single column — it would read as
+    // a linear top-to-bottom list. When layering yields only single-node rows
+    // (a chain with skip/back edges), stagger consecutive rows into two
+    // columns so the drawing keeps its graph shape.
+    const outDeg = {};
+    walk.flow.flows.forEach(function (e) { outDeg[e.from] = (outDeg[e.from] || 0) + 1; });
+    const branchy = Object.keys(outDeg).some(function (k) { return outDeg[k] >= 2; }) ||
+      edges.some(function (e) { return index[e.to] - index[e.from] >= 2; });
+    const maxRow = Math.max.apply(null, rowLen);
+    const stagger = branchy && maxRow === 1;
+    const colCount = stagger ? 2 : maxRow;
+
+    // -- (c) Geometry: node width, lanes, canvas ---------------------------------
+    const avail = Math.max(300, stage.clientWidth - 20);
+    const estGutter = (needLeft ? D.estGutter : 0) + (needRight ? D.estGutter : 0);
+    const fitW = Math.floor((avail - 2 * D.pad - estGutter - (colCount - 1) * D.laneGap) / colCount);
+    const nodeW = Math.max(D.nodeAbsMinW, Math.min(D.nodeMaxW, fitW));
+    const lanesW = colCount * nodeW + (colCount - 1) * D.laneGap;
+
+    // Right-edge x relative to the lane area (absolute offset still unknown) —
+    // tells whether two side ports line up closely enough for a bow.
+    const relRight = steps.map(function (s, i) {
+      if (stagger) {
+        return (layer[i] % 2) * (nodeW + D.laneGap) + nodeW;
+      }
+      const rowW = rowLen[layer[i]] * nodeW + (rowLen[layer[i]] - 1) * D.laneGap;
+      return (lanesW - rowW) / 2 + pos[i] * (nodeW + D.laneGap) + nodeW;
+    });
+
+    // -- Create node elements (HTML, absolutely positioned) and measure ---------
+    steps.forEach(function (s, i) {
+      const rank = walk.rankOf[i] + 1;
+      const node = el('div', {
+        class: 'node k-' + s.kind,
+        role: 'button',
+        tabindex: '0',
+        'data-idx': String(i),
+        'aria-label': 'Step ' + rank + ' of ' + n + ': ' + s.title + ' (' + s.kind + ')',
+      });
+      const head = el('div', { class: 'node-head' });
+      head.appendChild(el('span', { class: 'node-num' }, String(rank)));
+      head.appendChild(el('span', { class: 'node-kind' }, s.kind));
+      node.appendChild(head);
+      node.appendChild(el('h4', { class: 'node-title' }, s.title));
+      node.addEventListener('click', function () { pausePlayback(); setCurrent(i, { scroll: false }); });
+      node.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          pausePlayback();
+          setCurrent(i, { scroll: false });
+        }
+      });
+      node.style.position = 'absolute';
+      node.style.width = nodeW + 'px';
+      diagram.appendChild(node);
+      walk.nodeEls.push(node);
+    });
+    const h = walk.nodeEls.map(function (node) { return node.offsetHeight; });
+
+    // Row y positions: y advances by the row's tallest card + the layer gap.
+    const rowTop = [], rowMaxH = [];
+    let cursor = D.pad;
+    for (let l = 0; l < layerCount; l++) {
+      rowTop[l] = cursor;
+      let mh = 0;
+      rows[l].forEach(function (i) { mh = Math.max(mh, h[i]); });
+      rowMaxH[l] = mh;
+      cursor += mh + D.layerGap;
+    }
+    const H = cursor - D.layerGap + D.pad;
+
+    // Node rects (x filled in once the canvas width is known).
+    const R = steps.map(function (s, i) {
+      const y = rowTop[layer[i]];
+      return { x: 0, y: y, w: nodeW, h: h[i], cx: 0, cy: y + h[i] / 2,
+               top: y, bottom: y + h[i], left: 0, right: 0 };
+    });
+
+    // Lane-RELATIVE x for every node — the absolute lanesLeft offset is added
+    // below, after the gutter widths are known. The plan pass lays out edge
+    // ports in this relative space; every R.cx must be real before it runs.
+    R.forEach(function (r, i) {
+      let x;
+      if (stagger) {
+        x = (layer[i] % 2) * (nodeW + D.laneGap);
+      } else {
+        const rowW = rowLen[layer[i]] * nodeW + (rowLen[layer[i]] - 1) * D.laneGap;
+        x = (lanesW - rowW) / 2 + pos[i] * (nodeW + D.laneGap);
+      }
+      r.x = r.left = x;
+      r.right = x + nodeW;
+      r.cx = x + nodeW / 2;
+    });
+
+    // Inter-row bands: the node-free strips between consecutive rows (plus a
+    // bottom strip when tall enough). A label centred inside a band can never
+    // sit on a card, whatever its width.
+    const bands = [];
+    for (let l = 0; l < layerCount - 1; l++) {
+      bands.push({ y0: rowTop[l] + rowMaxH[l], y1: rowTop[l + 1] });
+    }
+    const lastBottom = rowTop[layerCount - 1] + rowMaxH[layerCount - 1];
+    if (H - lastBottom >= 16) bands.push({ y0: lastBottom, y1: H });
+    function bandNear(y) {
+      let best = null, bestD = Infinity;
+      bands.forEach(function (b) {
+        const d = Math.abs((b.y0 + b.y1) / 2 - y);
+        if (d < bestD) { bestD = d; best = b; }
+      });
+      return best;
+    }
+
+    // -- Gutter lanes: parallel runs keep their y-intervals disjoint -------------
+    const gutterLanes = { left: [], right: [] };   // per lane: list of [y0, y1]
+    function takeLane(side, a, b) {
+      const ls = gutterLanes[side];
+      for (let k = 0; k < ls.length; k++) {
+        const free = ls[k].every(function (iv) { return b < iv[0] - 6 || a > iv[1] + 6; });
+        if (free) { ls[k].push([a, b]); return k; }
+      }
+      if (ls.length < 5) { ls.push([[a, b]]); return ls.length - 1; }
+      ls[0].push([a, b]);                    // crowded gutter: reuse lane 0
+      return 0;
+    }
+
+    // Per-port counters fan multiple edges out of one card.
+    const portK = new Map();
+    function portOff(key) {
+      const k = portK.get(key) || 0;
+      portK.set(key, k + 1);
+      return [0, 12, -12, 24, -24][Math.min(k, 4)];
+    }
+
+    // Bottom/top port fan-out for next-layer edges (so parallel paths through
+    // one band stay apart).
+    const outOffset = new Map(), inOffset = new Map();
+    const bySource = new Map(), byTarget = new Map();
+    edges.forEach(function (e, ei) {
+      if (routes[ei].kind !== 'next') return;
+      if (!bySource.has(e.from)) bySource.set(e.from, []);
+      bySource.get(e.from).push(e);
+      if (!byTarget.has(e.to)) byTarget.set(e.to, []);
+      byTarget.get(e.to).push(e);
+    });
+    function spreadOut(list) {
+      list.sort(function (a, b) {
+        return (index[a.to] - index[b.to]) || a.label.localeCompare(b.label);
+      });
+      const m = list.length;
+      list.forEach(function (e, k) {
+        const t = m === 1 ? 0.5 : k / (m - 1);
+        outOffset.set(e, (t - 0.5) * 2 * D.sideFrac * nodeW);
+      });
+    }
+    function spreadIn(list) {
+      list.sort(function (a, b) {
+        return (index[a.from] - index[b.from]) || a.label.localeCompare(b.label);
+      });
+      const m = list.length;
+      list.forEach(function (e, k) {
+        const t = m === 1 ? 0.5 : k / (m - 1);
+        inOffset.set(e, (t - 0.5) * 2 * D.sideFrac * nodeW);
+      });
+    }
+    bySource.forEach(spreadOut);
+    byTarget.forEach(spreadIn);
+
+    // -- Plan pass: y-geometry per edge + a gutter lane per gutter edge ----------
+    const bulgeMax = { left: -1, right: -1 };
+    const plan = edges.map(function (e, ei) {
+      const rt = routes[ei];
+      const i = index[e.from], j = index[e.to];
+      if (rt.kind === 'bridge') {
+        return { kind: 'bridge', i: i, j: j, e: e, dir: rt.dir };
+      }
+      if (rt.kind === 'next') {
+        return {
+          kind: 'next', i: i, j: j, e: e,
+          sx: R[i].cx + (outOffset.get(e) || 0), sy: R[i].bottom + 1,
+          ex: R[j].cx + (inOffset.get(e) || 0), ey: R[j].y - 1,
+        };
+      }
+      const side = rt.side;
+      const down = rt.kind === 'span';       // spans descend; backs rise/loop
+      const sOut = side === 'right' ? pos[i] === rowLen[layer[i]] - 1 : pos[i] === 0;
+      const tOut = side === 'right' ? pos[j] === rowLen[layer[j]] - 1 : pos[j] === 0;
+      // A bow only reads (and stays clear of cards) between two ports that
+      // sit on nearly the same vertical line; otherwise run through the gutter.
+      const aligned = Math.abs(relRight[i] - relRight[j]) <= 24;
+      let sy, ty, escX = 0;
+      if (sOut) {
+        sy = R[i].cy + portOff(i + ':' + side);
+      } else {
+        // A side exit would cross a neighbouring card: escape vertically
+        // through the band below (downward) or above (upward) the source row.
+        escX = R[i].cx + portOff(i + ':esc');
+        sy = down ? Math.max(R[i].bottom + D.escape,
+                             rowTop[layer[i]] + rowMaxH[layer[i]] + 6)
+                  : R[i].y - D.escape;
+        sy = Math.max(sy, 2);
+      }
+      ty = tOut ? R[j].cy + portOff(j + ':' + side)
+                : Math.max(R[j].y - D.approach, 2);  // approach from above
+      const lane = takeLane(side, Math.min(sy, ty), Math.max(sy, ty));
+      // Even between aligned ports, a bow is only clear when no card in an
+      // intermediate row straddles the bow's apex column.
+      let bow = rt.kind === 'back' && sOut && tOut && aligned;
+      if (bow) {
+        const apex = relRight[i] + 0.75 * (46 + 20 * lane) + 2;
+        for (let l = Math.min(layer[i], layer[j]) + 1;
+             l < Math.max(layer[i], layer[j]) && bow; l++) {
+          for (let rk = 0; rk < rows[l].length && bow; rk++) {
+            const k = rows[l][rk];
+            if (relRight[k] - nodeW < apex && relRight[k] > relRight[i] + 2) bow = false;
+          }
+        }
+      }
+      if (bow && lane > bulgeMax[side]) {
+        bulgeMax[side] = lane;               // bows reserve extra gutter width
+      }
+      return {
+        kind: bow ? 'bulge' : 'run',
+        i: i, j: j, e: e, side: side, down: down, lane: lane,
+        sOut: sOut, tOut: tOut, sy: sy, ty: ty, escX: escX,
+      };
+    });
+
+    // -- Gutter widths, canvas size, lane x positions -----------------------------
+    function gutterW(side) {
+      const count = gutterLanes[side].length;
+      if (!count) return 0;
+      let w = Math.max(D.gutterMin, 14 + count * D.gutterLane + 6);
+      const b = 46 + 20 * Math.max(0, bulgeMax[side]);
+      return Math.max(w, Math.round(b * 0.75) + 14);
+    }
+    const gWL = gutterW('left'), gWR = gutterW('right');
+    const canvasW = Math.round(2 * D.pad + gWL + lanesW + gWR);
+    const lanesLeft = D.pad + gWL;
+    const lanesRight = lanesLeft + lanesW;
+
+    // Shift the plan's lane-relative anchors into absolute canvas coordinates.
+    plan.forEach(function (p) {
+      if (typeof p.sx === 'number') p.sx += lanesLeft;
+      if (typeof p.ex === 'number') p.ex += lanesLeft;
+      if (p.escX) p.escX += lanesLeft;
+    });
+    function laneX(side, k) {
+      return side === 'right' ? lanesRight + 14 + k * D.gutterLane
+                              : lanesLeft - 14 - k * D.gutterLane;
+    }
+
+    // Node x: rows centered over the lane area; staggered flows use two fixed
+    // columns so consecutive rows sit side by side.
+    R.forEach(function (r, i) {
+      let x;
+      if (stagger) {
+        x = lanesLeft + (layer[i] % 2) * (nodeW + D.laneGap);
+      } else {
+        const rowW = rowLen[layer[i]] * nodeW + (rowLen[layer[i]] - 1) * D.laneGap;
+        x = lanesLeft + (lanesW - rowW) / 2 + pos[i] * (nodeW + D.laneGap);
+      }
+      r.x = r.left = x;
+      r.right = x + nodeW;
+      r.cx = x + nodeW / 2;
+      walk.nodeEls[i].style.left = x + 'px';
+      walk.nodeEls[i].style.top = r.y + 'px';
+    });
+
+    diagram.style.width = canvasW + 'px';
+    diagram.style.height = H + 'px';
+    // Scroll only when the finished canvas genuinely exceeds the stage (rare —
+    // happens when the node floor had to clamp on very wide rows); otherwise the
+    // whole diagram fits and nothing is ever cut off. The page itself never does.
+    stage.style.overflowX = canvasW > stage.clientWidth - 2 ? 'auto' : 'hidden';
+
+    // -- SVG: arrowhead defs; edge paths paint below the node cards, labels ----
+    // live in a separate SVG layered above them (see .label-svg above).
+    const svg = svgEl('svg', {
+      class: 'edge-svg', width: String(canvasW), height: String(H),
+      viewBox: '0 0 ' + canvasW + ' ' + H, 'aria-hidden': 'true',
+    });
+    const labelSvg = svgEl('svg', {
+      class: 'label-svg', width: String(canvasW), height: String(H),
+      viewBox: '0 0 ' + canvasW + ' ' + H, 'aria-hidden': 'true',
+    });
+    const defs = svgEl('defs');
+    EDGE_KINDS.forEach(function (k) {
+      defs.appendChild(makeMarker('arrow-' + k, 'marker-fill-' + k, 7));
+      defs.appendChild(makeMarker('arrow-' + k + '-on', 'marker-fill-' + k, 10));
+    });
+    svg.appendChild(defs);
+
+    // Label placement with de-collision: keep the (estimated) label boxes
+    // from stacking. Band-mode labels may also slide horizontally — their
+    // row is node-free across the full canvas width — while gutter-mode
+    // labels only slide vertically (their x stays inside the gutter).
+    const measureCtx = document.createElement('canvas').getContext('2d');
+    measureCtx.font = '600 11px "IBM Plex Sans", system-ui, sans-serif';
+    const placedLabels = [];
+    function placeLabel(px, py, text, mode, band) {
+      const w = measureCtx.measureText(text).width + 12, hh = 14;
+      let x = px, y = py;
+      if (mode === 'band') {
+        x = Math.max(Math.min(px, canvasW - w / 2 - 4), Math.min(w / 2 + 4, canvasW / 2));
+        if (band) {
+          y = Math.max(Math.min(py, band.y1 - 10),
+                       Math.min(band.y0 + 10, (band.y0 + band.y1) / 2));
+        }
+      }
+      const clear = function (cx, cy) {
+        if (cx - w / 2 < 2 || cx + w / 2 > canvasW - 2 || cy < 8 || cy > H - 8) return false;
+        return !placedLabels.some(function (p) {
+          return Math.abs(p.x - cx) < (p.w + w) / 2 + 4 &&
+                 Math.abs(p.y - cy) < (p.h + hh) / 2 + 2;
+        });
+      };
+      let ok = false;
+      [0, -16, 16, -30, 30, -46, 46].some(function (dy) {
+        const cy = y + dy;
+        const inBand = !band || (cy > band.y0 + 8 && cy < band.y1 - 8);
+        if (inBand && clear(x, cy)) { y = cy; ok = true; return true; }
+        return false;
+      });
+      if (!ok && mode === 'band') {
+        [-30, 30, -60, 60, -90, 90].some(function (dx) {
+          if (clear(x + dx, y)) { x += dx; ok = true; return true; }
+          return false;
+        });
+      }
+      placedLabels.push({ x: x, y: y, w: w, h: hh });
+      return { x: Math.round(x), y: Math.round(y) };
+    }
+
+    // True when the cubic (p0..p3) never enters a node card interior (2px
+    // inset; ports sit 1px outside cards by design).
+    function curveClearsCard(p0, p1, p2, p3) {
+      for (let s = 0.03; s < 1; s += 0.047) {
+        const u = 1 - s;
+        const x = u * u * u * p0.x + 3 * u * u * s * p1.x + 3 * u * s * s * p2.x + s * s * s * p3.x;
+        const y = u * u * u * p0.y + 3 * u * u * s * p1.y + 3 * u * s * s * p2.y + s * s * s * p3.y;
+        for (let k = 0; k < R.length; k++) {
+          if (x > R[k].x + 2 && x < R[k].right - 2 && y > R[k].top + 2 && y < R[k].bottom - 2) return false;
+        }
+      }
+      return true;
+    }
+
+    // -- Paths + labels -----------------------------------------------------------
+    edges.forEach(function (e, ei) {
+      const p = plan[ei];
+      const i = p.i, j = p.j;
+      let d, label;
+
+      if (p.kind === 'bridge') {
+        // Short hook under the row: source side port → band below the row →
+        // target side port. Stays inside the card-free gap between the two.
+        const sxPort = p.dir === 'left' ? R[i].left - 1 : R[i].right + 1;
+        const txPort = p.dir === 'left' ? R[j].right + 1 : R[j].left - 1;
+        const by = Math.max(R[i].bottom, R[j].bottom) + 10;
+        d = roundedPath([
+          { x: sxPort, y: R[i].cy }, { x: sxPort, y: by },
+          { x: txPort, y: by }, { x: txPort, y: R[j].cy },
+        ], 10);
+        label = placeLabel((sxPort + txPort) / 2, by, e.label, 'band', bandNear(by));
+      } else if (p.kind === 'next') {
+        // S-curve from the source's bottom port to the target's top port; the
+        // cubic midpoint lands in the inter-row band between them.
+        const drop = Math.max(26, (p.ey - p.sy) * 0.42);
+        const p0 = { x: p.sx, y: p.sy }, p1 = { x: p.sx, y: p.sy + drop };
+        const p2 = { x: p.ex, y: p.ey - drop }, p3 = { x: p.ex, y: p.ey };
+        const band = bands[layer[i]];          // the band below the source row
+        if (curveClearsCard(p0, p1, p2, p3)) {
+          d = 'M ' + r2(p.sx) + ' ' + r2(p.sy) +
+              ' C ' + r2(p1.x) + ' ' + r2(p1.y) + ', ' + r2(p2.x) + ' ' + r2(p2.y) +
+              ', ' + r2(p.ex) + ' ' + r2(p.ey);
+          const mid = cubicMid(p0, p1, p2, p3);
+          label = placeLabel(mid.x, mid.y, e.label, 'band', bandNear(mid.y));
+        } else {
+          // The sweep would graze a taller neighbour card in the source row:
+          // jog through the node-free band centre instead.
+          const midY = band ? (band.y0 + band.y1) / 2 : (p.sy + p.ey) / 2;
+          d = roundedPath([
+            { x: p.sx, y: p.sy }, { x: p.sx, y: midY },
+            { x: p.ex, y: midY }, { x: p.ex, y: p.ey },
+          ], 12);
+          label = placeLabel((p.sx + p.ex) / 2, midY, e.label, 'band', band);
+        }
+      } else if (p.kind === 'bulge') {
+        // Right-side bow between two outermost side ports (backward / self).
+        let b = 46 + p.lane * 20;
+        if (stagger) b = Math.min(b, 24);    // bow through the column gap
+        const sx = R[i].right + 1, ex = R[j].right + 1;
+        const p0 = { x: sx, y: p.sy }, p1 = { x: sx + b, y: p.sy };
+        const p2 = { x: ex + b, y: p.ty }, p3 = { x: ex, y: p.ty };
+        d = 'M ' + r2(sx) + ' ' + r2(p.sy) +
+            ' C ' + r2(p1.x) + ' ' + r2(p1.y) + ', ' + r2(p2.x) + ' ' + r2(p2.y) +
+            ', ' + r2(ex) + ' ' + r2(p.ty);
+        const mid = cubicMid(p0, p1, p2, p3);
+        const band = bandNear(mid.y);
+        label = placeLabel(mid.x, band ? (band.y0 + band.y1) / 2 : mid.y - 8,
+                           e.label, band ? 'band' : 'gutter', band);
+      } else {
+        // Gutter run: side port (or a band escape) → vertical run on this
+        // edge's lane → side port or top-port approach into the target.
+        const lx = laneX(p.side, p.lane);
+        const pts = [];
+        if (p.sOut) {
+          pts.push({ x: p.side === 'right' ? R[i].right + 1 : R[i].left - 1, y: p.sy });
+        } else {
+          pts.push({ x: p.escX, y: p.down ? R[i].bottom + 1 : R[i].y - 1 });
+          pts.push({ x: p.escX, y: p.sy });
+        }
+        pts.push({ x: lx, y: p.sy });
+        pts.push({ x: lx, y: p.ty });
+        if (p.tOut) {
+          pts.push({ x: p.side === 'right' ? R[j].right + 1 : R[j].left - 1, y: p.ty });
+        } else {
+          pts.push({ x: R[j].cx, y: p.ty });
+          pts.push({ x: R[j].cx, y: R[j].y - 1 });
+        }
+        d = roundedPath(pts, 12);
+        const runMidY = (p.sy + p.ty) / 2;
+        const band = bandNear(runMidY);
+        label = placeLabel(lx, band ? (band.y0 + band.y1) / 2 : runMidY,
+                           e.label, band ? 'band' : 'gutter', band);
+      }
+
+      const path = svgEl('path', {
+        d: d,
+        class: 'edge k-' + e.kind,
+        'marker-end': 'url(#arrow-' + e.kind + ')',
+      });
+      svg.appendChild(path);
+
+      const text = svgEl('text', {
+        x: String(label.x), y: String(label.y),
+        class: 'edge-label k-' + e.kind,
+      });
+      text.textContent = e.label;
+      labelSvg.appendChild(text);
+
+      walk.edgeEls.push({ path: path, label: text, kind: e.kind, toIdx: j });
+    });
+
+    diagram.appendChild(svg);
+    diagram.appendChild(labelSvg);
+  }
+
+  /* ─── Walkthrough current step, playback & keyboard ─── */
+  // Step code: plain text immediately, Shiki highlight swapped in when ready
+  // (the want-key guard drops stale async renders after a fast step change).
+  function setStepCode(idx, s) {
+    const wrap = $('[data-wt="code"]', walk.pane);
+    if (!wrap) return;
+    wrap.dataset.want = String(idx);
+    const key = walk.ex.id + '#s' + idx;
+    const html = codeCache.get(key);
+    if (html) { wrap.innerHTML = html; return; }
+    wrap.innerHTML = '<pre class="code"><code>' + esc(s.code) + '</code></pre>';
+    highlight(s.code, 'go', false).then((h) => {
+      codeCache.set(key, h);
+      if (wrap.dataset.want === String(idx) && wrap.isConnected) wrap.innerHTML = h;
+    }).catch(() => {});
+  }
+
+  function setCurrent(i, opts) {
+    if (!walk.flow || !walk.pane) return;
+    const n = walk.flow.steps.length;
+    walk.currentStep = Math.max(0, Math.min(n - 1, i));
+    // Visible step numbers follow the layout's play order, not data order.
+    const rank = walk.rankOf.length === n && walk.rankOf[walk.currentStep] !== undefined
+      ? walk.rankOf[walk.currentStep]
+      : walk.currentStep;
+
+    walk.nodeEls.forEach(function (node, idx) {
+      const isCur = idx === walk.currentStep;
+      node.classList.toggle('current', isCur);
+      if (isCur) node.setAttribute('aria-current', 'step');
+      else node.removeAttribute('aria-current');
+    });
+
+    // Incoming edges of the current step animate more strongly.
+    walk.edgeEls.forEach(function (rec) {
+      const active = rec.toIdx === walk.currentStep;
+      rec.path.classList.toggle('active', active);
+      rec.path.setAttribute('marker-end', 'url(#arrow-' + rec.kind + (active ? '-on' : '') + ')');
+      rec.label.classList.toggle('active', active);
+    });
+
+    // Side panel content
+    const s = walk.flow.steps[walk.currentStep];
+    const badge = $('[data-wt="badge"]', walk.pane);
+    badge.className = 'step-kind-badge k-' + s.kind;
+    badge.textContent = s.kind;
+    $('[data-wt="title"]', walk.pane).textContent = s.title;
+    $('[data-wt="detail"]', walk.pane).textContent = s.detail;
+    setStepCode(walk.currentStep, s);
+    $('[data-wt="loc"]', walk.pane).textContent = s.file + ':' + s.lines +
+      '  ·  step ' + (rank + 1) + ' of ' + n;
+    $('[data-wt="pos"]', walk.pane).textContent = 'Step ' + (rank + 1) + ' / ' + n;
+
+    $('[data-wt="prev"]', walk.pane).disabled = walk.currentStep === 0;
+    $('[data-wt="next"]', walk.pane).disabled = walk.currentStep === n - 1;
+
+    if (opts && opts.scroll && walk.nodeEls[walk.currentStep]) {
+      walk.nodeEls[walk.currentStep].scrollIntoView({
+        block: 'nearest',
+        behavior: motionOK ? 'smooth' : 'auto',
+      });
+    }
+  }
+
+  function togglePlay() {
+    if (walk.playing) pausePlayback();
+    else startPlayback();
+  }
+
+  // The step `delta` places away from data index `fromIdx` in play order (the
+  // layout's topological order). Falls back to data order if the diagram has
+  // not been laid out yet.
+  function stepInOrder(fromIdx, delta) {
+    const n = walk.flow ? walk.flow.steps.length : 0;
+    const ordered = walk.playOrder.length === n && walk.rankOf.length === n &&
+      walk.rankOf[fromIdx] !== undefined;
+    const rank = ordered ? walk.rankOf[fromIdx] : fromIdx;
+    const k = Math.max(0, Math.min(n - 1, rank + delta));
+    return ordered ? walk.playOrder[k] : k;
+  }
+
+  function startPlayback() {
+    if (!walkActive()) return;
+    // Restart from the drawing's first step when play is pressed at the end.
+    const last = walk.playOrder.length ? walk.playOrder[walk.playOrder.length - 1] : walk.flow.steps.length - 1;
+    if (walk.currentStep === last) setCurrent(walk.playOrder.length ? walk.playOrder[0] : 0, { scroll: true });
+    walk.playing = true;
+    walkCanvas().classList.add('playing');
+    updatePlayButton();
+    scheduleTick();
+  }
+
+  function scheduleTick() {
+    clearTimeout(walk.timer);
+    walk.timer = setTimeout(function () {
+      if (!walk.playing || !walkActive()) return;
+      const last = walk.playOrder.length ? walk.playOrder[walk.playOrder.length - 1] : walk.flow.steps.length - 1;
+      if (walk.currentStep !== last) {
+        setCurrent(stepInOrder(walk.currentStep, 1), { scroll: true });
+        scheduleTick();
+      } else {
+        pausePlayback();          // hold on the last step
+      }
+    }, STEP_MS);
+  }
+
+  function pausePlayback() {
+    walk.playing = false;
+    clearTimeout(walk.timer);
+    const canvas = walkCanvas();
+    if (canvas) canvas.classList.remove('playing');
+    updatePlayButton();
+  }
+
+  function stopPlayback() {
+    pausePlayback();
+    walk.currentStep = 0;
+  }
+
+  function updatePlayButton() {
+    const btn = walk.pane && $('[data-wt="play"]', walk.pane);
+    if (!btn) return;
+    btn.textContent = walk.playing ? 'Pause' : 'Play';
+    btn.setAttribute('aria-pressed', walk.playing ? 'true' : 'false');
+  }
+
+  // ← / → step through the example in play order, Space toggles playback —
+  // only while the Step-through tab is the selected view, never from inputs,
+  // and arrows yield to tab buttons (whose own arrow handlers rotate tabs).
+  document.addEventListener('keydown', function (e) {
+    if (e.altKey || e.ctrlKey || e.metaKey) return;
+    const t = e.target;
+    if (t instanceof Element && t.matches('input, textarea, select')) return;
+    if (!walkActive()) return;
+    const tabLike = t instanceof Element && t.closest('[role="tab"], button, a');
+    if (e.key === 'ArrowRight') {
+      if (tabLike) return;
+      e.preventDefault();
+      pausePlayback();
+      setCurrent(stepInOrder(walk.currentStep, 1), { scroll: true });
+    } else if (e.key === 'ArrowLeft') {
+      if (tabLike) return;
+      e.preventDefault();
+      pausePlayback();
+      setCurrent(stepInOrder(walk.currentStep, -1), { scroll: true });
+    } else if (e.key === ' ') {
+      // Space toggles playback unless focus is on a control that handles Space
+      // itself (buttons, links, or a diagram node, which jumps to that step).
+      if (tabLike || (t instanceof Element && t.closest('.node'))) return;
+      e.preventDefault();
+      togglePlay();
+    }
+  });
+
+  // Re-layout the diagram when the viewport changes (keeps the current step).
+  window.addEventListener('resize', debounce(function () {
+    if (!walkActive()) return;
+    const wasPlaying = walk.playing;
+    buildWalkDiagram();
+    setCurrent(walk.currentStep, { scroll: false });
+    if (wasPlaying) walkCanvas().classList.add('playing');
+  }, 150));
+
+  /* Show the Diagram or Step-through pane. Loads the walkthrough data on
+     first demand; an idempotent no-op when the pane already shows this
+     example (hash-driven re-entry must not re-mount or scroll). */
+  function setFlowView(on) {
+    const pane = $('#pane-flow-walk', detail);
+    if (!pane) return;
+    if (!on) {
+      pane.hidden = true;
+      pausePlayback();
+      return;
+    }
+    pane.hidden = false;
+    const ex = state.current;
+    if (!ex) return;
+    const leaf = leafOf(ex.id);
+    if (walk.pane === pane && walk.leaf === leaf) return;   // already loaded/loading/errored
+    stopPlayback();
+    walk.pane = pane;
+    walk.leaf = leaf;
+    walk.ex = ex;
+    walk.flow = null;
+    pane.textContent = '';
+    pane.appendChild(el('p', { class: 'diagram-status' }, 'Loading walkthrough…'));
+    loadFlow(leaf).then((data) => {
+      if (walk.pane !== pane || walk.leaf !== leaf || !pane.isConnected) return;
+      if (data) {
+        mountWalkthrough(ex, pane, data);
+      } else {
+        pane.textContent = '';
+        pane.innerHTML = '<div class="wt-error"><h3>Walkthrough unavailable</h3>' +
+          '<p class="summary">The step-through data for this example could not be loaded ' +
+          '(<code>data/' + esc(leaf) + '.js</code>). The diagram and source views still work.</p></div>';
+        live('Walkthrough could not be loaded');
+      }
+    });
+  }
+
+  function select(id, { scroll = false, focus = false, walkOn = false } = {}) {
     const ex = state.all.find((e) => e.id === id);
     if (!ex) return false;
     state.current = ex;
@@ -963,7 +2125,7 @@ func main() {
       const lr = link.getBoundingClientRect(), cr = list.getBoundingClientRect();
       if (lr.top < cr.top || lr.bottom > cr.bottom) list.scrollTop += lr.top - cr.top - cr.height / 3;
     }
-    renderDetail(ex);
+    renderDetail(ex, walkOn);
     document.title = `${prettyName(ex.name)} · TypeSafe SDK for Go`;
     if (matchMedia('(max-width: 900px)').matches) setSideOpen(false);
     if (scroll) detail.scrollIntoView({ block: 'start' });
@@ -971,11 +2133,28 @@ func main() {
     return true;
   }
 
-  function route({ initial = false } = {}) {
+  // "#/examples/<id>" (+ optional "/walkthrough" suffix selecting the
+  // Step-through tab). Example ids contain slashes, so the suffix is
+  // stripped before lookup — no example leaf is named "walkthrough".
+  function parseExampleHash() {
     const m = location.hash.match(/^#\/examples\/(.+)$/);
-    if (m) {
-      const id = decodeURIComponent(m[1]);
-      if (select(id, { scroll: true, focus: !initial })) return;
+    if (!m) return null;
+    let id;
+    try { id = decodeURIComponent(m[1]); } catch (e) { id = m[1]; }
+    let walk = false;
+    if (id.endsWith('/walkthrough')) { id = id.slice(0, -'/walkthrough'.length); walk = true; }
+    return { id, walk };
+  }
+
+  function route({ initial = false } = {}) {
+    const h = parseExampleHash();
+    if (h) {
+      // Same example: just flip the flow tab — no re-render, no scroll churn.
+      if (state.current?.id === h.id) {
+        flowTabSelect?.($(h.walk ? '#tab-walk' : '#tab-flow', detail));
+        return;
+      }
+      if (select(h.id, { scroll: true, focus: !initial, walkOn: h.walk })) return;
     }
     if (initial || !state.current) select(state.all[0].id);
   }
