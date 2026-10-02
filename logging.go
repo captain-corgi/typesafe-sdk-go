@@ -9,6 +9,7 @@ import (
 	"os"
 	"strings"
 	"sync/atomic"
+	"unicode/utf8"
 )
 
 // levelOff sits above every standard slog level so that "off" disables all
@@ -137,7 +138,13 @@ func formatLoggedBody(body []byte) string {
 		formatted = "<redacted>"
 	}
 	if len(formatted) > maxLoggedBodyBytes {
-		return formatted[:maxLoggedBodyBytes] + "<truncated>"
+		// Back up over any continuation bytes so the fragment stays valid
+		// UTF-8 (formatted can be the raw wire body in full mode).
+		cut := maxLoggedBodyBytes
+		for !utf8.RuneStart(formatted[cut]) {
+			cut--
+		}
+		return formatted[:cut] + "<truncated>"
 	}
 	return formatted
 }

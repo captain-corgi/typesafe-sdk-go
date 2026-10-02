@@ -10,6 +10,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"unicode/utf8"
 )
 
 func TestRedactHeaders(t *testing.T) {
@@ -240,6 +241,17 @@ func TestLoggedBodyTruncation(t *testing.T) {
 	}
 	if len(got) != maxLoggedBodyBytes+len("<truncated>") {
 		t.Fatalf("formatted body length = %d, want %d", len(got), maxLoggedBodyBytes+len("<truncated>"))
+	}
+
+	// A cut landing inside a multi-byte rune backs up to the rune boundary so
+	// the logged fragment stays valid UTF-8.
+	body = bytes.Repeat([]byte("é"), maxLoggedBodyBytes) // 2 bytes each
+	got = formatLoggedBody(body)
+	if !utf8.ValidString(got) {
+		t.Fatalf("truncated body should stay valid UTF-8")
+	}
+	if !strings.HasSuffix(got, "<truncated>") {
+		t.Fatalf("multi-byte body should still indicate truncation")
 	}
 }
 
