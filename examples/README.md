@@ -16,9 +16,8 @@ behavior is the test suite's job, not the examples'.
 The [`automation-use-cases/`](automation-use-cases) and
 [`task-categories/`](task-categories) catalogs mirror the docs
 [use-case map](https://docs.typesafe.ai/concepts/use-case-map) one-for-one.
-Four more catalogs implement the 60 proposed Go patterns in
-[`plans/20260923-jev-go-software-use-cases/`](../plans/20260923-jev-go-software-use-cases/):
-general Go software, REST and GraphQL APIs, relational databases, and testing.
+Four more catalogs implement the 60 proposed Go patterns — general Go
+software, REST and GraphQL APIs, relational databases, and testing.
 Two basics stay at the root.
 
 ## Basics
@@ -77,8 +76,7 @@ table, under [`task-categories/`](task-categories).
 
 ## Go software use cases
 
-These programs implement the 20 proposed patterns in the
-[Go software plan](../plans/20260923-jev-go-software-use-cases/go-software-use-cases.md).
+These programs implement the 20 proposed Go software patterns.
 The Go program keeps dispatch, validation, and side effects; Jev answers
 bounded questions about meaning.
 
@@ -107,8 +105,7 @@ bounded questions about meaning.
 
 ## API use cases
 
-These programs implement the ten proposed REST and GraphQL patterns in the
-[API plan](../plans/20260923-jev-go-software-use-cases/api-use-cases.md).
+These programs implement the ten proposed REST and GraphQL patterns.
 They demonstrate where a semantic decision fits after the usual request,
 schema, and authorization checks.
 
@@ -127,8 +124,7 @@ schema, and authorization checks.
 
 ## Relational database use cases
 
-These programs illustrate the ten proposed PostgreSQL patterns in the
-[relational database plan](../plans/20260923-jev-go-software-use-cases/relational-db-use-cases.md).
+These programs illustrate the ten proposed PostgreSQL patterns.
 They call Jev live, then show the allowlisted SQL and arguments an application
 would pass to its own database driver. They do not require a database driver.
 
@@ -148,7 +144,7 @@ would pass to its own database driver. They do not require a database driver.
 ## Testing use cases
 
 These are opt-in live evaluation and review commands for the 20 proposed
-patterns in the [testing plan](../plans/20260923-jev-go-software-use-cases/testing-use-cases.md).
+testing patterns.
 Routine `go test` and fuzz targets stay offline and deterministic. A semantic
 answer can flag a case for review, but cannot make a failing test pass.
 
@@ -180,7 +176,9 @@ Conventions shared by every example:
 - a header comment naming the pattern and its run command;
 - readable stdout showing the answer and the Go policy applied to it;
 - both plain-string and structured-map `State` values across the catalog;
-- live SDK calls with no network mocking, including an error or uncertain path.
+- live SDK calls with no network mocking, including an error or uncertain path;
+- a `flow.mmd` Mermaid diagram of the flow, rendered on the project's GitHub
+  Pages site (see [CONTRIBUTING.md](../CONTRIBUTING.md) for the node classes).
 
 Thresholds in the examples illustrate control flow. Measure them on labeled
 application data before using them for production decisions.

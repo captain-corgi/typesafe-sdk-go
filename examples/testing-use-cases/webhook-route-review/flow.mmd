@@ -1,0 +1,12 @@
+flowchart TD
+  S[/"Signed webhook body evt-91<br/>human label: removed"/]:::state
+  S --> P0{"Go checks: HMAC-SHA256 valid,<br/>JSON decodes, dedup works?"}:::policy
+  P0 -- no --> E0("log.Fatal: signature/dedup failed"):::fail
+  P0 -- yes --> C(["client.SystemOne"]):::sdk
+  C --> Q1["route · Choice<br/>created · modified · removed · other"]:::choice
+  C -. "request error" .-> E1("INCONCLUSIVE route;<br/>verified event retained"):::fail
+  Q1 --> P1{"confidence below 0.85<br/>or choice other?"}:::policy
+  P1 -- yes --> O1("INCONCLUSIVE route"):::outcome
+  P1 -- no --> P2{"choice equals human label?"}:::policy
+  P2 -- no --> O2("REVIEW adapter route disagrees<br/>with fixture label"):::outcome
+  P2 -- yes --> O3("REVIEW route agrees; resulting<br/>state still needs Go assertions"):::outcome

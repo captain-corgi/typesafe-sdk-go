@@ -43,6 +43,26 @@ PR CI runs formatting, vet, race and plain tests on a platform matrix,
 Staticcheck, Govulncheck, and the zero-dependency check — all secretless.
 Live-API integration runs after merge, on trusted pushes only.
 
+## Examples and the docs site
+
+Every program under `examples/` needs three things, or `go test ./...`
+fails (`tools/pagegen`):
+
+- a row in `examples/README.md`;
+- a package doc comment (its first paragraph becomes the site summary);
+- a `flow.mmd` Mermaid `flowchart` next to `main.go` that shows the state,
+  the SDK call, each question, and the Go policy that follows. Tag every node
+  with one of the classes `state`, `sdk`, `noul`, `choice`, `score`, `raw`,
+  `policy`, `outcome`, or `fail`, and don't add `classDef` lines; the site
+  supplies theme-aware styles.
+
+Preview the GitHub Pages site locally:
+
+```sh
+go run ./tools/pagegen                      # writes docs/github-page/examples.json
+python -m http.server -d docs/github-page   # then open http://localhost:8000
+```
+
 ## Pull requests
 
 - Keep PRs focused; one concern per PR.

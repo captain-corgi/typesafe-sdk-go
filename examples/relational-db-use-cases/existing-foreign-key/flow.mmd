@@ -1,0 +1,10 @@
+flowchart TD
+  S[/"Incident note + shortlisted deployments<br/>501, 502 as candidate_1, candidate_2"/]:::state
+  S --> C(["client.SystemOne"]):::sdk
+  C --> Q1["deployment · Choice<br/>candidate_1 · candidate_2 · none"]:::choice
+  C -. "request error" .-> E1("Save note unattached for review"):::fail
+  Q1 --> P1{"listed candidate and<br/>confidence ≥ 0.90?"}:::policy
+  P1 -- no --> O1("Leave note unattached"):::outcome
+  P1 -- yes --> P2{"any other label within 0.20<br/>of the confidence?"}:::policy
+  P2 -- yes --> O2("Competing candidate: request human linking"):::outcome
+  P2 -- no --> O3("INSERT INTO incident_deployments … SELECT<br/>scoped JOIN WHERE tenant_id = $1 + args"):::outcome

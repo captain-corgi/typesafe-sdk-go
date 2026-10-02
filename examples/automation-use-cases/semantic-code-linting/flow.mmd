@@ -1,0 +1,18 @@
+flowchart TD
+  S[/"pricing.py snippet + team conventions"/]:::state
+  S --> C(["client.SystemOne"]):::sdk
+  C --> Q1["violates_naming · Noul"]:::noul
+  C --> Q2["swallows_errors · Noul"]:::noul
+  C --> Q3["left_todo · Noul"]:::noul
+  C --> Q4["severity · Score<br/>style · minor · major"]:::score
+  Q1 --> P1
+  Q2 --> P1
+  Q3 --> P1
+  P1{"for each check: value ≥ 0.5?"}:::policy
+  P1 -- yes --> O1("print FAIL for that check"):::outcome
+  P1 -- no --> O2("print ok for that check"):::outcome
+  Q4 --> O3("print worst severity /2"):::outcome
+  O1 --> P2{"any check failed?"}:::policy
+  O2 --> P2
+  P2 -- yes --> O4("lint result: violations found, exit 1"):::outcome
+  P2 -- no --> O5("lint result: clean"):::outcome

@@ -1,0 +1,15 @@
+flowchart TD
+  S[/"for each community comment (3)"/]:::state
+  S --> C(["client.SystemOne"]):::sdk
+  C -. "request error" .-> E1("Print error, skip to next comment"):::fail
+  C --> Q1["policy battery · 5× Noul<br/>toxic · harassment · spam · unsafe_advice · exposes_pii"]:::noul
+  C --> Q2["severity · Score<br/>benign · borderline · harmful"]:::score
+  Q1 --> P0["worst = max of the 5 signals"]:::policy
+  P0 --> P1{"exposes_pii ≥ 0.5 or<br/>harassment ≥ 0.7 or toxic ≥ 0.7?"}:::policy
+  Q2 --> P1
+  P1 -- yes --> O1("action: block, log to safety register"):::outcome
+  P1 -- no --> P2{"severity ≥ 1.5?"}:::policy
+  P2 -- yes --> O2("action: human review within 1 hour"):::outcome
+  P2 -- no --> P3{"severity ≥ 0.5 or worst ≥ 0.5?"}:::policy
+  P3 -- yes --> O3("action: warn, collapse and notify author"):::outcome
+  P3 -- no --> O4("action: allow"):::outcome

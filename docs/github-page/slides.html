@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="system">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TypeSafe SDK for Go · Introduction</title>
+  <meta name="description" content="An eight-slide introduction to the TypeSafe SDK for Go.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
+  <script>
+    // Same storage key as index.html, so the embedded deck follows the site's theme.
+    (function () {
+      var t = 'system';
+      try { t = localStorage.getItem('theme') || 'system'; } catch (e) {}
+      document.documentElement.setAttribute('data-theme', t);
+    })();
+  </script>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: light-dark(#ffffff, #020617);
+      --surface: light-dark(#f8fafc, #0b1120);
+      --surface-2: light-dark(#f1f5f9, #111a2e);
+      --code-bg: light-dark(#fbfcfd, #0a0f1d);
+      --border: light-dark(#e2e8f0, #1e293b);
+      --border-strong: light-dark(#cbd5e1, #334155);
+      --fg: light-dark(#0f172a, #f1f5f9);
+      --muted: light-dark(#475569, #94a3b8);
+      --faint: light-dark(#8392a7, #64748b);
+      --accent: light-dark(#0369a1, #38bdf8);
+      --go: #00add8;
+      --go-text: light-dark(#007c9a, #22c3e6);
+      --go-soft: light-dark(#e0f7fc, #06303a);
+      --go-ink: light-dark(#0b4f60, #a5ecfa);
+      --ring: light-dark(#0284c7, #7dd3fc);
+      --ok: light-dark(#15803d, #4ade80);
+      --bad: light-dark(#b91c1c, #f87171);
+      --bad-bg: light-dark(#fee2e2, rgb(239 68 68 / .14));
+      --noul: light-dark(#15803d, #4ade80);
+      --noul-bg: light-dark(#dcfce7, rgb(34 197 94 / .14));
+      --choice: light-dark(#1d4ed8, #93c5fd);
+      --choice-bg: light-dark(#dbeafe, rgb(59 130 246 / .16));
+      --score: light-dark(#7e22ce, #d8b4fe);
+      --score-bg: light-dark(#f3e8ff, rgb(168 85 247 / .16));
+      --raw: light-dark(#c2410c, #fdba74);
+      --raw-bg: light-dark(#ffedd5, rgb(249 115 22 / .16));
+      --sans: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+      --mono: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', Consolas, monospace;
+    }
+    :root[data-theme="light"] { color-scheme: light; }
+    :root[data-theme="dark"] { color-scheme: dark; }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body { font-family: var(--sans); background: var(--bg); color: var(--fg); overflow: hidden; -webkit-font-smoothing: antialiased; }
+    a { color: var(--accent); text-underline-offset: 3px; }
+    button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
+    code, pre { font-family: var(--mono); font-variant-ligatures: none; }
+    :focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; border-radius: 6px; }
+    .i { width: 1em; height: 1em; flex-shrink: 0; stroke: currentColor; fill: none; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
+    .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+    /* The deck is a size container: all type and spacing scale with it, not the window. */
+    .deck { position: fixed; inset: 0; display: grid; grid-template-rows: minmax(0, 1fr) auto; grid-template-columns: minmax(0, 1fr); }
+    .stage { position: relative; container-type: size; overflow: hidden; }
+    .progress { position: absolute; top: 0; left: 0; height: 3px; background: var(--go); transition: width .35s ease; z-index: 5; }
+    .slide {
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column; justify-content: center; gap: clamp(10px, 2.2cqh, 28px);
+      padding: clamp(18px, 6cqh, 72px) clamp(18px, 6cqw, 96px);
+      opacity: 0; visibility: hidden; transform: translateX(16px);
+      transition: opacity .35s ease, transform .35s ease, visibility 0s linear .35s;
+    }
+    .slide.active { opacity: 1; visibility: visible; transform: none; transition: opacity .35s ease, transform .35s ease; }
+    .slide.before { transform: translateX(-16px); }
+
+    .eyebrow { font: 600 clamp(10px, 1.25cqw, 15px)/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
+    h1 { font-size: clamp(28px, 6.2cqw, 88px); line-height: 1.04; letter-spacing: -.035em; }
+    h1 span, h2 span { color: var(--go-text); }
+    h2 { font-size: clamp(20px, 3.6cqw, 52px); line-height: 1.12; letter-spacing: -.025em; max-width: 26ch; }
+    h3 { font-size: clamp(13px, 1.55cqw, 22px); letter-spacing: -.01em; }
+    p, li { font-size: clamp(12px, 1.5cqw, 21px); line-height: 1.5; }
+    .lead { color: var(--muted); font-size: clamp(13px, 1.85cqw, 26px); max-width: 48ch; }
+    .muted { color: var(--muted); }
+    :not(pre) > code { font-size: .88em; background: var(--surface-2); border: 1px solid var(--border); padding: .06em .35em; border-radius: 5px; white-space: nowrap; }
+
+    .card { border: 1px solid var(--border); border-radius: clamp(8px, 1cqw, 14px); background: var(--surface); padding: clamp(10px, 2cqw, 28px); min-width: 0; }
+    .tag { display: inline-flex; align-items: center; font: 600 clamp(10px, 1.15cqw, 15px)/1 var(--mono); padding: .38em .6em; border-radius: 6px; white-space: nowrap; }
+    .tag-noul { color: var(--noul); background: var(--noul-bg); }
+    .tag-choice { color: var(--choice); background: var(--choice-bg); }
+    .tag-score { color: var(--score); background: var(--score-bg); }
+    .tag-raw { color: var(--raw); background: var(--raw-bg); }
+
+    /* 1 · Title */
+    .title-slide { background: radial-gradient(60cqw 60cqh at 85% 15%, color-mix(in srgb, var(--go) 14%, transparent), transparent 70%); }
+    .title-slide h1 { max-width: 14ch; }
+    .install { display: inline-flex; align-items: center; gap: .8em; align-self: flex-start; font: clamp(11px, 1.45cqw, 20px) var(--mono); background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: .6em 1em; color: var(--muted); max-width: 100%; overflow: hidden; white-space: nowrap; }
+    .install b { color: var(--fg); font-weight: 500; }
+    .facts { display: flex; flex-wrap: wrap; gap: clamp(14px, 4cqw, 56px); }
+    .facts div { color: var(--muted); font-size: clamp(11px, 1.3cqw, 17px); }
+    .facts strong { display: block; font: 600 clamp(20px, 3.4cqw, 48px)/1.1 var(--mono); color: var(--fg); }
+
+    /* 2 · Problem */
+    .versus { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(10px, 2.4cqw, 32px); }
+    .versus .card { display: grid; gap: clamp(6px, 1.2cqh, 14px); align-content: start; }
+    .versus h3 { display: flex; align-items: center; gap: .5em; }
+    .versus .bad h3 { color: var(--bad); }
+    .versus .good h3 { color: var(--ok); }
+    .snip { font: clamp(10px, 1.3cqw, 17px)/1.55 var(--mono); background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px; padding: .8em 1em; white-space: pre; overflow: hidden; color: var(--muted); }
+    .snip .hl { color: var(--fg); font-weight: 500; }
+    .ticks { list-style: none; display: grid; gap: .35em; }
+    .ticks li { display: flex; gap: .55em; align-items: baseline; color: var(--muted); }
+    .ticks .i { position: relative; top: .14em; }
+    .bad .ticks .i { color: var(--bad); }
+    .good .ticks .i { color: var(--ok); }
+
+    /* 3 · Primitives */
+    .prims { display: grid; grid-template-columns: repeat(4, 1fr); gap: clamp(8px, 1.6cqw, 24px); }
+    .prim { display: grid; gap: clamp(6px, 1.3cqh, 14px); align-content: start; border-top: 3px solid var(--c); }
+    .prim .q { font: clamp(10px, 1.2cqw, 16px)/1.5 var(--mono); color: var(--muted); }
+    .prim .a { font: 600 clamp(11px, 1.3cqw, 17px)/1.4 var(--mono); color: var(--c); }
+    .prim.noul { --c: var(--noul); } .prim.choice { --c: var(--choice); } .prim.score { --c: var(--score); } .prim.raw { --c: var(--raw); }
+
+    /* 4 · Code */
+    .split { display: grid; grid-template-columns: .8fr 1.2fr; gap: clamp(14px, 3.5cqw, 56px); align-items: center; }
+    .split > * { min-width: 0; }
+    .code-card { border: 1px solid var(--border); border-radius: 12px; background: var(--code-bg); overflow: hidden; }
+    .code-bar { font: 500 clamp(10px, 1.1cqw, 14px) var(--mono); color: var(--muted); padding: .6em 1em; border-bottom: 1px solid var(--border); background: var(--surface); }
+    pre.code { margin: 0; padding: 1em 1.2em; font-size: clamp(9px, 1.22cqw, 17px); line-height: 1.6; overflow: hidden; tab-size: 4; background: transparent !important; }
+    .shiki span { color: light-dark(var(--shiki-light), var(--shiki-dark)); }
+    .steps { list-style: none; display: grid; gap: clamp(8px, 1.8cqh, 20px); counter-reset: s; }
+    .steps li { display: grid; grid-template-columns: auto 1fr; gap: .8em; align-items: baseline; }
+    .steps li::before { counter-increment: s; content: counter(s); font: 600 .8em/1 var(--mono); color: var(--go-ink); background: var(--go-soft); border-radius: 999px; width: 1.9em; height: 1.9em; display: grid; place-items: center; }
+    .steps b { display: block; }
+    .steps span { color: var(--muted); font-size: .92em; }
+
+    /* 5 · Life of a call */
+    .flow { display: grid; grid-template-columns: repeat(5, 1fr); gap: clamp(6px, 1.2cqw, 16px); align-items: stretch; }
+    .node { position: relative; display: grid; gap: .4em; align-content: start; padding: clamp(10px, 1.7cqw, 24px); border-radius: 12px; border: 1.5px solid var(--nb); background: var(--nf); color: var(--nc); }
+    .node .k { font: 600 clamp(9px, 1.05cqw, 14px)/1 var(--mono); text-transform: uppercase; letter-spacing: .06em; opacity: .8; }
+    .node p { color: inherit; opacity: .9; font-size: clamp(11px, 1.3cqw, 18px); }
+    .node:not(:last-child)::after { content: ''; position: absolute; right: calc(-1 * clamp(6px, 1.2cqw, 16px)); top: 50%; width: clamp(6px, 1.2cqw, 16px); height: 1.5px; background: var(--faint); }
+    .n-state { --nf: var(--bg); --nb: var(--border-strong); --nc: var(--fg); border-style: dashed; }
+    .n-sdk { --nf: var(--fg); --nb: var(--fg); --nc: var(--bg); }
+    .n-retry { --nf: var(--raw-bg); --nb: var(--raw); --nc: var(--fg); }
+    .n-answer { --nf: var(--choice-bg); --nb: var(--choice); --nc: var(--fg); }
+    .n-policy { --nf: var(--go-soft); --nb: var(--go); --nc: var(--go-ink); }
+    .errs { display: flex; flex-wrap: wrap; gap: .5em; align-items: center; font-size: clamp(11px, 1.3cqw, 17px); color: var(--muted); }
+    .errs code { color: var(--bad); background: var(--bad-bg); border-color: transparent; }
+
+    /* 6 · Defaults */
+    .grid6 { display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(8px, 1.6cqw, 22px); }
+    .feat { display: grid; grid-template-columns: auto 1fr; gap: .2em .8em; align-items: start; }
+    .feat .i { width: clamp(16px, 2cqw, 28px); height: clamp(16px, 2cqw, 28px); color: var(--go); grid-row: span 2; }
+    .feat p { color: var(--muted); font-size: clamp(11px, 1.3cqw, 17px); }
+
+    /* 7 · Examples */
+    .chart-wrap { position: relative; height: clamp(160px, 46cqh, 520px); }
+    .kinds { display: flex; flex-wrap: wrap; gap: .5em; align-items: center; }
+    .kinds .muted { font-size: clamp(11px, 1.25cqw, 16px); margin-right: .2em; }
+
+    /* 8 · CTA */
+    .cta-slide { align-items: center; text-align: center; background: radial-gradient(50cqw 50cqh at 50% 110%, color-mix(in srgb, var(--go) 16%, transparent), transparent 70%); }
+    .cta-slide h2 { max-width: 22ch; }
+    .cta-slide .install { align-self: center; }
+    .links { display: flex; flex-wrap: wrap; justify-content: center; gap: clamp(8px, 1.2cqw, 16px); }
+    .btn { display: inline-flex; align-items: center; gap: .5em; font-weight: 600; font-size: clamp(12px, 1.4cqw, 18px); padding: .65em 1.15em; border-radius: 10px; border: 1px solid var(--border-strong); color: var(--fg); text-decoration: none; transition: border-color .2s, background-color .2s; }
+    .btn:hover { border-color: var(--fg); }
+    .btn-primary { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+    .btn-primary:hover { background: color-mix(in srgb, var(--fg) 86%, var(--bg)); }
+
+    /* Controls */
+    .controls { display: flex; align-items: center; gap: .5rem; padding: .5rem .75rem; border-top: 1px solid var(--border); background: var(--surface); font-size: .85rem; }
+    .ctl { display: inline-grid; place-items: center; min-width: 36px; height: 36px; border-radius: 8px; color: var(--muted); transition: color .2s, background-color .2s; }
+    .ctl:hover:not(:disabled) { color: var(--fg); background: var(--surface-2); }
+    .ctl:disabled { opacity: .35; cursor: default; }
+    .ctl .i { width: 18px; height: 18px; }
+    .dots { display: flex; gap: 2px; margin: 0 auto; }
+    .dot { width: 24px; height: 24px; display: grid; place-items: center; }
+    .dot::before { content: ''; width: 8px; height: 8px; border-radius: 999px; background: var(--border-strong); transition: width .25s, background-color .25s; }
+    .dot[aria-current="true"]::before { width: 20px; background: var(--go); }
+    .counter { font: 500 .8rem var(--mono); color: var(--muted); min-width: 3.5em; text-align: center; }
+
+    /* Narrow or portrait frames: stack layouts instead of shrinking type further. */
+    @container (max-aspect-ratio: 1/1) {
+      .versus, .split { grid-template-columns: minmax(0, 1fr); }
+      .prims { grid-template-columns: 1fr 1fr; }
+      .flow { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+      .node { grid-template-columns: auto 1fr; align-items: baseline; gap: .8em; padding: 10px 12px; }
+      .node:not(:last-child)::after { display: none; }
+      .grid6 { grid-template-columns: 1fr 1fr; }
+      .split .steps, .hide-narrow { display: none; }
+      pre.code { font-size: clamp(9px, 2.4cqw, 14px); overflow-x: auto; }
+      .chart-wrap { height: 40cqh; }
+    }
+    @container (max-width: 520px) {
+      .grid6 { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+      .prims { gap: 8px; }
+      .feat p, .prim .q { display: none; }
+    }
+    @media (max-width: 520px) {
+      .dots { display: none; }
+      .counter { margin: 0 auto; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .slide, .slide.active, .progress, .dot::before { transition: none !important; transform: none !important; }
+    }
+  </style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></symbol>
+  <symbol id="i-package" viewBox="0 0 24 24"><path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z"/><path d="M12 22V12"/><path d="m3.3 7 7.703 4.734a2 2 0 0 0 1.994 0L20.7 7"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></symbol>
+  <symbol id="i-zap" viewBox="0 0 24 24"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect width="18" height="11" x="3" y="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></symbol>
+  <symbol id="i-left" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></symbol>
+  <symbol id="i-right" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></symbol>
+  <symbol id="i-expand" viewBox="0 0 24 24"><path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/></symbol>
+  <symbol id="i-shrink" viewBox="0 0 24 24"><path d="m14 10 7-7"/><path d="M20 10h-6V4"/><path d="m3 21 7-7"/><path d="M4 14h6v6"/></symbol>
+  <symbol id="i-external" viewBox="0 0 24 24"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></symbol>
+  <symbol id="i-github" viewBox="0 0 24 24"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"/><path d="M9 18c-4.51 2-5-2-7-2"/></symbol>
+</svg>
+
+<div class="deck" id="deck" role="region" aria-roledescription="slide deck" aria-label="TypeSafe SDK for Go introduction">
+  <div class="stage" id="stage">
+    <div class="progress" id="progress"></div>
+
+    <!-- 1 · Hook -->
+    <section class="slide title-slide" aria-label="Slide 1: Title">
+      <span class="eyebrow">Open-source Go SDK · Python v0.7.0 parity</span>
+      <h1>TypeSafe SDK<br><span>for Go</span></h1>
+      <p class="lead">Ask an AI model bounded questions about any text. Get typed answers back, and keep every decision in plain Go.</p>
+      <div class="install">$ <b>go get</b> github.com/captain-corgi/typesafe-sdk-go</div>
+      <div class="facts">
+        <div><strong>0</strong>runtime dependencies</div>
+        <div><strong>3</strong>typed primitives</div>
+        <div><strong data-total>91</strong>runnable examples</div>
+      </div>
+    </section>
+
+    <!-- 2 · Problem -->
+    <section class="slide" aria-label="Slide 2: The problem">
+      <span class="eyebrow">The problem</span>
+      <h2>A model returns prose. Your code needs <span>a value it can branch on</span>.</h2>
+      <div class="versus">
+        <div class="card bad">
+          <h3><svg class="i" aria-hidden="true"><use href="#i-x"/></svg>Parse free text</h3>
+          <div class="snip">reply := <span class="hl">complete</span>(prompt)
+if strings.Contains(reply, <span class="hl">"urgent"</span>) {
+    // "not urgent" also matches
+}</div>
+          <ul class="ticks hide-narrow">
+            <li><svg class="i" aria-hidden="true"><use href="#i-x"/></svg>Output format drifts between calls</li>
+            <li><svg class="i" aria-hidden="true"><use href="#i-x"/></svg>No confidence to set a threshold on</li>
+            <li><svg class="i" aria-hidden="true"><use href="#i-x"/></svg>Retries, timeouts, and errors by hand</li>
+          </ul>
+        </div>
+        <div class="card good">
+          <h3><svg class="i" aria-hidden="true"><use href="#i-check"/></svg>Ask a typed question</h3>
+          <div class="snip">"urgent": typesafe.<span class="hl">Noul</span>{...}
+// answer: NoulAnswer{Noul: <span class="hl">0.91</span>}
+if resp.Nouls()["urgent"].Noul &gt;= 0.8 { ... }</div>
+          <ul class="ticks hide-narrow">
+            <li><svg class="i" aria-hidden="true"><use href="#i-check"/></svg>The question kind fixes the answer type</li>
+            <li><svg class="i" aria-hidden="true"><use href="#i-check"/></svg>Probabilities you can measure and tune</li>
+            <li><svg class="i" aria-hidden="true"><use href="#i-check"/></svg>Validation, retries, and errors built in</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3 · Solution -->
+    <section class="slide" aria-label="Slide 3: Three primitives">
+      <span class="eyebrow">The solution</span>
+      <h2>Three question kinds. <span>Each has its own answer type.</span></h2>
+      <div class="prims">
+        <div class="card prim noul"><span class="tag tag-noul" style="justify-self:start">Noul</span><h3>Yes or no, as a probability</h3><div class="q">"Is this urgent?"</div><div class="a">.Noul → 0.91</div></div>
+        <div class="card prim choice"><span class="tag tag-choice" style="justify-self:start">Choice</span><h3>Pick one label</h3><div class="q">billing · technical · account</div><div class="a">.Choice → "billing"</div></div>
+        <div class="card prim score"><span class="tag tag-score" style="justify-self:start">Score</span><h3>Place on an ordered rubric</h3><div class="q">calm → annoyed → upset</div><div class="a">.Score → 1.4</div></div>
+        <div class="card prim raw"><span class="tag tag-raw" style="justify-self:start">Raw</span><h3>Pass a shape through</h3><div class="q">Fields this SDK version does not model</div><div class="a">sent untouched</div></div>
+      </div>
+    </section>
+
+    <!-- 4 · Product -->
+    <section class="slide" aria-label="Slide 4: One call">
+      <div class="split">
+        <div style="display:grid;gap:clamp(10px,2.2cqh,24px)">
+          <span class="eyebrow">In code</span>
+          <h2>One call. <span>Your policy stays in Go.</span></h2>
+          <ol class="steps">
+            <li><div><b>Describe the state</b><span>A ticket, a diff, a log line, any text.</span></div></li>
+            <li><div><b>Ask named questions</b><span>Mix kinds freely in one request.</span></div></li>
+            <li><div><b>Branch on typed answers</b><span><code>if</code> and <code>switch</code>, with thresholds you measured.</span></div></li>
+          </ol>
+        </div>
+        <div class="code-card">
+          <div class="code-bar">triage.go</div>
+<pre class="code" data-lang="go"><code>resp, err := client.SystemOne(ctx, &amp;typesafe.SystemOneParams{
+    State: ticket.Body,
+    Questions: typesafe.Questions{
+        "urgent": typesafe.Noul{Instructions: "Is this urgent?"},
+        "topic": typesafe.Choice{
+            Instructions: "What is this about?",
+            Criteria: typesafe.ChoiceCriteria{
+                "billing": "Charges or invoices",
+                "bug":     "Something is broken",
+            },
+        },
+    },
+})
+if err != nil {
+    return err
+}
+
+if resp.Nouls()["urgent"].Noul &gt;= 0.8 &amp;&amp;
+    resp.Choices()["topic"].Choice == "billing" {
+    page(billingOnCall)
+}</code></pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5 · How it works -->
+    <section class="slide" aria-label="Slide 5: Life of a call">
+      <span class="eyebrow">How it works</span>
+      <h2>The SDK handles the path <span>between your code and the API</span>.</h2>
+      <div class="flow">
+        <div class="node n-state"><span class="k">Input</span><p>State and named questions</p></div>
+        <div class="node n-sdk"><span class="k">Validate</span><p>Checked before any network I/O</p></div>
+        <div class="node n-retry"><span class="k">Send + retry</span><p>429, 5xx, timeouts: backoff with jitter</p></div>
+        <div class="node n-answer"><span class="k">Decode</span><p>Nouls(), Choices(), Scores()</p></div>
+        <div class="node n-policy"><span class="k">Your Go</span><p>if / switch on typed values</p></div>
+      </div>
+      <div class="errs"><span>Failures match with <code style="color:inherit;background:var(--surface-2);border-color:var(--border)">errors.As</code>:</span><code>*RateLimitError</code><code>*TimeoutError</code><code>*ResponseValidationError</code></div>
+    </section>
+
+    <!-- 6 · Features -->
+    <section class="slide" aria-label="Slide 6: Production defaults">
+      <span class="eyebrow">Why this SDK</span>
+      <h2>Small surface. <span>Production defaults.</span></h2>
+      <div class="grid6">
+        <div class="card feat"><svg class="i" aria-hidden="true"><use href="#i-package"/></svg><h3>Zero dependencies</h3><p>Standard library only. CI proves it.</p></div>
+        <div class="card feat"><svg class="i" aria-hidden="true"><use href="#i-shield"/></svg><h3>Typed answers</h3><p>Noul, Choice, and Score map to their own structs.</p></div>
+        <div class="card feat"><svg class="i" aria-hidden="true"><use href="#i-refresh"/></svg><h3>Smart retries</h3><p>Backoff, jitter, <code>Retry-After</code>, per-call budget.</p></div>
+        <div class="card feat"><svg class="i" aria-hidden="true"><use href="#i-alert"/></svg><h3>Structured errors</h3><p>One taxonomy, matched with <code>errors.As</code>.</p></div>
+        <div class="card feat"><svg class="i" aria-hidden="true"><use href="#i-zap"/></svg><h3>Safe for concurrency</h3><p>One client per process, verified with <code>-race</code>.</p></div>
+        <div class="card feat"><svg class="i" aria-hidden="true"><use href="#i-lock"/></svg><h3>Secure by default</h3><p>HTTPS only, secrets redacted from <code>slog</code> logs.</p></div>
+      </div>
+    </section>
+
+    <!-- 7 · Proof -->
+    <section class="slide" aria-label="Slide 7: Examples">
+      <span class="eyebrow">Proof in code</span>
+      <h2><span data-total>91</span> runnable examples, <span>each with a diagram</span>.</h2>
+      <div class="chart-wrap"><canvas id="chart" role="img" aria-label="Bar chart of examples per catalog"></canvas></div>
+      <div class="kinds" id="kinds"><span class="muted">Question kinds used:</span></div>
+    </section>
+
+    <!-- 8 · CTA -->
+    <section class="slide cta-slide" aria-label="Slide 8: Get started">
+      <span class="eyebrow">Get started</span>
+      <h2>Install it, set <span>TYPESAFE_API_KEY</span>, and ask your first question.</h2>
+      <div class="install">$ <b>go get</b> github.com/captain-corgi/typesafe-sdk-go</div>
+      <div class="links">
+        <a class="btn btn-primary" href="index.html#examples" target="_top">Browse examples <svg class="i" aria-hidden="true"><use href="#i-right"/></svg></a>
+        <a class="btn" href="https://github.com/captain-corgi/typesafe-sdk-go" target="_blank" rel="noopener"><svg class="i" aria-hidden="true"><use href="#i-github"/></svg>GitHub</a>
+        <a class="btn" href="https://pkg.go.dev/github.com/captain-corgi/typesafe-sdk-go" target="_blank" rel="noopener">API reference <svg class="i" aria-hidden="true"><use href="#i-external"/></svg></a>
+      </div>
+      <p class="muted" style="font-size:clamp(11px,1.2cqw,15px)">MIT licensed · community maintained · not affiliated with TypeSafe AI</p>
+    </section>
+  </div>
+
+  <nav class="controls" aria-label="Slide controls">
+    <button class="ctl" id="prev" aria-label="Previous slide"><svg class="i" aria-hidden="true"><use href="#i-left"/></svg></button>
+    <span class="counter" id="counter" aria-hidden="true">1 / 8</span>
+    <div class="dots" id="dots"></div>
+    <button class="ctl" id="fs" aria-label="Enter full screen"><svg class="i" aria-hidden="true"><use href="#i-expand"/></svg></button>
+    <button class="ctl" id="next" aria-label="Next slide"><svg class="i" aria-hidden="true"><use href="#i-right"/></svg></button>
+  </nav>
+  <div class="sr-only" id="live" aria-live="polite"></div>
+</div>
+
+<script type="module">
+  const SHIKI = 'https://esm.sh/shiki@4.4.3';
+  const SHIKI_LANGS = 'https://esm.sh/@shikijs/langs@4.4.3';
+  const SHIKI_THEMES = 'https://esm.sh/@shikijs/themes@4.4.3';
+  const CHARTJS = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.1/+esm';
+  // Fallback when examples.json is missing (for example, opening the file directly).
+  const FALLBACK = {
+    catalogs: [['Basics', 2], ['Go software', 20], ['REST & GraphQL APIs', 10], ['Relational databases', 10], ['Testing', 20], ['Automation', 19], ['Task categories', 10]],
+    kinds: { Noul: 62, Choice: 45, Score: 35, Raw: 1 },
+  };
+
+  const $ = (s, el = document) => el.querySelector(s);
+  const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+  const root = document.documentElement;
+  const slides = $$('.slide');
+  const total = slides.length;
+  let current = 0;
+
+  /* ─── Navigation ─── */
+  const dots = $('#dots');
+  dots.innerHTML = slides.map((s, i) => `<button class="dot" aria-label="Go to slide ${i + 1}"></button>`).join('');
+  $$('.dot', dots).forEach((d, i) => d.addEventListener('click', () => show(i)));
+
+  function show(n, { announce = true } = {}) {
+    current = Math.max(0, Math.min(total - 1, n));
+    slides.forEach((s, i) => {
+      const on = i === current;
+      s.classList.toggle('active', on);
+      s.classList.toggle('before', i < current);
+      s.inert = !on;
+      s.setAttribute('aria-hidden', String(!on));
+    });
+    $$('.dot', dots).forEach((d, i) => d.setAttribute('aria-current', String(i === current)));
+    $('#counter').textContent = `${current + 1} / ${total}`;
+    $('#progress').style.width = `${((current + 1) / total) * 100}%`;
+    $('#prev').disabled = current === 0;
+    $('#next').disabled = current === total - 1;
+    if (announce) $('#live').textContent = slides[current].getAttribute('aria-label');
+    history.replaceState(null, '', `#${current + 1}`);
+    if (slides[current].contains($('#chart'))) drawChart();
+  }
+  $('#prev').addEventListener('click', () => show(current - 1));
+  $('#next').addEventListener('click', () => show(current + 1));
+  document.addEventListener('keydown', (e) => {
+    if (e.altKey || e.ctrlKey || e.metaKey) return;
+    const k = e.key;
+    if (k === 'ArrowRight' || k === 'PageDown' || (k === ' ' && !e.target.closest('button, a'))) { e.preventDefault(); show(current + 1); }
+    else if (k === 'ArrowLeft' || k === 'PageUp') { e.preventDefault(); show(current - 1); }
+    else if (k === 'Home') { e.preventDefault(); show(0); }
+    else if (k === 'End') { e.preventDefault(); show(total - 1); }
+    else if (k === 'f' || k === 'F') toggleFullscreen();
+  });
+
+  let touchX = null;
+  const stage = $('#stage');
+  stage.addEventListener('pointerdown', (e) => { if (e.pointerType !== 'mouse') touchX = e.clientX; });
+  stage.addEventListener('pointerup', (e) => {
+    if (touchX === null) return;
+    const dx = e.clientX - touchX;
+    touchX = null;
+    if (Math.abs(dx) > 40) show(current + (dx < 0 ? 1 : -1));
+  });
+
+  /* ─── Full screen ─── */
+  const fsBtn = $('#fs');
+  if (!document.fullscreenEnabled) fsBtn.hidden = true;
+  function toggleFullscreen() {
+    if (!document.fullscreenEnabled) return;
+    if (document.fullscreenElement) document.exitFullscreen();
+    else root.requestFullscreen().catch(() => {});
+  }
+  fsBtn.addEventListener('click', toggleFullscreen);
+  document.addEventListener('fullscreenchange', () => {
+    const on = !!document.fullscreenElement;
+    fsBtn.setAttribute('aria-label', on ? 'Exit full screen' : 'Enter full screen');
+    $('use', fsBtn).setAttribute('href', on ? '#i-shrink' : '#i-expand');
+  });
+
+  /* ─── Theme ─── */
+  const darkQuery = matchMedia('(prefers-color-scheme: dark)');
+  const isDark = () => root.dataset.theme === 'dark' || (root.dataset.theme !== 'light' && darkQuery.matches);
+  function onThemeChange() { if (chart) { chart.destroy(); chart = null; drawChart(); } }
+  window.addEventListener('storage', (e) => {
+    if (e.key !== 'theme') return;
+    root.dataset.theme = e.newValue || 'system';
+    onThemeChange();
+  });
+  darkQuery.addEventListener('change', () => { if (root.dataset.theme === 'system') onThemeChange(); });
+
+  /* ─── Data ─── */
+  const dataPromise = fetch('examples.json', { cache: 'no-cache' })
+    .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
+    .then((d) => {
+      const kinds = { Noul: 0, Choice: 0, Score: 0, Raw: 0 };
+      const all = d.catalogs.flatMap((c) => c.examples);
+      for (const ex of all) for (const k in kinds) if (ex.kinds?.[k]) kinds[k]++;
+      return { total: all.length, catalogs: d.catalogs.map((c) => [c.title, c.examples.length]), kinds };
+    })
+    .catch(() => ({ ...FALLBACK, total: FALLBACK.catalogs.reduce((n, [, v]) => n + v, 0) }));
+
+  dataPromise.then((d) => {
+    $$('[data-total]').forEach((el) => { el.textContent = d.total; });
+    $('#kinds').insertAdjacentHTML('beforeend', Object.entries(d.kinds)
+      .map(([k, n]) => `<span class="tag tag-${k.toLowerCase()}">${k} · ${n} example${n === 1 ? '' : 's'}</span>`).join(''));
+  });
+
+  /* ─── Chart ─── */
+  let chart = null;
+  let chartLib;
+  async function drawChart() {
+    if (chart) return;
+    chartLib ??= import(CHARTJS).then((m) => { m.Chart.register(...m.registerables); return m.Chart; });
+    const [Chart, d] = await Promise.all([chartLib, dataPromise]);
+    if (chart) return;
+    const dark = isDark();
+    const ink = dark ? '#94a3b8' : '#475569';
+    const grid = dark ? 'rgba(148,163,184,.12)' : 'rgba(15,23,42,.07)';
+    Chart.defaults.font.family = "'IBM Plex Sans', system-ui, sans-serif";
+    chart = new Chart($('#chart'), {
+      type: 'bar',
+      data: {
+        labels: d.catalogs.map(([t]) => t),
+        datasets: [{
+          label: 'Examples',
+          data: d.catalogs.map(([, n]) => n),
+          backgroundColor: dark ? 'rgba(0,173,216,.75)' : 'rgba(0,173,216,.85)',
+          hoverBackgroundColor: '#00add8',
+          borderRadius: 6,
+          maxBarThickness: 34,
+        }],
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: matchMedia('(prefers-reduced-motion: reduce)').matches ? false : { duration: 600 },
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: (c) => ` ${c.parsed.x} examples` } },
+        },
+        scales: {
+          x: { beginAtZero: true, grid: { color: grid }, border: { display: false }, ticks: { color: ink, precision: 0 } },
+          y: { grid: { display: false }, border: { display: false }, ticks: { color: dark ? '#e2e8f0' : '#0f172a', font: { size: 13, weight: 500 } } },
+        },
+      },
+    });
+  }
+
+  /* ─── Syntax highlighting (same Shiki setup and themes as index.html) ─── */
+  async function highlightCode() {
+    const [{ createHighlighterCore }, { createJavaScriptRegexEngine }, go, light, darkTheme] = await Promise.all([
+      import(`${SHIKI}/core`),
+      import(`${SHIKI}/engine/javascript`),
+      import(`${SHIKI_LANGS}/go`),
+      import(`${SHIKI_THEMES}/github-light`),
+      import(`${SHIKI_THEMES}/github-dark`),
+    ]);
+    const hl = await createHighlighterCore({ themes: [light.default, darkTheme.default], langs: [go.default], engine: createJavaScriptRegexEngine() });
+    for (const pre of $$('pre.code[data-lang]')) {
+      const html = hl.codeToHtml(pre.textContent, { lang: pre.dataset.lang, themes: { light: 'github-light', dark: 'github-dark' }, defaultColor: false });
+      const tmp = document.createElement('div');
+      tmp.innerHTML = html.replace('<pre class="shiki', '<pre class="code shiki');
+      pre.replaceWith(tmp.firstElementChild);
+    }
+  }
+  highlightCode().catch((e) => console.warn('highlight failed', e));
+
+  const start = parseInt(location.hash.slice(1), 10);
+  show(Number.isFinite(start) ? start - 1 : 0, { announce: false });
+</script>
+</body>
+</html>

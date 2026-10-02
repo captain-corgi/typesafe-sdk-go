@@ -1,0 +1,13 @@
+flowchart TD
+  S[/"Incoming BUG-204"/]:::state
+  S --> L[/"for each candidate (2)"/]:::state
+  L --> C(["client.SystemOne"]):::sdk
+  C --> Q1["match · Score<br/>different · possibly · same bug"]:::score
+  C --> Q2["symptoms · environment · repro<br/>3× Noul"]:::noul
+  C -. "request error" .-> E1("Queue pair for review"):::fail
+  Q1 --> P1{"match conf ≥ 0.75, score ≥ 1.6<br/>and all 3 signals ≥ 0.75?"}:::policy
+  Q2 --> P1
+  P1 -- yes --> O1("Suggest duplicate link; human confirms"):::outcome
+  P1 -- no --> P2{"match conf ≥ 0.75<br/>and score below 0.5?"}:::policy
+  P2 -- yes --> O2("Likely distinct"):::outcome
+  P2 -- no --> O3("Queue ambiguous pair for review"):::outcome

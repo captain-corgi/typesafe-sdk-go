@@ -1,0 +1,13 @@
+flowchart TD
+  S[/"Untrusted input (os.Args or default)"/]:::state
+  S --> C(["client.SystemOne"]):::sdk
+  C --> Q1["override · restricted · secrets<br/>3× Noul"]:::noul
+  C --> Q2["severity · Score<br/>none · review · clear violation"]:::score
+  C -. "request error" .-> E1("Hold for review: guardrail unavailable"):::fail
+  Q1 & Q2 --> P1{"severity confidence ≥ 0.70?"}:::policy
+  P1 -- no --> O1("Hold for review: severity uncertain"):::outcome
+  P1 -- yes --> P2{"severity ≥ 1.5 and<br/>any flag ≥ 0.85?"}:::policy
+  P2 -- yes --> O2("Reject before LLM call"):::outcome
+  P2 -- no --> P3{"severity ≤ 0.5 and<br/>all flags ≤ 0.20?"}:::policy
+  P3 -- yes --> O3("Pass to LLM after auth checks"):::outcome
+  P3 -- no --> O4("Hold for review: mixed signals"):::outcome

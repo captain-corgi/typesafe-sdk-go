@@ -218,6 +218,15 @@ func TestRetryableDispatch(t *testing.T) {
 		if !policy.retryable(notFound) {
 			t.Error("RetryOn should opt a 404 into retries")
 		}
+		tooLarge := &ResponseTooLargeError{Limit: 16 << 20}
+		sizePolicy := DefaultRetryPolicy()
+		sizePolicy.RetryOn = []error{&ResponseTooLargeError{}}
+		if !sizePolicy.retryable(tooLarge) {
+			t.Error("RetryOn should treat &ResponseTooLargeError{} as a type selector")
+		}
+		if policy.retryable(tooLarge) {
+			t.Error("oversized bodies should still not retry by default")
+		}
 	})
 
 	t.Run("retry-on sentinels", func(t *testing.T) {

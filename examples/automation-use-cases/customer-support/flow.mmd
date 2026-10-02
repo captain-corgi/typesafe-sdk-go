@@ -1,0 +1,17 @@
+flowchart TD
+  S[/"Ticket: subject, message, account tier"/]:::state
+  S --> C(["client.SystemOne"]):::sdk
+  C --> Q1["category · Choice<br/>bug · billing · how-to · feature_req"]:::choice
+  C --> Q2["severity · Score · frustration · Score"]:::score
+  C --> Q3["has_repro_steps · Noul<br/>requests_refund · Noul"]:::noul
+  C --> Q4["satisfaction_risk · Raw<br/>score passthrough, weight 2"]:::raw
+  Q1 --> P1
+  Q2 --> P1
+  Q3 --> P1
+  Q4 --> P1
+  P1{"Independent checks, collect actions"}:::policy
+  P1 -- "bug, severity ≥ 1.5, repro ≥ 0.5" --> O1("escalate to engineering"):::outcome
+  P1 -- "refund ≥ 0.5" --> O2("flag for billing review"):::outcome
+  P1 -- "frustration or churn ≥ 1.5" --> O3("priority response SLA"):::outcome
+  P1 -- "category confidence below 0.6" --> O4("route to human triage"):::outcome
+  P1 -- "no action matched" --> O5("standard queue"):::outcome

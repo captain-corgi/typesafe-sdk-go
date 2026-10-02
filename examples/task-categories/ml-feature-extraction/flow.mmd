@@ -1,0 +1,10 @@
+flowchart TD
+  S[/"for each product review (2)"/]:::state
+  S --> C(["client.SystemOne"]):::sdk
+  C --> Q1["repurchase_signal · defect_signal<br/>refund_request · 3× Noul"]:::noul
+  C --> Q2["sentiment · Score<br/>negative · mixed · positive"]:::score
+  C -. "request error" .-> E1("Print the error, next review"):::fail
+  Q2 --> P1["Normalize: sentiment ÷ 2 into 0–1"]:::policy
+  Q1 --> P2["Build feature map, sort names"]:::policy
+  P1 --> P2
+  P2 --> O1("Print features and model input row"):::outcome

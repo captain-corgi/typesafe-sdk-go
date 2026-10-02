@@ -1,0 +1,12 @@
+flowchart TD
+  S[/"User request + proposed go_test call"/]:::state
+  S --> P0{"name, package, pattern<br/>in allowlists?"}:::policy
+  P0 -- no --> O0("Reject: invalid function or arguments"):::outcome
+  P0 -- yes --> C(["client.SystemOne"]):::sdk
+  C --> Q1["addresses · Noul"]:::noul
+  C --> Q2["expands_scope · Noul"]:::noul
+  C --> Q3["mismatch · Choice<br/>none · wrong_tool · broader_scope · other"]:::choice
+  C -. "request error" .-> E1("Pause tool call for review"):::fail
+  Q1 & Q2 & Q3 --> P1{"addresses ≥ 0.80, expands ≤ 0.20,<br/>mismatch = none at ≥ 0.75?"}:::policy
+  P1 -- yes --> O1("Approved proposal: go test -run"):::outcome
+  P1 -- no --> O2("Pause for review; retain full trace"):::outcome

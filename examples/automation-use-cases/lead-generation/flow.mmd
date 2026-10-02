@@ -1,0 +1,16 @@
+flowchart TD
+  S[/"for each lead (2): company + inbound message"/]:::state
+  S --> C(["client.SystemOne"]):::sdk
+  C -. "request error" .-> E1("Print error, skip lead"):::fail
+  C --> Q1["icp_fit · Score<br/>no fit · partial fit · strong fit"]:::score
+  C --> Q2["maturity · Score<br/>exploring · evaluating · ready to buy"]:::score
+  C --> Q3["buy_signal · Score<br/>curiosity · interest · urgent need"]:::score
+  Q1 --> P1
+  Q2 --> P1
+  Q3 --> P1
+  P1["composite = 0.5·icp + 0.3·maturity<br/>+ 0.2·buy_signal (normalized)"]:::policy
+  P1 --> P2{"composite ≥ 0.7?"}:::policy
+  P2 -- yes --> O1("hot: route to sales today"):::outcome
+  P2 -- no --> P3{"composite ≥ 0.4?"}:::policy
+  P3 -- yes --> O2("warm: add to nurture sequence"):::outcome
+  P3 -- no --> O3("cold: self-serve drip"):::outcome

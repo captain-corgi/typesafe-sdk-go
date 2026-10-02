@@ -1,0 +1,16 @@
+flowchart TD
+  S[/"Issues 301 → 408 (tenant-authorized)<br/>+ statement + blocks edges"/]:::state
+  S --> C(["client.SystemOne"]):::sdk
+  C --> Q1["relation · Choice<br/>duplicates · blocks · caused_by · related · none"]:::choice
+  C -. "request error" .-> E1("Leave endpoints unlinked for review"):::fail
+  Q1 --> P1{"confidence ≥ 0.85?"}:::policy
+  P1 -- no --> O0("Proposal needs review"):::outcome
+  P1 -- yes --> P2{"switch relation.Choice"}:::policy
+  P2 -- "duplicates / related" --> P3["Canonical order: smaller ID first"]:::policy
+  P2 -- blocks --> P4{"target already reaches source?"}:::policy
+  P2 -- caused_by --> P5["Keep source → target direction"]:::policy
+  P2 -- none --> O1("No supported edge; leave rows unlinked"):::outcome
+  P4 -- yes --> O2("Cycle: queue for review"):::outcome
+  P4 -- no --> O3("INSERT INTO item_relations … SELECT scoped<br/>JOIN, relation_type $4 + args"):::outcome
+  P3 --> O3
+  P5 --> O3

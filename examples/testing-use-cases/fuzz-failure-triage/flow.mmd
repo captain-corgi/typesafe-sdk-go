@@ -1,0 +1,11 @@
+flowchart TD
+  S[/"Saved fuzz failure: corpus ID,<br/>input bytes, panic text, replay exit"/]:::state
+  S --> P0{"replay exit nonzero,<br/>input and corpus ID set?"}:::policy
+  P0 -- no --> E0("log.Fatal: no reproducing failure"):::fail
+  P0 -- yes --> P1["SHA-256 fingerprint of input"]:::policy
+  P1 --> C(["client.SystemOne"]):::sdk
+  C --> Q1["failure_kind · Choice<br/>panic · round_trip_mismatch<br/>unexpected_error · timeout · other"]:::choice
+  C -. "request error" .-> E1("INCONCLUSIVE: retain corpus entry"):::fail
+  Q1 --> P2{"confidence below 0.85<br/>or choice other?"}:::policy
+  P2 -- yes --> O1("INCONCLUSIVE: retain corpus entry"):::outcome
+  P2 -- no --> O2("REVIEW tentative owner + SHA-256;<br/>keep corpus entry"):::outcome

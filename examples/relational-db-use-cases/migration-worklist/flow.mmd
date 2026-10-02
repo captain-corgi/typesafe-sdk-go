@@ -1,0 +1,14 @@
+flowchart TD
+  S0[/"Keyset page SQL: legacy_records<br/>id after checkpoint 1000 LIMIT 100"/]:::state
+  S0 --> S[/"for each row (1001, 1002)"/]:::state
+  S --> C(["client.SystemOne"]):::sdk
+  C --> Q1["migration_class · Choice<br/>billing · access · needs_review · out_of_scope"]:::choice
+  C -. "request error" .-> E1("Keep legacy form; stop before checkpoint"):::fail
+  Q1 --> P1{"confidence ≥ 0.85 and known bucket?"}:::policy
+  P1 -- no --> P2["bucket = needs_review"]:::policy
+  P1 -- yes --> P3["bucket = chosen class"]:::policy
+  P2 --> O1("INSERT INTO migration_staging … 'pending'<br/>ON CONFLICT DO NOTHING; advance checkpoint"):::outcome
+  P3 --> O1
+  O1 --> O2("Commit staging, then persist checkpoint"):::outcome
+  E1 --> O2
+  O2 --> O3("Reviewed apply: UPDATE legacy_records …<br/>WHERE review_state = 'approved'"):::outcome

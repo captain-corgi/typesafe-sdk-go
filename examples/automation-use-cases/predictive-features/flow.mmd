@@ -1,0 +1,14 @@
+flowchart TD
+  S[/"for each customer review (2)"/]:::state
+  S --> C(["client.SystemOne"]):::sdk
+  C -. "request error" .-> E1("Print error, skip review"):::fail
+  C --> Q1["purchase_intent · Noul"]:::noul
+  C --> Q2["urgency · Noul"]:::noul
+  C --> Q3["competitor_mention · Noul"]:::noul
+  C --> Q4["sentiment · Score<br/>negative · neutral · positive"]:::score
+  Q4 --> P1["Normalize sentiment to 0–1<br/>(score / 2)"]:::policy
+  Q1 --> P2
+  Q2 --> P2
+  Q3 --> P2
+  P1 --> P2["Build feature map, sort names"]:::policy
+  P2 --> O1("Print feature row name=value,..."):::outcome

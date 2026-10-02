@@ -1,0 +1,17 @@
+flowchart TD
+  S[/"for each FNOL claim report (2)"/]:::state
+  S --> C(["client.SystemOne"]):::sdk
+  C -. "request error" .-> E1("Print error, skip claim"):::fail
+  C --> Q1["claim_type · Choice<br/>collision · theft · weather · liability"]:::choice
+  C --> Q2["complexity · Score<br/>simple · moderate · complex"]:::score
+  C --> Q3["missing_info · Noul"]:::noul
+  C --> Q4["fraud_indicator · Noul"]:::noul
+  Q2 --> P1
+  Q3 --> P1
+  Q4 --> P1
+  Q1 --> O0("Print claim type + confidence"):::outcome
+  P1{"fraud_indicator ≥ 0.5?"}:::policy
+  P1 -- yes --> O1("investigate (SIU referral)"):::outcome
+  P1 -- no --> P2{"complexity ≥ 1.5 or<br/>missing_info ≥ 0.5?"}:::policy
+  P2 -- yes --> O2("review by adjuster"):::outcome
+  P2 -- no --> O3("straight-through processing"):::outcome

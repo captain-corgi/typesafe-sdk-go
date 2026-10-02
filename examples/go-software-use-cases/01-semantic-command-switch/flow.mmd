@@ -1,0 +1,12 @@
+flowchart TD
+  S[/"User command (os.Args or default)"/]:::state
+  S --> C(["client.SystemOne"]):::sdk
+  C --> Q1["action · Choice<br/>search_docs · show_status · explain_config · other"]:::choice
+  C -. "request error" .-> E1("Ask the user to restate the command"):::fail
+  Q1 --> P1{"confidence ≥ 0.70?"}:::policy
+  P1 -- no --> O0("Ask the user to clarify"):::outcome
+  P1 -- yes --> P2{"switch action.Choice"}:::policy
+  P2 -- search_docs --> O1("dispatch: searchDocs"):::outcome
+  P2 -- show_status --> O2("dispatch: showStatus"):::outcome
+  P2 -- explain_config --> O3("dispatch: explainConfig"):::outcome
+  P2 -- other --> O4("Offer the supported commands"):::outcome

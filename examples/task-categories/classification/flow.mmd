@@ -1,0 +1,9 @@
+flowchart TD
+  S[/"for each headline (2)"/]:::state
+  S --> C(["client.SystemOne"]):::sdk
+  C --> Q1["topic · Choice<br/>business · sports · technology · entertainment · world"]:::choice
+  C -. "request error" .-> E1("Print the error, next headline"):::fail
+  Q1 --> P1["Print winner and sorted distribution"]:::policy
+  P1 --> P2{"confidence ≥ 0.75?"}:::policy
+  P2 -- yes --> O1("Auto-tag as the winning topic"):::outcome
+  P2 -- no --> O2("Queue for human tagging"):::outcome

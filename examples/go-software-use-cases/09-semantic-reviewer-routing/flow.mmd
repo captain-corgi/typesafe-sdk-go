@@ -1,0 +1,13 @@
+flowchart TD
+  S[/"transport.go diff + CODEOWNERS reviewers"/]:::state
+  S --> C(["client.SystemOne"]):::sdk
+  C --> Q1["concern · Choice<br/>api_contract · security_boundary<br/>performance · observability · other"]:::choice
+  C -. "request error" .-> E1("Keep CODEOWNERS reviewers"):::fail
+  Q1 --> P1{"mapped concern, conf ≥ 0.70<br/>and reviewer not present?"}:::policy
+  P1 -- yes --> P3["Append concern reviewer"]:::policy
+  P1 -- no --> P2{"conf below 0.70?"}:::policy
+  P2 -- yes --> P4["Append @triage-reviewers"]:::policy
+  P2 -- no --> P5["Keep reviewers unchanged"]:::policy
+  P3 --> O1("Print reviewers for transport.go"):::outcome
+  P4 --> O1
+  P5 --> O1

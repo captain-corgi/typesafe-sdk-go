@@ -1,0 +1,14 @@
+flowchart TD
+  S[/"REST fixture: status 409<br/>result, message, request_id"/]:::state
+  S --> P0{"Go checks: JSON parses, 409,<br/>result failed, request_id set?"}:::policy
+  P0 -- no --> E0("log.Fatal: REST assertion failed"):::fail
+  P0 -- yes --> C(["client.SystemOne"]):::sdk
+  C --> Q1["contradicts · Noul<br/>claims success vs failed result"]:::noul
+  C -. "request error" .-> E1("INCONCLUSIVE prose;<br/>structural assertions remain"):::fail
+  Q1 --> P1{"answer present?"}:::policy
+  P1 -- no --> E2("INCONCLUSIVE: answer missing"):::fail
+  P1 -- yes --> P2{"p ≥ 0.90?"}:::policy
+  P2 -- yes --> O1("REVIEW response contradiction"):::outcome
+  P2 -- no --> P3{"p above 0.10?"}:::policy
+  P3 -- yes --> O2("INCONCLUSIVE response prose"):::outcome
+  P3 -- no --> O3("REVIEW no contradiction detected;<br/>Go assertions authoritative"):::outcome

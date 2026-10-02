@@ -1,0 +1,13 @@
+flowchart TD
+  S[/"English source + Spanish translation"/]:::state
+  S --> V{"{id} appears exactly once in each?"}:::policy
+  V -- no --> E0("Exit: placeholder assertion failed"):::fail
+  V -- yes --> C(["client.SystemOne"]):::sdk
+  C --> Q1["preserves · Noul<br/>failed + retry later, no success claim"]:::noul
+  C -. "request error" .-> E1("INCONCLUSIVE: bilingual review needed"):::fail
+  Q1 -- answer missing --> E2("INCONCLUSIVE: answer missing"):::fail
+  Q1 --> P1{"p ≤ 0.10?"}:::policy
+  P1 -- yes --> O1("REVIEW likely semantic drift"):::outcome
+  P1 -- no --> P2{"p below 0.90?"}:::policy
+  P2 -- yes --> O2("INCONCLUSIVE translation"):::outcome
+  P2 -- no --> O3("REVIEW possible meaning preservation;<br/>bilingual reviewer decides"):::outcome

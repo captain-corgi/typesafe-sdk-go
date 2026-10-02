@@ -1,0 +1,12 @@
+flowchart TD
+  S[/"for each candidate triple (3)<br/>subject, object, sentence, current edge"/]:::state
+  S --> C(["client.SystemOne"]):::sdk
+  C -. "request error" .-> E1("Print error, skip to next triple"):::fail
+  C --> Q1["relation · Choice<br/>employs · acquired · partners_with ·<br/>competes_with · created · no_relation"]:::choice
+  C --> Q2["contradicts_existing · Noul"]:::noul
+  Q2 --> P1{"contradicts ≥ 0.5?"}:::policy
+  P1 -- yes --> O1("flag contradiction, keep both,<br/>open curation task"):::outcome
+  P1 -- no --> P2{"no_relation or<br/>confidence below 0.70?"}:::policy
+  Q1 --> P2
+  P2 -- yes --> O2("queue for human curation"):::outcome
+  P2 -- no --> O3("commit edge: subject, relation, object"):::outcome

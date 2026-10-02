@@ -1,0 +1,12 @@
+flowchart TD
+  S[/"Query + for each passage (3)"/]:::state
+  S --> C(["client.SystemOne"]):::sdk
+  C --> Q1["relevant · useful · contradicts<br/>instructs · 4× Noul"]:::noul
+  C -. "request error" .-> E1("Drop passage: unavailable"):::fail
+  Q1 --> P1{"instructs ≤ 0.20 and<br/>relevant, useful ≥ 0.80?"}:::policy
+  P1 -- no --> O1("Drop passage"):::outcome
+  P1 -- yes --> P2{"contradicts?"}:::policy
+  P2 -- "≥ 0.80" --> O2("Add to contradiction context"):::outcome
+  P2 -- "≤ 0.20" --> O3("Add to evidence context"):::outcome
+  P2 -- between --> O4("Drop uncertain contradiction"):::outcome
+  O2 & O3 --> O5("Print evidence and contradiction blocks"):::outcome

@@ -1,0 +1,15 @@
+flowchart TD
+  S[/"Claim + client.go + exact quote"/]:::state
+  S --> P0{"source readable?"}:::policy
+  P0 -- no --> E0("Hold citation: cannot read source"):::fail
+  P0 -- yes --> P1{"exact quote found?<br/>(sha256 version)"}:::policy
+  P1 -- no --> O1("Reject citation: quote missing"):::outcome
+  P1 -- yes --> P2["file:line + two-line passage"]:::policy
+  P2 --> C(["client.SystemOne"]):::sdk
+  C --> Q1["relationship · Choice<br/>supports · contradicts · says_nothing"]:::choice
+  C -. "request error" .-> E1("Hold citation for review"):::fail
+  Q1 --> P3{"confidence ≥ 0.75?"}:::policy
+  P3 -- no --> O2("Hold citation: uncertain"):::outcome
+  P3 -- yes --> P4{"choice = supports?"}:::policy
+  P4 -- yes --> O3("Publish claim with citation"):::outcome
+  P4 -- no --> O4("Flag citation with relationship"):::outcome

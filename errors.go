@@ -431,9 +431,8 @@ func joinValidationDetails(entries []any) string {
 
 // headerValue looks a header up case-insensitively and reports whether it was
 // present at all, so an explicitly empty value is distinguishable from an
-// absent one. Duplicate headers are comma-joined like the Python SDK's HTTP
-// client renders them, so repeated Retry-After lines fail to parse rather
-// than silently honoring only the first value.
+// absent one. Duplicate header lines resolve to the first value, matching the
+// Python SDK's httpx `Headers.get` lookup.
 func headerValue(headers http.Header, name string) (string, bool) {
 	if headers == nil {
 		return "", false
@@ -445,7 +444,7 @@ func headerValue(headers http.Header, name string) (string, bool) {
 	if len(values) == 0 {
 		return "", true
 	}
-	return strings.Join(values, ", "), true
+	return values[0], true
 }
 
 // parseRetryAfter converts the retry-after-ms and retry-after response

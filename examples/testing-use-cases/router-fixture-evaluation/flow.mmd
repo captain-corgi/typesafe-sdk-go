@@ -1,0 +1,16 @@
+flowchart TD
+  M{"TYPESAFE_EVAL_MODEL pinned?<br/>set and not latest"}:::policy
+  M -- no --> E0("Exit: set a pinned model"):::fail
+  M -- yes --> S[/"for each labeled fixture (8)"/]:::state
+  S --> C(["client.SystemOne"]):::sdk
+  C --> Q1["action · Choice<br/>refund · track_order · cancel · other"]:::choice
+  C -. "request error or missing answer" .-> E1("outcome: inconclusive"):::fail
+  Q1 --> P1{"confidence below 0.85?"}:::policy
+  P1 -- yes --> O1("outcome: inconclusive<br/>abstentions++"):::outcome
+  P1 -- no --> P2{"choice == label?"}:::policy
+  P2 -- yes --> P3["agreement_for_review<br/>matrix label/choice ++"]:::policy
+  P2 -- no --> P4["disagreement_for_review<br/>matrix label/choice ++"]:::policy
+  P3 --> O2("Write router-evaluation JSON;<br/>print abstention rate + matrix"):::outcome
+  P4 --> O2
+  O1 --> O2
+  E1 --> O2

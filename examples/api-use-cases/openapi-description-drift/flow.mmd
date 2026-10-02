@@ -1,0 +1,14 @@
+flowchart TD
+  S[/"Old and current OpenAPI operation"/]:::state
+  S --> P0{"method, path, schema hash equal?"}:::policy
+  P0 -- no --> O0("structural_diff_requires_review"):::outcome
+  P0 -- yes --> P1{"prose changed?"}:::policy
+  P1 -- no --> O1("no_prose_change"):::outcome
+  P1 -- yes --> P2{"total prose ≤ 4000 chars?"}:::policy
+  P2 -- no --> E1("review_prose_change"):::fail
+  P2 -- yes --> C(["client.SystemOne"]):::sdk
+  C --> Q1["behavior · ordering · errors · 3× Noul"]:::noul
+  C -. "request error" .-> E1
+  Q1 --> P3{"any answer above 0.20?"}:::policy
+  P3 -- yes --> O2("review_prose_change"):::outcome
+  P3 -- no --> O3("no_semantic_drift_detected_run_contract_tests"):::outcome

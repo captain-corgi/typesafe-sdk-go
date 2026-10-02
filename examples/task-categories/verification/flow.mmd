@@ -1,0 +1,14 @@
+flowchart TD
+  S[/"for each claim + cited passage (2)"/]:::state
+  S --> C(["client.SystemOne"]):::sdk
+  C --> Q1["supported · Noul"]:::noul
+  C --> Q2["support_strength · Score<br/>contradicts · unrelated · weak · direct"]:::score
+  C --> Q3["overstates · Noul"]:::noul
+  C -. "request error" .-> E1("Print the error, next claim"):::fail
+  Q1 --> P1{"strength below 0.5?"}:::policy
+  Q2 --> P1
+  Q3 --> P1
+  P1 -- yes --> O1("FAIL: citation contradicts the claim"):::outcome
+  P1 -- no --> P2{"supported ≥ 0.5, strength ≥ 2.5<br/>and overstates below 0.5?"}:::policy
+  P2 -- yes --> O2("Verified"):::outcome
+  P2 -- no --> O3("Send to citation review"):::outcome

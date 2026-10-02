@@ -1,0 +1,13 @@
+flowchart TD
+  S[/"Upstream status 429 + sanitized message"/]:::state
+  S --> P0["Map status in Go<br/>429 · 503 · else 502"]:::policy
+  P0 --> P1{"message 1-500 chars?"}:::policy
+  P1 -- no --> E1("Generic upstream-failure problem"):::fail
+  P1 -- yes --> C(["client.SystemOne"]):::sdk
+  C --> Q1["failure · Choice<br/>quota_exhausted · temporary_unavailable<br/>invalid_payload · other"]:::choice
+  C -. "request error" .-> E1
+  Q1 --> P2{"known problem and confidence ≥ 0.80?"}:::policy
+  P2 -- no --> E1
+  P2 -- yes --> O1("Public problem type with Go-chosen status"):::outcome
+  O1 --> O2("Print application/problem+json response"):::outcome
+  E1 --> O2

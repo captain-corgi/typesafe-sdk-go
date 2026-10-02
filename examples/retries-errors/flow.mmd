@@ -1,0 +1,17 @@
+flowchart TD
+  S1[/"RetryPolicy: MaxRetries 4 · backoff 250ms<br/>statuses 429 · 502 · 503 · 504 · budget 2m"/]:::state
+  S2[/"Bug report · ctx timeout 3m<br/>per call: jev-latest · 15s · X-Request-Source"/]:::state
+  S1 --> C1(["client.SystemOne"]):::sdk
+  S2 --> C1
+  C1 --> Q1["is_bug · Noul"]:::noul
+  Q1 --> O1("Print is_bug and request id"):::outcome
+  O1 --> C2(["client.Models.List"]):::sdk
+  C2 --> O2("Print model count and first model"):::outcome
+  C1 -. "request error" .-> P1{"describe(err): each errors.As match prints"}:::policy
+  C2 -. "request error" .-> P1
+  P1 -- "*TypeSafeError" --> E1("A TypeSafe SDK failure"):::fail
+  P1 -- "*RateLimitError with RetryAfterMs" --> E2("Rate limited; server wait in ms"):::fail
+  P1 -- "*ResponseValidationError" --> E3("Response invalid at FieldPath"):::fail
+  P1 -- "*TimeoutError" --> E4("Timed out after Duration"):::fail
+  P1 -- "*ConnectionError" --> E5("Print unwrapped transport cause"):::fail
+  P1 -- "*APIError" --> E6("Endpoint, status, request id; exit 1"):::fail

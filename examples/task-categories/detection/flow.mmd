@@ -1,0 +1,16 @@
+flowchart TD
+  S[/"for each email message (3)"/]:::state
+  S --> C(["client.SystemOne"]):::sdk
+  C --> Q1["spam · Noul"]:::noul
+  C --> Q2["phishing · Noul<br/>urgency + credential or payment request"]:::noul
+  C --> Q3["promotional · Noul"]:::noul
+  C -. "request error" .-> E1("Print the error, next message"):::fail
+  Q1 --> P1{"p(phishing) ≥ 0.30?"}:::policy
+  Q2 --> P1
+  Q3 --> P1
+  P1 -- yes --> O1("Quarantine and warn the recipient"):::outcome
+  P1 -- no --> P2{"p(spam) ≥ 0.50?"}:::policy
+  P2 -- yes --> O2("Move to junk"):::outcome
+  P2 -- no --> P3{"p(promotional) ≥ 0.50?"}:::policy
+  P3 -- yes --> O3("Move to promotions"):::outcome
+  P3 -- no --> O4("Deliver to inbox"):::outcome

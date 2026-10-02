@@ -1,0 +1,8 @@
+flowchart TD
+  S1[/"Query: cancel subscription and refund"/]:::state
+  S1 --> S2[/"map: for each KB passage (5)"/]:::state
+  S2 --> C(["client.SystemOne"]):::sdk
+  C --> Q1["relevance · Score<br/>irrelevant · related · directly answers"]:::score
+  Q1 --> P1["reduce: sort by relevance, descending"]:::policy
+  P1 --> P2["Keep the top 3"]:::policy
+  P2 --> O1("Print ranked passages with relevance"):::outcome

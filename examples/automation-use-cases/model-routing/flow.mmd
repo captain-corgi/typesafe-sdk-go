@@ -1,0 +1,17 @@
+flowchart TD
+  S[/"for each prompt (3)"/]:::state
+  S --> C(["client.SystemOne"]):::sdk
+  C -. "request error" .-> E1("Print error, skip prompt"):::fail
+  C --> Q1["domain · Choice<br/>creative · analysis · lookup · support"]:::choice
+  C --> Q2["difficulty · Score<br/>trivial · standard · hard"]:::score
+  C --> Q3["needs_reasoning · Noul"]:::noul
+  Q1 --> P1
+  Q2 --> P1
+  Q3 --> P1
+  P1{"domain confidence below 0.60?"}:::policy
+  P1 -- yes --> O1("route: standard (low confidence)"):::outcome
+  P1 -- no --> P2{"needs_reasoning ≥ 0.5 or<br/>difficulty ≥ 1.5?"}:::policy
+  P2 -- yes --> O2("route: reasoning-max"):::outcome
+  P2 -- no --> P3{"difficulty below 0.5?"}:::policy
+  P3 -- yes --> O3("route: flash-mini"):::outcome
+  P3 -- no --> O4("route: standard"):::outcome

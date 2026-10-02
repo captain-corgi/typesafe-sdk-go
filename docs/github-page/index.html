@@ -1,0 +1,2195 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="system">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TypeSafe SDK for Go</title>
+  <meta name="description" content="Go client SDK for the TypeSafe AI API: typed answers to named questions, zero runtime dependencies, and 91 runnable examples with diagrams.">
+  <meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff">
+  <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#020617">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2300ADD8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z'/%3E%3Cpath d='m9 12 2 2 4-4'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
+  <script>
+    // Apply the saved theme before first paint to avoid a flash.
+    (function () {
+      var t = 'system';
+      try { t = localStorage.getItem('theme') || 'system'; } catch (e) {}
+      document.documentElement.setAttribute('data-theme', t);
+    })();
+  </script>
+  <style>
+    /* ─── Tokens (one definition per token; light-dark() follows color-scheme) ─── */
+    :root {
+      color-scheme: light dark;
+      --bg: light-dark(#ffffff, #020617);
+      --surface: light-dark(#f8fafc, #0b1120);
+      --surface-2: light-dark(#f1f5f9, #111a2e);
+      --code-bg: light-dark(#fbfcfd, #0a0f1d);
+      --border: light-dark(#e2e8f0, #1e293b);
+      --border-strong: light-dark(#cbd5e1, #334155);
+      --fg: light-dark(#0f172a, #f1f5f9);
+      --muted: light-dark(#475569, #94a3b8);
+      --faint: light-dark(#8392a7, #64748b);
+      --accent: light-dark(#0369a1, #38bdf8);
+      --go: #00add8;
+      --ring: light-dark(#0284c7, #7dd3fc);
+      --ok: light-dark(#15803d, #4ade80);
+      --nav-bg: light-dark(rgb(255 255 255 / .82), rgb(2 6 23 / .78));
+      --noul: light-dark(#15803d, #4ade80);
+      --noul-bg: light-dark(#dcfce7, rgb(34 197 94 / .14));
+      --choice: light-dark(#1d4ed8, #93c5fd);
+      --choice-bg: light-dark(#dbeafe, rgb(59 130 246 / .16));
+      --score: light-dark(#7e22ce, #d8b4fe);
+      --score-bg: light-dark(#f3e8ff, rgb(168 85 247 / .16));
+      --raw: light-dark(#c2410c, #fdba74);
+      --raw-bg: light-dark(#ffedd5, rgb(249 115 22 / .16));
+      /* Step-through walkthrough kinds */
+      --k-setup: light-dark(#5b6478, #9aa4bc);    --k-setup-bg: light-dark(#edf0f6, #232a3a);
+      --k-request: light-dark(#4653e8, #93a0ff);  --k-request-bg: light-dark(#e8ebfe, #26305a);
+      --k-response: light-dark(#0e8a76, #3ec9ad); --k-response-bg: light-dark(#e2f6f1, #12352e);
+      --k-decision: light-dark(#b26205, #e0a04f); --k-decision-bg: light-dark(#fdf0dc, #3a2c14);
+      --k-error: light-dark(#d23b4e, #f2788a);    --k-error-bg: light-dark(#fdeaec, #401b22);
+      --k-output: light-dark(#7a3ff2, #b58cff);   --k-output-bg: light-dark(#f1e9fe, #2d2350);
+      --e-data: light-dark(#4653e8, #8e9bff);
+      --e-control: light-dark(#8d97ad, #6d778e);
+      --e-error: light-dark(#d23b4e, #f2788a);
+      --radius: 12px;
+      --sans: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+      --mono: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', Consolas, monospace;
+    }
+    :root[data-theme="light"] { color-scheme: light; }
+    :root[data-theme="dark"] { color-scheme: dark; }
+
+    /* ─── Base ─── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font: 16px/1.6 var(--sans);
+      background: var(--bg);
+      color: var(--fg);
+      -webkit-font-smoothing: antialiased;
+    }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover, p a { text-decoration: underline; text-underline-offset: 3px; }
+    :focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; border-radius: 4px; }
+    code, pre, kbd { font-family: var(--mono); font-variant-ligatures: none; }
+    :not(pre) > code {
+      font-size: .85em;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      padding: .08em .35em;
+      border-radius: 5px;
+    }
+    button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
+    .i { width: 1em; height: 1em; flex-shrink: 0; stroke: currentColor; fill: none; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
+    .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+    .skip { position: absolute; left: 1rem; top: -3rem; z-index: 200; background: var(--fg); color: var(--bg); padding: .5rem 1rem; border-radius: 8px; }
+    .skip:focus { top: .75rem; }
+    .wrap { margin: 0 auto; padding: 0 1.5rem; }
+    section { padding: 5rem 0; scroll-margin-top: 64px; }
+    section + section { border-top: 1px solid var(--border); }
+    .eyebrow { font: 600 .75rem/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
+    h2 { font-size: clamp(1.6rem, 3vw, 2.1rem); line-height: 1.2; letter-spacing: -.02em; margin: .6rem 0 .75rem; }
+    .lead { color: var(--muted); font-size: 1.05rem; }
+    .head { margin-bottom: 2.5rem; }
+
+    /* ─── Buttons ─── */
+    .btn {
+      display: inline-flex; align-items: center; gap: .5rem;
+      font-weight: 600; font-size: .95rem;
+      padding: .7rem 1.2rem; border-radius: 10px;
+      border: 1px solid var(--border-strong);
+      color: var(--fg);
+      transition: background-color .2s, border-color .2s, color .2s;
+    }
+    .btn:hover { text-decoration: none; border-color: var(--fg); }
+    .btn-primary { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+    .btn-primary:hover { background: color-mix(in srgb, var(--fg) 86%, var(--bg)); }
+    .btn:disabled { opacity: .45; cursor: not-allowed; }
+    .icon-btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: .4rem;
+      min-height: 36px; padding: 0 .7rem; border-radius: 8px;
+      color: var(--muted); font-size: .85rem; font-weight: 500;
+      border: 1px solid transparent;
+      transition: color .2s, background-color .2s, border-color .2s;
+    }
+    .icon-btn:hover { color: var(--fg); background: var(--surface-2); text-decoration: none; }
+    .icon-btn.done { color: var(--ok); }
+
+    /* ─── Nav ─── */
+    .nav { position: sticky; top: 0; z-index: 100; background: var(--nav-bg); backdrop-filter: saturate(1.4) blur(14px); border-bottom: 1px solid var(--border); }
+    .nav .wrap { display: flex; align-items: center; gap: 1.5rem; height: 60px; }
+    .brand { display: flex; align-items: center; gap: .6rem; font-weight: 700; color: var(--fg); letter-spacing: -.01em; }
+    .brand:hover { text-decoration: none; }
+    .brand .i { width: 24px; height: 24px; stroke: var(--go); stroke-width: 2; }
+    .brand small { font: 500 .72rem var(--mono); color: var(--muted); border: 1px solid var(--border); border-radius: 999px; padding: .1rem .5rem; }
+    .nav-links { display: flex; align-items: center; gap: .25rem; margin-left: auto; }
+    .nav-links > a { color: var(--muted); font-size: .9rem; font-weight: 500; padding: .4rem .7rem; border-radius: 8px; }
+    .nav-links > a:hover { color: var(--fg); text-decoration: none; background: var(--surface-2); }
+    .theme { display: inline-flex; border: 1px solid var(--border); border-radius: 9px; padding: 2px; margin-left: .5rem; }
+    .theme button { width: 32px; height: 28px; display: grid; place-items: center; border-radius: 7px; color: var(--muted); transition: color .2s, background-color .2s; }
+    .theme button:hover { color: var(--fg); }
+    .theme button[aria-pressed="true"] { background: var(--surface-2); color: var(--fg); box-shadow: inset 0 0 0 1px var(--border-strong); }
+    .nav-toggle { display: none; margin-left: auto; width: 40px; height: 40px; place-items: center; border-radius: 8px; }
+    .nav-toggle .i { width: 22px; height: 22px; }
+    @media (max-width: 820px) {
+      .nav-toggle { display: grid; }
+      .nav-links { display: none; position: absolute; top: 60px; left: 0; right: 0; flex-direction: column; align-items: stretch; gap: .25rem; padding: 1rem 1.5rem 1.25rem; background: var(--bg); border-bottom: 1px solid var(--border); }
+      .nav-links.open { display: flex; }
+      .theme { margin: .5rem 0 0; align-self: flex-start; }
+    }
+
+    /* ─── Hero ─── */
+    .hero { padding: 6rem 0 5rem; }
+    .hero .wrap { display: grid; grid-template-columns: .9fr 1.1fr; gap: 3rem; align-items: center; }
+    .hero pre.code { font-size: .8rem; }
+    .hero h1 { font-size: clamp(2.2rem, 5vw, 3.4rem); line-height: 1.08; letter-spacing: -.035em; margin: 1rem 0 1.25rem; }
+    .hero h1 span { color: light-dark(#007c9a, #22c3e6); }
+    .hero p { color: var(--muted); font-size: 1.12rem; }
+    .cta { display: flex; flex-wrap: wrap; gap: .75rem; margin: 2rem 0 1.5rem; }
+    .install {
+      display: flex; align-items: center; gap: .75rem;
+      background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+      padding: .35rem .35rem .35rem 1rem; font: .88rem var(--mono);
+    }
+    .install code { flex: 1; min-width: 0; overflow-x: auto; white-space: nowrap; color: var(--muted); }
+    .install code b { color: var(--fg); font-weight: 500; }
+    .hero-stats { display: flex; gap: 2rem; margin-top: 2rem; }
+    .hero-stats div { font-size: .85rem; color: var(--muted); }
+    .hero-stats strong { display: block; font: 600 1.4rem var(--mono); color: var(--fg); }
+    .hero .wrap > * { min-width: 0; }
+    @media (max-width: 960px) { .hero .wrap { grid-template-columns: minmax(0, 1fr); } .hero { padding: 4rem 0 3.5rem; } }
+
+    /* ─── Code blocks ─── */
+    .code-card { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; min-width: 0; }
+    .code-card-bar { display: flex; align-items: center; gap: .5rem; padding: .35rem .5rem .35rem 1rem; border-bottom: 1px solid var(--border); background: var(--surface); font: 500 .8rem var(--mono); color: var(--muted); }
+    .code-card-bar .spacer { flex: 1; }
+    pre.code { margin: 0; padding: 1rem 1.1rem; overflow: auto; font-size: .84rem; line-height: 1.65; tab-size: 4; background: transparent !important; }
+    pre.code code { font-family: inherit; }
+    .shiki span { color: light-dark(var(--shiki-light), var(--shiki-dark)); }
+    pre.code.ln code { counter-reset: line; }
+    pre.code.ln .line::before {
+      counter-increment: line; content: counter(line);
+      display: inline-block; width: 2.4em; margin-right: 1.25em;
+      text-align: right; color: var(--faint); user-select: none;
+    }
+
+    /* ─── Intro slides ─── */
+    .intro-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 1rem 2rem; }
+    kbd { font-size: .8em; padding: .1em .45em; border: 1px solid var(--border-strong); border-bottom-width: 2px; border-radius: 5px; background: var(--surface); color: var(--fg); }
+    .deck-frame { aspect-ratio: 16 / 10; max-height: max(420px, calc(100vh - 110px)); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; background: var(--bg); box-shadow: 0 1px 2px rgb(15 23 42 / .04), 0 12px 32px -12px rgb(15 23 42 / .12); }
+    .deck-frame iframe { display: block; width: 100%; height: 100%; border: 0; color-scheme: normal; }
+    @media (max-width: 720px) { .deck-frame { aspect-ratio: 2 / 3; } }
+
+    /* ─── Features ─── */
+    .features { display: grid; grid-template-columns: repeat(3, 1fr); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+    .feature { padding: 1.75rem; border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+    .feature:nth-child(3n) { border-right: 0; }
+    .feature:nth-last-child(-n + 3) { border-bottom: 0; }
+    .feature .i { width: 22px; height: 22px; color: var(--go); margin-bottom: .9rem; }
+    .feature h3 { font-size: 1rem; margin-bottom: .35rem; }
+    .feature p { color: var(--muted); font-size: .92rem; }
+    @media (max-width: 900px) {
+      .features { grid-template-columns: 1fr; }
+      .feature { border-right: 0 !important; border-bottom: 1px solid var(--border) !important; }
+      .feature:last-child { border-bottom: 0 !important; }
+    }
+
+    /* ─── How it works ─── */
+    .how { display: grid; grid-template-columns: .9fr 1.1fr; gap: 2.5rem; align-items: start; }
+    .prims { display: grid; gap: .75rem; }
+    .prim { display: grid; grid-template-columns: auto 1fr; gap: .25rem 1rem; align-items: baseline; padding: 1.1rem 1.25rem; border: 1px solid var(--border); border-radius: var(--radius); }
+    .prim p { grid-column: 2; color: var(--muted); font-size: .9rem; }
+    .prim h3 { font-size: .98rem; }
+    .diagram-card { border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); padding: 1.25rem; min-width: 0; }
+    .diagram { overflow-x: auto; display: flex; justify-content: center; min-height: 120px; }
+    .diagram svg { max-width: 100%; height: auto; }
+    .diagram-status { color: var(--muted); font-size: .9rem; align-self: center; }
+    @media (max-width: 960px) { .how { grid-template-columns: minmax(0, 1fr); } }
+
+    /* ─── Kind tags ─── */
+    .tag { display: inline-flex; align-items: center; gap: .3rem; font: 600 .72rem/1 var(--mono); padding: .32rem .5rem; border-radius: 6px; white-space: nowrap; }
+    .tag-noul { color: var(--noul); background: var(--noul-bg); }
+    .tag-choice { color: var(--choice); background: var(--choice-bg); }
+    .tag-score { color: var(--score); background: var(--score-bg); }
+    .tag-raw { color: var(--raw); background: var(--raw-bg); }
+
+    /* ─── Quick start ─── */
+    .qs { display: grid; grid-template-columns: .8fr 1.2fr; gap: 2.5rem; align-items: start; }
+    .checks { list-style: none; display: grid; gap: .6rem; margin-top: 1.5rem; }
+    .checks li { display: flex; gap: .6rem; color: var(--muted); font-size: .95rem; }
+    .checks .i { color: var(--ok); margin-top: .3rem; }
+    @media (max-width: 960px) { .qs { grid-template-columns: minmax(0, 1fr); } }
+
+    /* ─── Example browser ─── */
+    .browser { display: grid; grid-template-columns: 320px minmax(0, 1fr); gap: 2rem; align-items: start; }
+    .side { position: sticky; top: 76px; max-height: calc(100vh - 92px); display: flex; flex-direction: column; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); overflow: hidden; }
+    .side-top { padding: .9rem; border-bottom: 1px solid var(--border); display: grid; gap: .7rem; }
+    .search { position: relative; }
+    .search .i { position: absolute; left: .7rem; top: 50%; transform: translateY(-50%); color: var(--faint); }
+    .search input {
+      width: 100%; font: inherit; font-size: .9rem; color: var(--fg);
+      background: var(--bg); border: 1px solid var(--border-strong); border-radius: 8px;
+      padding: .55rem .7rem .55rem 2.1rem;
+    }
+    .search input::placeholder { color: var(--faint); }
+    .search input:focus-visible { outline: 2px solid var(--ring); outline-offset: 0; border-color: transparent; }
+    .chips { display: flex; flex-wrap: wrap; gap: .35rem; align-items: center; }
+    .chips-label { font-size: .75rem; color: var(--muted); margin-right: .15rem; }
+    .chip { font: 600 .72rem/1 var(--mono); padding: .4rem .55rem; border-radius: 999px; border: 1px solid var(--border-strong); color: var(--muted); transition: color .2s, background-color .2s, border-color .2s; }
+    .chip:hover { color: var(--fg); }
+    .chip[aria-pressed="true"].k-noul { color: var(--noul); background: var(--noul-bg); border-color: transparent; }
+    .chip[aria-pressed="true"].k-choice { color: var(--choice); background: var(--choice-bg); border-color: transparent; }
+    .chip[aria-pressed="true"].k-score { color: var(--score); background: var(--score-bg); border-color: transparent; }
+    .chip[aria-pressed="true"].k-raw { color: var(--raw); background: var(--raw-bg); border-color: transparent; }
+    .count { font-size: .78rem; color: var(--muted); }
+    .ex-list { overflow-y: auto; padding: .4rem .5rem 1rem; overscroll-behavior: contain; }
+    .grp-h { display: flex; justify-content: space-between; font: 600 .72rem var(--mono); text-transform: uppercase; letter-spacing: .06em; color: var(--muted); padding: .9rem .5rem .4rem; }
+    .grp ul { list-style: none; }
+    .ex-link { display: block; padding: .45rem .6rem; border-radius: 8px; color: var(--fg); border-left: 2px solid transparent; transition: background-color .15s; }
+    .ex-link:hover { background: var(--surface-2); text-decoration: none; }
+    .ex-link[aria-current="page"] { background: var(--bg); border-left-color: var(--go); box-shadow: 0 0 0 1px var(--border); }
+    .ex-link b { display: block; font: 500 .8rem/1.4 var(--mono); overflow-wrap: anywhere; }
+    .detail-head .desc code { background: none; border: 0; padding: 0; font-size: .92em; font-weight: 600; }
+    .ex-link code { background: none; border: 0; padding: 0; font-size: .95em; color: var(--fg); }
+    .ex-link span { display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; font-size: .78rem; color: var(--muted); }
+    .empty { padding: 1.5rem 1rem; text-align: center; color: var(--muted); font-size: .88rem; }
+    .empty button { color: var(--accent); font-weight: 600; margin-top: .5rem; }
+    .browse-toggle { display: none; }
+
+    .detail { min-width: 0; display: grid; gap: 1.25rem; scroll-margin-top: 76px; }
+    .detail-head { display: grid; gap: .6rem; }
+    .crumb { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; font-size: .82rem; color: var(--muted); }
+    .detail-head h3 { font-size: clamp(1.35rem, 2.4vw, 1.75rem); letter-spacing: -.02em; line-height: 1.2; }
+    .detail-head .path { font: .82rem var(--mono); color: var(--muted); overflow-wrap: anywhere; }
+    .detail-head .desc { font-size: 1.02rem; }
+    .detail-head .summary { color: var(--muted); font-size: .95rem; }
+    .tags { display: flex; flex-wrap: wrap; gap: .4rem; }
+    .panel { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; background: var(--surface); }
+    .panel-bar { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; padding: .45rem .5rem .45rem 1rem; border-bottom: 1px solid var(--border); }
+    .panel-bar h4 { font-size: .85rem; font-weight: 600; }
+    .panel-bar .spacer { flex: 1; }
+    .panel .diagram { padding: 1.5rem 1rem; background: var(--bg); min-height: 220px; }
+    .legend { display: flex; flex-wrap: wrap; gap: .4rem .9rem; padding: .7rem 1rem; border-top: 1px solid var(--border); font-size: .75rem; color: var(--muted); }
+    .legend span { display: inline-flex; align-items: center; gap: .35rem; }
+    .legend i { width: 10px; height: 10px; border-radius: 3px; border: 1.5px solid; display: inline-block; }
+    .tabs { display: flex; gap: .15rem; }
+    .tab { padding: .4rem .75rem; border-radius: 7px; font: 500 .8rem var(--mono); color: var(--muted); transition: color .2s, background-color .2s; }
+    .tab:hover { color: var(--fg); }
+    .tab[aria-selected="true"] { color: var(--fg); background: var(--bg); box-shadow: 0 0 0 1px var(--border); }
+    .panel .code-scroll { max-height: 640px; overflow: auto; background: var(--code-bg); }
+    .pager { display: flex; justify-content: space-between; gap: 1rem; }
+    .pager a { display: inline-flex; align-items: center; gap: .4rem; font-size: .88rem; color: var(--muted); max-width: 48%; }
+    .pager a:hover { color: var(--fg); }
+    .pager a b { font: 500 .8rem var(--mono); color: var(--fg); overflow-wrap: anywhere; }
+    .note { color: var(--muted); font-size: .85rem; margin-top: 2rem; }
+    @media (max-width: 900px) {
+      .browser { grid-template-columns: minmax(0, 1fr); gap: 1.25rem; }
+      .side { position: static; max-height: none; }
+      .browse-toggle { display: flex; align-items: center; justify-content: space-between; gap: .75rem; width: 100%; padding: .8rem 1rem; font-weight: 600; font-size: .92rem; text-align: left; }
+      .browse-toggle .i { transition: transform .2s; }
+      .side[data-open="true"] .browse-toggle .i { transform: rotate(180deg); }
+      .side:not([data-open="true"]) .side-top,
+      .side:not([data-open="true"]) .ex-list { display: none; }
+      .side .side-top { border-top: 1px solid var(--border); }
+      .ex-list { max-height: 60vh; }
+    }
+
+    /* ─── Walkthrough (step-through view) ─── */
+    #pane-flow-walk { background: var(--bg); }
+    .flow-layout { display: grid; grid-template-columns: minmax(0, 1fr) 350px; gap: 1.25rem; align-items: start; }
+    .flow-stage { overflow: auto; padding: 1.5rem 1rem; }
+    .flow-canvas { position: relative; margin: 0 auto; }
+    .edge-svg, .label-svg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+    /* Edge labels live in their own SVG layered above the node cards
+       (nodes are z-index: 1) so labels of edges that span one or more
+       steps stay visible instead of hiding behind an intermediate card. */
+    .label-svg { z-index: 2; }
+
+    .node {
+      position: absolute; z-index: 1;
+      background: var(--surface);
+      border: 1px solid var(--border-strong); border-left-width: 4px;
+      border-radius: 10px; padding: 9px 12px 10px;
+      cursor: pointer;
+      transition: box-shadow .15s, opacity .2s, border-color .15s;
+    }
+    .node:hover { border-color: var(--accent); }
+    .node-head { display: flex; align-items: center; gap: 8px; margin-bottom: 3px; }
+    .node-num {
+      display: inline-flex; align-items: center; justify-content: center;
+      min-width: 22px; height: 22px; border-radius: 999px;
+      font: 700 .72rem var(--mono);
+      /* Saturated light-mode kind chips take white numerals; the pastel
+         dark-mode ones take the page ink. */
+      color: light-dark(#ffffff, #0b1120);
+      background: var(--node-color, var(--accent));
+    }
+    .node-kind { font: 700 .68rem var(--mono); letter-spacing: .05em; text-transform: uppercase; color: var(--node-color, var(--accent)); }
+    .node-title { font-size: .92rem; font-weight: 600; line-height: 1.35; text-wrap: balance; }
+    /* Kind accents: left border, number chip, badge (before :hover in source
+       order would let the hover color clobber the kind left border). */
+    .node.k-setup     { --node-color: var(--k-setup);     border-left-color: var(--k-setup); }
+    .node.k-request   { --node-color: var(--k-request);   border-left-color: var(--k-request); }
+    .node.k-response  { --node-color: var(--k-response);  border-left-color: var(--k-response); }
+    .node.k-decision  { --node-color: var(--k-decision);  border-left-color: var(--k-decision); }
+    .node.k-error     { --node-color: var(--k-error);     border-left-color: var(--k-error); }
+    .node.k-output    { --node-color: var(--k-output);    border-left-color: var(--k-output); }
+    .node.current { border-color: var(--node-color, var(--accent)); box-shadow: 0 0 0 3px var(--bg), 0 0 0 6px var(--node-color, var(--accent)); }
+    .flow-canvas.playing .node:not(.current) { opacity: .45; }
+    .flow-canvas.playing .edge:not(.active) { opacity: .3; }
+
+    /* Edge paths: marching-ants animation (the -240px offset loops cleanly
+       for every dash pattern below: 240 % 16, % 10, % 12 === 0) */
+    .edge { fill: none; stroke-width: 1.8; animation: ants 4s linear infinite; }
+    .edge.k-data    { stroke: var(--e-data);    stroke-dasharray: 10 6; }
+    .edge.k-control { stroke: var(--e-control); stroke-dasharray: 4 6; }
+    .edge.k-error   { stroke: var(--e-error);   stroke-dasharray: 7 5; }
+    .edge.active { stroke-width: 3.2; animation-duration: 1.1s; }
+    @keyframes ants { to { stroke-dashoffset: -240; } }
+    .marker-fill-data    { fill: var(--e-data); }
+    .marker-fill-control { fill: var(--e-control); }
+    .marker-fill-error   { fill: var(--e-error); }
+    /* Edge labels: text with a halo so it stays readable across lines */
+    .edge-label {
+      font-family: var(--sans); font-size: 11px; font-weight: 600;
+      text-anchor: middle; paint-order: stroke;
+      stroke: var(--bg); stroke-width: 4px; stroke-linejoin: round;
+    }
+    .edge-label.k-data    { fill: var(--e-data); }
+    .edge-label.k-control { fill: var(--muted); }
+    .edge-label.k-error   { fill: var(--e-error); }
+    .edge-label.active { fill: var(--accent); opacity: 1; font-weight: 700; }
+
+    .flow-panel { position: sticky; top: 76px; display: flex; flex-direction: column; gap: .75rem; }
+    .panel-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: .9rem 1rem; }
+    .panel-controls { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; }
+    .panel-controls .btn { padding: .45rem .9rem; font-size: .85rem; }
+    .panel-controls .btn-primary { min-width: 84px; }
+    .step-pos { margin-left: auto; font: 500 .78rem var(--mono); color: var(--faint); }
+    .panel-body { display: flex; flex-direction: column; gap: .6rem; }
+    .step-kind-badge { align-self: flex-start; font: 700 .68rem var(--mono); letter-spacing: .05em; text-transform: uppercase; border-radius: 999px; padding: 3px 11px; }
+    .step-kind-badge.k-setup    { color: var(--k-setup);    background: var(--k-setup-bg); }
+    .step-kind-badge.k-request  { color: var(--k-request);  background: var(--k-request-bg); }
+    .step-kind-badge.k-response { color: var(--k-response); background: var(--k-response-bg); }
+    .step-kind-badge.k-decision { color: var(--k-decision); background: var(--k-decision-bg); }
+    .step-kind-badge.k-error    { color: var(--k-error);    background: var(--k-error-bg); }
+    .step-kind-badge.k-output   { color: var(--k-output);   background: var(--k-output-bg); }
+    .step-title { font-size: 1.05rem; font-weight: 700; letter-spacing: -.01em; line-height: 1.35; }
+    .step-detail { font-size: .92rem; color: var(--muted); }
+    .step-code { max-height: 280px; overflow: auto; background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px; }
+    .step-code pre.code { margin: 0; padding: .75rem .9rem; font-size: .78rem; }
+    .step-loc { font: 400 .78rem var(--mono); color: var(--faint); }
+    .panel-hint { font-size: .78rem; color: var(--faint); }
+    .wt-error { padding: 1.5rem; }
+    .wt-error h3 { font-size: 1rem; margin-bottom: .5rem; }
+    .wt-error .summary { color: var(--muted); font-size: .95rem; }
+
+    .walk-legend { display: flex; flex-wrap: wrap; gap: .5rem 1.1rem; align-items: center; padding: .7rem 1rem; border-top: 1px solid var(--border); font-size: .75rem; color: var(--muted); }
+    .walk-legend-group { display: flex; flex-wrap: wrap; gap: .5rem .9rem; align-items: center; }
+    .walk-legend-item { display: inline-flex; align-items: center; gap: 6px; }
+    .walk-legend-dot { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+    .walk-legend-line { display: inline-block; }
+    .walk-legend-sep { width: 1px; height: 18px; background: var(--border); }
+
+    @media (max-width: 900px) {
+      /* minmax(0, 1fr) lets the track shrink below the diagram's fixed
+         min-width so the stage scrolls internally instead of stretching
+         the page horizontally on phone-width viewports. */
+      .flow-layout { grid-template-columns: minmax(0, 1fr); }
+      .flow-panel { position: static; }
+    }
+
+    /* ─── Docs ─── */
+    .docs { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1rem; }
+    .doc { display: block; padding: 1.2rem 1.25rem; border: 1px solid var(--border); border-radius: var(--radius); color: var(--fg); transition: border-color .2s, background-color .2s; }
+    .doc:hover { text-decoration: none; border-color: var(--border-strong); background: var(--surface); }
+    .doc h3 { display: flex; justify-content: space-between; align-items: center; font-size: .98rem; margin-bottom: .25rem; }
+    .doc h3 .i { color: var(--faint); }
+    .doc p { color: var(--muted); font-size: .88rem; }
+
+    footer { border-top: 1px solid var(--border); padding: 2.5rem 0; color: var(--muted); font-size: .85rem; }
+    footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 1rem; }
+    footer nav { display: flex; gap: 1.25rem; }
+    footer a { color: var(--muted); }
+    footer a:hover { color: var(--fg); }
+
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      *, *::before, *::after { transition: none !important; animation: none !important; }
+    }
+  </style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></symbol>
+  <symbol id="i-package" viewBox="0 0 24 24"><path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z"/><path d="M12 22V12"/><path d="m3.3 7 7.703 4.734a2 2 0 0 0 1.994 0L20.7 7"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></symbol>
+  <symbol id="i-zap" viewBox="0 0 24 24"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/></symbol>
+  <symbol id="i-compare" viewBox="0 0 24 24"><circle cx="18" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><path d="M13 6h3a2 2 0 0 1 2 2v7"/><path d="M11 18H8a2 2 0 0 1-2-2V9"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></symbol>
+  <symbol id="i-monitor" viewBox="0 0 24 24"><rect width="20" height="14" x="2" y="3" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></symbol>
+  <symbol id="i-external" viewBox="0 0 24 24"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></symbol>
+  <symbol id="i-left" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></symbol>
+  <symbol id="i-right" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+  <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h16"/></symbol>
+  <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M7 7h10v10"/><path d="M7 17 17 7"/></symbol>
+  <symbol id="i-github" viewBox="0 0 24 24"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"/><path d="M9 18c-4.51 2-5-2-7-2"/></symbol>
+</svg>
+
+<a class="skip" href="#main">Skip to content</a>
+<div id="live" class="sr-only" aria-live="polite"></div>
+
+<header class="nav">
+  <div class="wrap">
+    <a href="#top" class="brand"><svg class="i" aria-hidden="true"><use href="#i-shield"/></svg>TypeSafe SDK for Go <small>v0.7.0</small></a>
+    <button class="nav-toggle" aria-label="Menu" aria-expanded="false" aria-controls="nav-links"><svg class="i" aria-hidden="true"><use href="#i-menu"/></svg></button>
+    <nav class="nav-links" id="nav-links" aria-label="Primary">
+      <a href="#intro">Intro</a>
+      <a href="#features">Features</a>
+      <a href="#how">How it works</a>
+      <a href="#quickstart">Quick start</a>
+      <a href="#examples">Examples</a>
+      <a href="#docs">Docs</a>
+      <a href="https://github.com/captain-corgi/typesafe-sdk-go" target="_blank" rel="noopener" aria-label="GitHub repository"><svg class="i" aria-hidden="true" style="width:18px;height:18px;vertical-align:-4px"><use href="#i-github"/></svg></a>
+      <div class="theme" role="group" aria-label="Color theme">
+        <button data-theme-set="light" aria-label="Light theme" aria-pressed="false"><svg class="i" aria-hidden="true"><use href="#i-sun"/></svg></button>
+        <button data-theme-set="system" aria-label="System theme" aria-pressed="false"><svg class="i" aria-hidden="true"><use href="#i-monitor"/></svg></button>
+        <button data-theme-set="dark" aria-label="Dark theme" aria-pressed="false"><svg class="i" aria-hidden="true"><use href="#i-moon"/></svg></button>
+      </div>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+  <!-- ═══ Hero ═══ -->
+  <div class="hero" id="top">
+    <div class="wrap">
+      <div>
+        <span class="eyebrow">Go SDK · Python v0.7.0 parity</span>
+        <h1>Typed answers to <span>named questions</span>.</h1>
+        <p>Ask yes/no, classification, and rubric questions about any state in one request. Get statically typed answers back, then decide in plain Go.</p>
+        <div class="cta">
+          <a href="#examples" class="btn btn-primary">Browse examples <svg class="i" aria-hidden="true"><use href="#i-right"/></svg></a>
+          <a href="https://pkg.go.dev/github.com/captain-corgi/typesafe-sdk-go" class="btn" target="_blank" rel="noopener">API reference <svg class="i" aria-hidden="true"><use href="#i-external"/></svg></a>
+        </div>
+        <div class="install">
+          <code>$ <b>go get</b> github.com/captain-corgi/typesafe-sdk-go</code>
+          <button class="icon-btn" data-copy="go get github.com/captain-corgi/typesafe-sdk-go" aria-label="Copy install command"><svg class="i" aria-hidden="true"><use href="#i-copy"/></svg></button>
+        </div>
+        <div class="hero-stats">
+          <div><strong>0</strong>dependencies</div>
+          <div><strong>3</strong>typed primitives</div>
+          <div><strong data-total>91</strong>examples</div>
+        </div>
+      </div>
+      <div class="code-card">
+        <div class="code-card-bar">main.go</div>
+<pre class="code" data-lang="go"><code>resp, err := client.SystemOne(ctx, &amp;typesafe.SystemOneParams{
+    State: "I was charged twice. Please fix it today!",
+    Questions: typesafe.Questions{
+        "topic": typesafe.Choice{
+            Instructions: "What is this about?",
+            Criteria: typesafe.ChoiceCriteria{
+                "billing":   "Charges or invoices",
+                "technical": "Something is broken",
+            },
+        },
+        "urgent": typesafe.Noul{Instructions: "Is this urgent?"},
+        "anger": typesafe.Score{
+            Instructions: "How upset is the customer?",
+            Criteria:     typesafe.ScoreCriteria{"calm", "annoyed", "upset"},
+        },
+    },
+})
+
+topic := resp.Choices()["topic"] // .Choice "billing", .Confidence 0.97
+urgent := resp.Nouls()["urgent"] // .Noul 0.91
+anger := resp.Scores()["anger"]  // .Score 1.4</code></pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ Intro slides ═══ -->
+  <section id="intro">
+    <div class="wrap">
+      <div class="head intro-head">
+        <div>
+          <span class="eyebrow">Introduction</span>
+          <h2>The SDK in eight slides</h2>
+          <p class="lead">Use the arrow keys or swipe to move between slides. Press <kbd>F</kbd> for full screen.</p>
+        </div>
+        <a class="btn" href="slides.html" target="_blank" rel="noopener">Open in new tab <svg class="i" aria-hidden="true"><use href="#i-external"/></svg></a>
+      </div>
+      <div class="deck-frame">
+        <iframe src="slides.html" title="TypeSafe SDK for Go introduction slides" loading="lazy" allow="fullscreen" allowfullscreen></iframe>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ Features ═══ -->
+  <section id="features">
+    <div class="wrap">
+      <div class="head">
+        <span class="eyebrow">Why this SDK</span>
+        <h2>Small surface. Production defaults.</h2>
+        <p class="lead">Idiomatic Go on top of the standard library, with the same wire protocol, errors, and retry semantics as the Python SDK.</p>
+      </div>
+      <div class="features">
+        <div class="feature"><svg class="i" aria-hidden="true"><use href="#i-shield"/></svg><h3>Typed answers</h3><p>The question kind fixes the answer type. <code>Noul</code>, <code>Choice</code>, and <code>Score</code> map to their own answer structs.</p></div>
+        <div class="feature"><svg class="i" aria-hidden="true"><use href="#i-package"/></svg><h3>Zero dependencies</h3><p>Only <code>net/http</code>, <code>encoding/json</code>, and <code>log/slog</code>. CI proves the module has no third-party requirements.</p></div>
+        <div class="feature"><svg class="i" aria-hidden="true"><use href="#i-refresh"/></svg><h3>Smart retries</h3><p>Exponential backoff with jitter, <code>Retry-After</code> support, a per-call budget, and custom retry selectors.</p></div>
+        <div class="feature"><svg class="i" aria-hidden="true"><use href="#i-alert"/></svg><h3>Structured errors</h3><p>Match any failure with <code>errors.As</code>: <code>*RateLimitError</code>, <code>*TimeoutError</code>, <code>*ResponseValidationError</code>, and more.</p></div>
+        <div class="feature"><svg class="i" aria-hidden="true"><use href="#i-zap"/></svg><h3>Safe for concurrency</h3><p>One <code>Client</code> per process, shared across goroutines. Verified with <code>-race</code> in CI.</p></div>
+        <div class="feature"><svg class="i" aria-hidden="true"><use href="#i-compare"/></svg><h3>Secure and in parity</h3><p>HTTPS only, secret headers redacted from logs, bounded response size. Feature parity with Python SDK v0.7.0.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ How it works ═══ -->
+  <section id="how">
+    <div class="wrap">
+      <div class="head">
+        <span class="eyebrow">How it works</span>
+        <h2>Three primitives. One call. Your policy in Go.</h2>
+        <p class="lead">Describe the state, ask named questions, and branch on typed answers. The SDK validates, sends, retries, and decodes.</p>
+      </div>
+      <div class="how">
+        <div class="prims">
+          <div class="prim"><span class="tag tag-noul">Noul</span><h3>Yes or no, as a probability</h3><p><code>NoulAnswer.Noul</code> is a float from 0 to 1. Compare it to a threshold you measured.</p></div>
+          <div class="prim"><span class="tag tag-choice">Choice</span><h3>Pick one label</h3><p><code>ChoiceAnswer</code> has the <code>Choice</code>, its <code>Confidence</code>, and every label's probability.</p></div>
+          <div class="prim"><span class="tag tag-score">Score</span><h3>Place on an ordered rubric</h3><p><code>ScoreAnswer.Score</code> is a position on your rubric, with a legend and probabilities.</p></div>
+          <div class="prim"><span class="tag tag-raw">Raw</span><h3>Pass anything through</h3><p><code>RawQuestion</code> sends a question shape untouched, for fields this SDK version does not model.</p></div>
+        </div>
+        <figure class="diagram-card">
+          <div class="diagram" data-mermaid="how" role="img" aria-label="Sequence diagram of one SystemOne call: validate, send, retry on 429 or 5xx, decode typed answers, apply Go policy."><span class="diagram-status">Loading diagram…</span></div>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ Quick start ═══ -->
+  <section id="quickstart">
+    <div class="wrap qs">
+      <div>
+        <span class="eyebrow">Quick start</span>
+        <h2>Up and running in a minute</h2>
+        <p class="lead">Set your key, create one client, and ask your first question.</p>
+        <ul class="checks">
+          <li><svg class="i" aria-hidden="true"><use href="#i-check"/></svg><span>The client reads <code>TYPESAFE_API_KEY</code> from the environment.</span></li>
+          <li><svg class="i" aria-hidden="true"><use href="#i-check"/></svg><span>Questions are validated before any network I/O.</span></li>
+          <li><svg class="i" aria-hidden="true"><use href="#i-check"/></svg><span>Retries, timeouts, and headers are handled for you.</span></li>
+          <li><svg class="i" aria-hidden="true"><use href="#i-check"/></svg><span>Responses include usage stats and raw HTTP access.</span></li>
+        </ul>
+      </div>
+      <div class="code-card">
+        <div class="code-card-bar">quickstart/main.go<span class="spacer"></span><button class="icon-btn" data-copy-from="qs-code" aria-label="Copy quick start code"><svg class="i" aria-hidden="true"><use href="#i-copy"/></svg></button></div>
+<pre class="code" data-lang="go" id="qs-code"><code>package main
+
+import (
+    "context"
+    "fmt"
+    "log"
+
+    "github.com/captain-corgi/typesafe-sdk-go"
+)
+
+func main() {
+    client, err := typesafe.NewClient() // reads TYPESAFE_API_KEY
+    if err != nil {
+        log.Fatal(err)
+    }
+    defer client.Close()
+
+    resp, err := client.SystemOne(context.Background(), &amp;typesafe.SystemOneParams{
+        State: "The export button crashes the app every time.",
+        Questions: typesafe.Questions{
+            "is_bug": typesafe.Noul{Instructions: "Is this a bug report?"},
+        },
+    })
+    if err != nil {
+        log.Fatal(err)
+    }
+    if resp.Nouls()["is_bug"].Noul &gt;= 0.8 {
+        fmt.Println("route to engineering")
+    }
+}</code></pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ Examples ═══ -->
+  <section id="examples">
+    <div class="wrap">
+      <div class="head">
+        <span class="eyebrow">Examples</span>
+        <h2><span data-total>91</span> runnable examples, each with a diagram</h2>
+        <p class="lead">Every example is one <code>package main</code> that uses only the standard library and this SDK, and runs against the live API. Pick one to see its flow and full source.</p>
+      </div>
+
+      <div class="browser">
+        <aside class="side" id="side" aria-label="Example list">
+          <button class="browse-toggle" aria-expanded="false" aria-controls="side-top ex-list"><span>Browse examples <span class="count" id="toggle-count"></span></span><svg class="i" aria-hidden="true"><use href="#i-down"/></svg></button>
+          <div class="side-top" id="side-top">
+            <div class="search">
+              <label for="q" class="sr-only">Search examples</label>
+              <svg class="i" aria-hidden="true"><use href="#i-search"/></svg>
+              <input id="q" type="search" placeholder="Search examples…" autocomplete="off" spellcheck="false">
+            </div>
+            <div class="chips" role="group" aria-label="Filter by question kind">
+              <span class="chips-label">Uses</span>
+              <button class="chip k-noul" data-kind="Noul" aria-pressed="false">Noul</button>
+              <button class="chip k-choice" data-kind="Choice" aria-pressed="false">Choice</button>
+              <button class="chip k-score" data-kind="Score" aria-pressed="false">Score</button>
+              <button class="chip k-raw" data-kind="Raw" aria-pressed="false">Raw</button>
+            </div>
+            <div class="count" id="count" aria-hidden="true"></div>
+          </div>
+          <div class="ex-list" id="ex-list">
+            <noscript><p class="empty">The example browser needs JavaScript. See the <a href="https://github.com/captain-corgi/typesafe-sdk-go/blob/master/examples/README.md">examples index on GitHub</a>.</p></noscript>
+          </div>
+        </aside>
+
+        <article class="detail" id="detail" aria-live="off">
+          <p class="diagram-status">Loading examples…</p>
+        </article>
+      </div>
+      <p class="note">Thresholds in the examples illustrate control flow. Measure them on labeled data from your application before production use. Full index: <a href="https://github.com/captain-corgi/typesafe-sdk-go/blob/master/examples/README.md" target="_blank" rel="noopener">examples/README.md</a>.</p>
+    </div>
+  </section>
+
+  <!-- ═══ Docs ═══ -->
+  <section id="docs">
+    <div class="wrap">
+      <div class="head">
+        <span class="eyebrow">Documentation</span>
+        <h2>Deep dives</h2>
+      </div>
+      <div class="docs">
+        <a class="doc" href="https://github.com/captain-corgi/typesafe-sdk-go/blob/master/docs/getting-started.md" target="_blank" rel="noopener"><h3>Getting started <svg class="i" aria-hidden="true"><use href="#i-arrow"/></svg></h3><p>Install, first call, choosing a question kind.</p></a>
+        <a class="doc" href="https://github.com/captain-corgi/typesafe-sdk-go/blob/master/docs/architecture.md" target="_blank" rel="noopener"><h3>Architecture <svg class="i" aria-hidden="true"><use href="#i-arrow"/></svg></h3><p>Module map, life of a call, concurrency model.</p></a>
+        <a class="doc" href="https://github.com/captain-corgi/typesafe-sdk-go/blob/master/docs/configuration.md" target="_blank" rel="noopener"><h3>Configuration <svg class="i" aria-hidden="true"><use href="#i-arrow"/></svg></h3><p>Options, environment variables, timeouts, HTTP client.</p></a>
+        <a class="doc" href="https://github.com/captain-corgi/typesafe-sdk-go/blob/master/docs/questions.md" target="_blank" rel="noopener"><h3>Questions <svg class="i" aria-hidden="true"><use href="#i-arrow"/></svg></h3><p>Noul, Choice, Score, Raw, and what goes on the wire.</p></a>
+        <a class="doc" href="https://github.com/captain-corgi/typesafe-sdk-go/blob/master/docs/responses.md" target="_blank" rel="noopener"><h3>Responses <svg class="i" aria-hidden="true"><use href="#i-arrow"/></svg></h3><p>Typed answers, usage stats, raw access, validation.</p></a>
+        <a class="doc" href="https://github.com/captain-corgi/typesafe-sdk-go/blob/master/docs/errors.md" target="_blank" rel="noopener"><h3>Errors <svg class="i" aria-hidden="true"><use href="#i-arrow"/></svg></h3><p>Error taxonomy, matching patterns, recipes.</p></a>
+        <a class="doc" href="https://github.com/captain-corgi/typesafe-sdk-go/blob/master/docs/retries.md" target="_blank" rel="noopener"><h3>Retries and timeouts <svg class="i" aria-hidden="true"><use href="#i-arrow"/></svg></h3><p>Backoff, jitter, budget, Retry-After, selectors.</p></a>
+        <a class="doc" href="https://github.com/captain-corgi/typesafe-sdk-go/blob/master/docs/wire-protocol.md" target="_blank" rel="noopener"><h3>Wire protocol <svg class="i" aria-hidden="true"><use href="#i-arrow"/></svg></h3><p>Methods, paths, headers, JSON encoding.</p></a>
+        <a class="doc" href="https://github.com/captain-corgi/typesafe-sdk-go/blob/master/docs/observability.md" target="_blank" rel="noopener"><h3>Observability <svg class="i" aria-hidden="true"><use href="#i-arrow"/></svg></h3><p>Logging, redaction, slog integration.</p></a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <p>An independent, community-maintained Go SDK. Not affiliated with TypeSafe AI.</p>
+    <nav aria-label="Footer">
+      <a href="https://github.com/captain-corgi/typesafe-sdk-go" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://pkg.go.dev/github.com/captain-corgi/typesafe-sdk-go" target="_blank" rel="noopener">pkg.go.dev</a>
+      <a href="https://github.com/captain-corgi/typesafe-sdk-go/blob/master/LICENSE" target="_blank" rel="noopener">MIT License</a>
+    </nav>
+  </div>
+</footer>
+
+<script type="module">
+  const REPO = 'https://github.com/captain-corgi/typesafe-sdk-go';
+  const SHIKI = 'https://esm.sh/shiki@4.4.3';
+  const SHIKI_LANGS = 'https://esm.sh/@shikijs/langs@4.4.3';
+  const SHIKI_THEMES = 'https://esm.sh/@shikijs/themes@4.4.3';
+  const MERMAID = 'https://cdn.jsdelivr.net/npm/mermaid@11.17.2/dist/mermaid.esm.min.mjs';
+  const KINDS = ['Noul', 'Choice', 'Score', 'Raw'];
+  const root = document.documentElement;
+  const $ = (s, el = document) => el.querySelector(s);
+  const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+  const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const md = (s) => esc(s).replace(/`([^`]+)`/g, '<code>$1</code>');
+  const icon = (id) => `<svg class="i" aria-hidden="true"><use href="#i-${id}"/></svg>`;
+  const live = (msg) => { const el = $('#live'); el.textContent = ''; setTimeout(() => { el.textContent = msg; }, 30); };
+
+  /* ─── Theme ─── */
+  const darkQuery = matchMedia('(prefers-color-scheme: dark)');
+  const effectiveTheme = () => {
+    const t = root.dataset.theme;
+    return t === 'light' || t === 'dark' ? t : (darkQuery.matches ? 'dark' : 'light');
+  };
+  function setTheme(t) {
+    root.dataset.theme = t;
+    try { localStorage.setItem('theme', t); } catch (e) {}
+    $$('[data-theme-set]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.themeSet === t)));
+    rerenderDiagrams();
+  }
+  $$('[data-theme-set]').forEach((b) => b.addEventListener('click', () => setTheme(b.dataset.themeSet)));
+  $$('[data-theme-set]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.themeSet === root.dataset.theme)));
+  darkQuery.addEventListener('change', () => { if (root.dataset.theme === 'system') rerenderDiagrams(); });
+
+  /* ─── Mobile nav ─── */
+  const navToggle = $('.nav-toggle');
+  navToggle.addEventListener('click', () => {
+    const open = $('#nav-links').classList.toggle('open');
+    navToggle.setAttribute('aria-expanded', String(open));
+  });
+  $$('#nav-links a').forEach((a) => a.addEventListener('click', () => {
+    $('#nav-links').classList.remove('open');
+    navToggle.setAttribute('aria-expanded', 'false');
+  }));
+
+  /* ─── Copy ─── */
+  async function copy(btn, text, label) {
+    try {
+      await navigator.clipboard.writeText(text);
+      btn.classList.add('done');
+      const use = $('use', btn);
+      if (use) use.setAttribute('href', '#i-check');
+      live(`${label || 'Text'} copied to clipboard`);
+      setTimeout(() => { btn.classList.remove('done'); if (use) use.setAttribute('href', '#i-copy'); }, 1600);
+    } catch (e) {
+      live('Copy failed. Select the text and copy it manually.');
+    }
+  }
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-copy], [data-copy-from]');
+    if (!btn) return;
+    const text = btn.dataset.copy ?? $('#' + btn.dataset.copyFrom).textContent;
+    copy(btn, text, btn.getAttribute('aria-label')?.replace(/^Copy /, '') || 'Text');
+  });
+
+  /* ─── Syntax highlighting (Shiki, VS Code grammars and GitHub themes) ─── */
+  let highlighterPromise;
+  function highlighter() {
+    highlighterPromise ??= (async () => {
+      const [{ createHighlighterCore }, { createJavaScriptRegexEngine }, go, sh, light, dark] = await Promise.all([
+        import(`${SHIKI}/core`),
+        import(`${SHIKI}/engine/javascript`),
+        import(`${SHIKI_LANGS}/go`),
+        import(`${SHIKI_LANGS}/shellscript`),
+        import(`${SHIKI_THEMES}/github-light`),
+        import(`${SHIKI_THEMES}/github-dark`),
+      ]);
+      return createHighlighterCore({
+        themes: [light.default, dark.default],
+        langs: [go.default, sh.default],
+        engine: createJavaScriptRegexEngine(),
+      });
+    })();
+    return highlighterPromise;
+  }
+  async function highlight(code, lang, lineNumbers) {
+    const hl = await highlighter();
+    // Line-number gutters shift tab stops, so expand tabs for display only.
+    const text = code.replace(/\n$/, '').replace(/\t/g, '    ');
+    const html = hl.codeToHtml(text, {
+      lang, themes: { light: 'github-light', dark: 'github-dark' }, defaultColor: false,
+    });
+    return html.replace('<pre class="shiki', `<pre class="code${lineNumbers ? ' ln' : ''} shiki`);
+  }
+  async function highlightStatic() {
+    for (const pre of $$('pre.code[data-lang]')) {
+      try {
+        const html = await highlight(pre.textContent, pre.dataset.lang, false);
+        const tmp = document.createElement('div');
+        tmp.innerHTML = html;
+        const next = tmp.firstElementChild;
+        if (pre.id) next.id = pre.id;
+        pre.replaceWith(next);
+      } catch (e) { console.warn('highlight failed', e); return; }
+    }
+  }
+
+  /* ─── Mermaid diagrams ─── */
+  const PALETTE = {
+    light: {
+      vars: { background: '#ffffff', primaryColor: '#f1f5f9', primaryBorderColor: '#94a3b8', primaryTextColor: '#0f172a', secondaryColor: '#f8fafc', tertiaryColor: '#f8fafc', lineColor: '#64748b', textColor: '#0f172a', edgeLabelBackground: '#ffffff', clusterBkg: '#f8fafc', clusterBorder: '#cbd5e1', actorBkg: '#f1f5f9', actorBorder: '#94a3b8', actorTextColor: '#0f172a', signalColor: '#475569', signalTextColor: '#0f172a', labelBoxBkgColor: '#e0f7fc', labelBoxBorderColor: '#00add8', labelTextColor: '#0b4f60', loopTextColor: '#0b4f60', noteBkgColor: '#fef9c3', noteBorderColor: '#ca8a04', noteTextColor: '#713f12', activationBkgColor: '#e0f7fc', activationBorderColor: '#00add8', sequenceNumberColor: '#ffffff' },
+      cls: {
+        state: ['#ffffff', '#94a3b8', '#334155', 'stroke-dasharray:5 3'],
+        sdk: ['#0f172a', '#0f172a', '#f8fafc'],
+        noul: ['#dcfce7', '#16a34a', '#14532d'],
+        choice: ['#dbeafe', '#2563eb', '#1e3a8a'],
+        score: ['#f3e8ff', '#9333ea', '#581c87'],
+        raw: ['#ffedd5', '#ea580c', '#7c2d12'],
+        policy: ['#e0f7fc', '#00add8', '#0b4f60'],
+        outcome: ['#f8fafc', '#334155', '#0f172a', 'font-weight:600'],
+        fail: ['#fee2e2', '#dc2626', '#7f1d1d'],
+      },
+    },
+    dark: {
+      vars: { darkMode: true, background: '#020617', primaryColor: '#1e293b', primaryBorderColor: '#475569', primaryTextColor: '#e2e8f0', secondaryColor: '#0f172a', tertiaryColor: '#0f172a', lineColor: '#94a3b8', textColor: '#e2e8f0', edgeLabelBackground: '#0b1120', clusterBkg: '#0b1120', clusterBorder: '#334155', actorBkg: '#1e293b', actorBorder: '#475569', actorTextColor: '#e2e8f0', signalColor: '#94a3b8', signalTextColor: '#e2e8f0', labelBoxBkgColor: '#06303a', labelBoxBorderColor: '#00add8', labelTextColor: '#a5ecfa', loopTextColor: '#a5ecfa', noteBkgColor: '#422006', noteBorderColor: '#eab308', noteTextColor: '#fef08a', activationBkgColor: '#06303a', activationBorderColor: '#00add8', sequenceNumberColor: '#020617' },
+      cls: {
+        state: ['#0f172a', '#64748b', '#cbd5e1', 'stroke-dasharray:5 3'],
+        sdk: ['#e2e8f0', '#e2e8f0', '#0f172a'],
+        noul: ['#052e16', '#22c55e', '#bbf7d0'],
+        choice: ['#172554', '#3b82f6', '#bfdbfe'],
+        score: ['#3b0764', '#a855f7', '#e9d5ff'],
+        raw: ['#431407', '#f97316', '#fed7aa'],
+        policy: ['#06303a', '#00add8', '#a5ecfa'],
+        outcome: ['#1e293b', '#cbd5e1', '#f8fafc', 'font-weight:600'],
+        fail: ['#450a0a', '#ef4444', '#fecaca'],
+      },
+    },
+  };
+  const LEGEND = [['state', 'Input'], ['sdk', 'SDK call'], ['noul', 'Noul'], ['choice', 'Choice'], ['score', 'Score'], ['raw', 'Raw'], ['policy', 'Go policy'], ['outcome', 'Outcome'], ['fail', 'Error / fallback']];
+  const HOW = `sequenceDiagram
+  autonumber
+  participant App as Your Go code
+  participant C as typesafe.Client
+  participant API as api.typesafe.ai
+  App->>C: SystemOne(ctx, State, Questions)
+  C->>C: validate questions (no network yet)
+  C->>API: POST /v1/systemone
+  alt 429, 5xx, or timeout
+    API-->>C: retryable error
+    C->>API: retry with backoff and jitter
+  end
+  API-->>C: 200 OK with answers
+  C-->>App: Nouls() · Choices() · Scores()
+  App->>App: plain Go policy (if / switch)`;
+
+  let mermaidPromise;
+  let renderSeq = 0;
+  const svgCache = new Map();
+  function mermaidLib() {
+    mermaidPromise ??= import(MERMAID).then((m) => m.default);
+    return mermaidPromise;
+  }
+  function withClasses(src, theme) {
+    if (!/^\s*flowchart/.test(src)) return src;
+    const defs = Object.entries(PALETTE[theme].cls).map(([name, [fill, stroke, color, extra]]) =>
+      `  classDef ${name} fill:${fill},stroke:${stroke},color:${color},stroke-width:1.5px${extra ? ',' + extra : ''}`);
+    return src.trimEnd() + '\n' + defs.join('\n') + '\n';
+  }
+  let renderQueue = Promise.resolve();
+  function renderDiagram(el, key, src) {
+    el.dataset.key = key;
+    el._src = src;
+    renderQueue = renderQueue.then(async () => {
+      const theme = effectiveTheme();
+      const cacheKey = key + '|' + theme;
+      try {
+        let svg = svgCache.get(cacheKey);
+        if (!svg) {
+          const mermaid = await mermaidLib();
+          mermaid.initialize({
+            startOnLoad: false, securityLevel: 'strict', theme: 'base',
+            themeVariables: { fontFamily: 'IBM Plex Sans, system-ui, sans-serif', fontSize: '14px', ...PALETTE[theme].vars },
+            flowchart: { curve: 'basis', padding: 12, nodeSpacing: 36, rankSpacing: 44, htmlLabels: true },
+            sequence: { mirrorActors: false, boxMargin: 8, messageMargin: 32 },
+          });
+          ({ svg } = await mermaid.render('mmd-' + (++renderSeq), withClasses(src, theme)));
+          svgCache.set(cacheKey, svg);
+        }
+        if (el.dataset.key === key) el.innerHTML = svg;
+      } catch (err) {
+        console.error('mermaid', key, err);
+        if (el.dataset.key === key) el.innerHTML = '<span class="diagram-status">This diagram could not be rendered.</span>';
+      }
+    });
+    return renderQueue;
+  }
+  function rerenderDiagrams() {
+    $$('[data-key]').forEach((el) => { if (el._src) renderDiagram(el, el.dataset.key, el._src); });
+    paintLegend();
+  }
+
+  /* ─── Example browser ─── */
+  const state = { data: null, all: [], filtered: [], current: null, query: '', kinds: new Set() };
+  const codeCache = new Map();
+  const side = $('#side');
+  const list = $('#ex-list');
+  const detail = $('#detail');
+  const catalogTitle = (id) => state.data.catalogs.find((c) => c.id === id)?.title ?? id;
+  const prettyName = (name) => {
+    const s = name.replace(/^\d+-/, '').replace(/-/g, ' ');
+    return s.charAt(0).toUpperCase() + s.slice(1);
+  };
+  const kindTags = (kinds) => KINDS.filter((k) => kinds[k]).map((k) =>
+    `<span class="tag tag-${k.toLowerCase()}">${kinds[k] > 1 ? kinds[k] + '× ' : ''}${k}</span>`).join('');
+
+  function applyFilter() {
+    const q = state.query.trim().toLowerCase();
+    const terms = q.split(/\s+/).filter(Boolean);
+    state.filtered = state.all.filter((ex) => {
+      for (const k of state.kinds) if (!ex.kinds[k]) return false;
+      if (!terms.length) return true;
+      const hay = ex._hay;
+      return terms.every((t) => hay.includes(t));
+    });
+    renderList();
+    const total = state.all.length;
+    const n = state.filtered.length;
+    $('#count').textContent = n === total ? `${total} examples` : `Showing ${n} of ${total}`;
+    $('#toggle-count').textContent = `(${n})`;
+  }
+
+  function renderList() {
+    if (!state.filtered.length) {
+      list.innerHTML = `<div class="empty"><p>No examples match${state.query ? ` “${esc(state.query)}”` : ''}${state.kinds.size ? ' with the selected kinds' : ''}.</p><p>Try “routing”, “graphql”, or “retry”.</p><button type="button" data-clear>Clear search and filters</button></div>`;
+      return;
+    }
+    const groups = new Map();
+    for (const ex of state.filtered) {
+      if (!groups.has(ex.catalog)) groups.set(ex.catalog, []);
+      groups.get(ex.catalog).push(ex);
+    }
+    list.innerHTML = [...groups].map(([cat, exs]) => `
+      <div class="grp">
+        <h3 class="grp-h"><span>${esc(catalogTitle(cat))}</span><span>${exs.length}</span></h3>
+        <ul>${exs.map((ex) => `<li><a class="ex-link" href="#/examples/${esc(ex.id)}" data-id="${esc(ex.id)}"${state.current?.id === ex.id ? ' aria-current="page"' : ''}><b>${esc(ex.name)}</b><span>${md(ex.description)}</span></a></li>`).join('')}</ul>
+      </div>`).join('');
+  }
+
+  list.addEventListener('click', (e) => {
+    if (e.target.closest('[data-clear]')) {
+      state.query = ''; $('#q').value = '';
+      state.kinds.clear();
+      $$('.chip').forEach((c) => c.setAttribute('aria-pressed', 'false'));
+      applyFilter();
+      $('#q').focus();
+    }
+  });
+  list.addEventListener('keydown', (e) => {
+    if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
+    const links = $$('.ex-link', list);
+    const i = links.indexOf(document.activeElement);
+    if (i < 0) return;
+    e.preventDefault();
+    links[Math.max(0, Math.min(links.length - 1, i + (e.key === 'ArrowDown' ? 1 : -1)))].focus();
+  });
+  $('#q').addEventListener('input', (e) => { state.query = e.target.value; applyFilter(); });
+  $('#q').addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowDown') { const first = $('.ex-link', list); if (first) { e.preventDefault(); first.focus(); } }
+  });
+  $$('.chip').forEach((chip) => chip.addEventListener('click', () => {
+    const k = chip.dataset.kind;
+    const on = !state.kinds.has(k);
+    on ? state.kinds.add(k) : state.kinds.delete(k);
+    chip.setAttribute('aria-pressed', String(on));
+    applyFilter();
+    live(`${state.filtered.length} examples shown`);
+  }));
+  $('.browse-toggle').addEventListener('click', () => setSideOpen(side.dataset.open !== 'true'));
+  function setSideOpen(open) {
+    side.dataset.open = String(open);
+    $('.browse-toggle').setAttribute('aria-expanded', String(open));
+  }
+
+  function renderDetail(ex, walkOn = false) {
+    stopPlayback();
+    const pos = state.filtered.indexOf(ex);
+    const seq = pos >= 0 ? state.filtered : state.all;
+    const i = seq.indexOf(ex);
+    const prev = seq[i - 1];
+    const next = seq[i + 1];
+    const run = `export TYPESAFE_API_KEY=ts_live_...\n${ex.run}`;
+    detail.innerHTML = `
+      <header class="detail-head">
+        <div class="crumb"><span>${esc(catalogTitle(ex.catalog))}</span><span aria-hidden="true">·</span><span class="tags">${kindTags(ex.kinds)}</span></div>
+        <h3 tabindex="-1" id="detail-title">${esc(prettyName(ex.name))}</h3>
+        <div class="path">examples/${esc(ex.id)}</div>
+        <p class="desc">${md(ex.description)}</p>
+        ${ex.summary ? `<p class="summary">${md(ex.summary)}</p>` : ''}
+      </header>
+      <div class="panel">
+        <div class="panel-bar">
+          <div class="tabs" role="tablist" aria-label="Flow view">
+            <button class="tab" role="tab" id="tab-flow" aria-controls="pane-flow-diagram" aria-selected="true">Diagram</button>
+            <button class="tab" role="tab" id="tab-walk" aria-controls="pane-flow-walk" aria-selected="false" tabindex="-1">Step-through</button>
+          </div>
+        </div>
+        <div role="tabpanel" id="pane-flow-diagram" aria-labelledby="tab-flow">
+          <div class="diagram" role="img" aria-label="Flow diagram for ${esc(ex.name)}"><span class="diagram-status">Rendering diagram…</span></div>
+          <div class="legend" aria-hidden="true">${LEGEND.map(([c, label]) => `<span><i data-legend="${c}"></i>${label}</span>`).join('')}</div>
+        </div>
+        <div role="tabpanel" id="pane-flow-walk" aria-labelledby="tab-walk" hidden></div>
+      </div>
+      <div class="panel">
+        <div class="panel-bar">
+          <div class="tabs" role="tablist" aria-label="Example files">
+            <button class="tab" role="tab" id="tab-src" aria-controls="pane-src" aria-selected="true">main.go</button>
+            <button class="tab" role="tab" id="tab-run" aria-controls="pane-run" aria-selected="false" tabindex="-1">run</button>
+          </div>
+          <span class="spacer"></span>
+          <button class="icon-btn" data-copy-current aria-label="Copy main.go">${icon('copy')}<span>Copy</span></button>
+          <a class="icon-btn" href="${REPO}/tree/master/examples/${esc(ex.id)}" target="_blank" rel="noopener">${icon('github')}<span>GitHub</span></a>
+        </div>
+        <div class="code-scroll" role="tabpanel" id="pane-src" aria-labelledby="tab-src"><pre class="code ln"><code>${esc(ex.source)}</code></pre></div>
+        <div class="code-scroll" role="tabpanel" id="pane-run" aria-labelledby="tab-run" hidden><pre class="code"><code>${esc(run)}</code></pre></div>
+      </div>
+      <nav class="pager" aria-label="Adjacent examples">
+        ${prev ? `<a href="#/examples/${esc(prev.id)}">${icon('left')}<span>Previous<br><b>${esc(prev.name)}</b></span></a>` : '<span></span>'}
+        ${next ? `<a href="#/examples/${esc(next.id)}" style="text-align:right"><span>Next<br><b>${esc(next.name)}</b></span>${icon('right')}</a>` : '<span></span>'}
+      </nav>`;
+    paintLegend();
+    wireFlowTabs(ex, walkOn);
+    highlightInto($('#pane-src', detail), ex.id, ex.source, 'go', true);
+    highlightInto($('#pane-run', detail), ex.id + '#run', run, 'shellscript', false);
+    wireTabs(ex, run);
+  }
+
+  // The Mermaid diagram renders on first selection of the Diagram tab: a
+  // /walkthrough deep link never downloads the Mermaid module at all.
+  function ensureFlowDiagram(ex) {
+    const d = $('.diagram', detail);
+    if (d && !d._src) renderDiagram(d, ex.id, ex.diagram);
+  }
+
+  let flowTabSelect = null;
+  function wireFlowTabs(ex, walkOn) {
+    const panel = $('#pane-flow-diagram', detail).closest('.panel');
+    const tabs = $$('.tab', panel);
+    flowTabSelect = makeTablist(tabs, panel, (tab) => {
+      const on = tab.id === 'tab-walk';
+      setFlowView(on);
+      if (!on) ensureFlowDiagram(ex);
+    });
+    // Tab clicks write the hash so the view is shareable and browser
+    // back/forward flips between Diagram and Step-through.
+    tabs.forEach((t) => t.addEventListener('click', () => {
+      const h = '#/examples/' + ex.id + (t.id === 'tab-walk' ? '/walkthrough' : '');
+      if (location.hash !== h) location.hash = h;
+    }));
+    flowTabSelect(walkOn ? $('#tab-walk', panel) : $('#tab-flow', panel));
+  }
+
+  async function highlightInto(pane, key, code, lang, ln) {
+    try {
+      let html = codeCache.get(key);
+      if (!html) { html = await highlight(code, lang, ln); codeCache.set(key, html); }
+      if (pane.isConnected) pane.innerHTML = html;
+    } catch (e) { console.warn('highlight failed', e); }
+  }
+
+  // Shared tablist behavior (click + arrow-key rotation) for the flow and
+  // source panels; returns the select function for programmatic switching.
+  function makeTablist(tabs, scope, onSelect) {
+    const select = (tab) => {
+      tabs.forEach((t) => {
+        const on = t === tab;
+        t.setAttribute('aria-selected', String(on));
+        t.tabIndex = on ? 0 : -1;
+        $('#' + t.getAttribute('aria-controls'), scope).hidden = !on;
+      });
+      if (onSelect) onSelect(tab);
+    };
+    tabs.forEach((t) => {
+      t.addEventListener('click', () => select(t));
+      t.addEventListener('keydown', (e) => {
+        if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+        const other = tabs[(tabs.indexOf(t) + 1) % tabs.length];
+        select(other); other.focus();
+      });
+    });
+    return select;
+  }
+
+  function wireTabs(ex, run) {
+    const panel = $('#pane-src', detail).closest('.panel');
+    makeTablist($$('.tab', panel), panel, (tab) => {
+      const isRun = tab.id === 'tab-run';
+      $('[data-copy-current]', detail).setAttribute('aria-label', isRun ? 'Copy run command' : 'Copy main.go');
+    });
+    $('[data-copy-current]', detail).addEventListener('click', (e) => {
+      const isRun = $('#tab-run', detail).getAttribute('aria-selected') === 'true';
+      copy(e.currentTarget, isRun ? run : ex.source, isRun ? 'Run command' : 'main.go');
+    });
+  }
+
+  function paintLegend() {
+    const cls = PALETTE[effectiveTheme()].cls;
+    $$('[data-legend]', detail).forEach((i) => {
+      const [fill, stroke] = cls[i.dataset.legend];
+      i.style.background = fill; i.style.borderColor = stroke;
+    });
+  }
+
+  /* ─── Walkthrough (step-through view) ───
+     Ported from the former standalone gallery. A layered ("Sugiyama-lite")
+     layout draws each example's steps as nodes colored by kind, connected by
+     animated SVG edges; a side panel plays the walkthrough step by step.
+     Data loads lazily: one data/<leaf>.js script per example on first demand. */
+  const STEP_KINDS = ['setup', 'request', 'response', 'decision', 'error', 'output'];
+  const EDGE_KINDS = ['data', 'control', 'error'];
+  const STEP_MS = 2400;          // playback dwell time per step
+  const DIAGRAM = {
+    pad: 12,                     // canvas padding
+    laneGap: 28,                 // horizontal gap between lanes within a row
+    layerGap: 56,                // vertical gap between layer rows (edge fans)
+    nodeMaxW: 420,               // widest node card
+    nodeAbsMinW: 168,            // narrowest card; below this the stage scrolls
+    gutterMin: 48,               // gutter width for one or two edge lanes
+    gutterLane: 17,              // x spacing between parallel gutter lanes
+    escape: 16,                  // card edge → band jog for gutter escapes
+    approach: 18,                // band jog distance above a target card
+    sideFrac: 0.30,              // bottom/top port fan-out spread (× node width)
+    estGutter: 62,               // gutter allowance when fitting the node width
+  };
+  const motionOK = !matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function el(tag, attrs, text) {
+    const node = document.createElement(tag);
+    if (attrs) {
+      Object.keys(attrs).forEach(function (k) {
+        if (k === 'class') node.className = attrs[k];
+        else node.setAttribute(k, attrs[k]);
+      });
+    }
+    if (text !== undefined) node.textContent = text;
+    return node;
+  }
+  const SVG_NS = 'http://www.w3.org/2000/svg';
+  function svgEl(tag, attrs) {
+    const node = document.createElementNS(SVG_NS, tag);
+    if (attrs) Object.keys(attrs).forEach(function (k) { node.setAttribute(k, attrs[k]); });
+    return node;
+  }
+  // Cubic bezier midpoint at t = 0.5 (used to place edge labels).
+  function cubicMid(p0, p1, p2, p3) {
+    return {
+      x: (p0.x + 3 * p1.x + 3 * p2.x + p3.x) / 8,
+      y: (p0.y + 3 * p1.y + 3 * p2.y + p3.y) / 8,
+    };
+  }
+  function debounce(fn, ms) {
+    let t = null;
+    return function () { clearTimeout(t); t = setTimeout(fn, ms); };
+  }
+
+  /* Lazy data loading: data/<leaf>.js assigns into a shared global; plain
+     script tags (not fetch) so file:// and the Pages subpath both work. */
+  const FLOWS = (window.__TYPESAFE_FLOWS__ = window.__TYPESAFE_FLOWS__ || {});
+  const flowLoads = new Map();               // leaf → Promise<data | null>
+  function loadFlow(leaf) {
+    if (!flowLoads.has(leaf)) {
+      flowLoads.set(leaf, new Promise((resolve) => {
+        const s = document.createElement('script');
+        s.src = 'data/' + encodeURIComponent(leaf) + '.js';
+        s.onload = () => resolve(FLOWS[leaf] || null);
+        s.onerror = () => resolve(null);     // 404 / network error
+        document.head.appendChild(s);
+      }));
+    }
+    return flowLoads.get(leaf);
+  }
+
+  const walk = { pane: null, leaf: null, ex: null, flow: null, currentStep: 0, playing: false, timer: 0, edgeEls: [], nodeEls: [], playOrder: [], rankOf: [] };
+  const walkActive = () => !!(walk.pane && walk.pane.isConnected && !walk.pane.hidden && walk.flow);
+  const walkCanvas = () => (walk.pane ? $('.flow-canvas', walk.pane) : null);
+  const leafOf = (id) => id.substring(id.lastIndexOf('/') + 1);
+
+  function buildWalkLegend() {
+    const legend = el('div', { class: 'walk-legend' });
+    const steps = el('div', { class: 'walk-legend-group' });
+    STEP_KINDS.forEach(function (k) {
+      const item = el('span', { class: 'walk-legend-item' });
+      const dot = el('span', { class: 'walk-legend-dot' });
+      dot.style.background = 'var(--k-' + k + ')';
+      item.appendChild(dot);
+      item.appendChild(document.createTextNode(k));
+      steps.appendChild(item);
+    });
+    legend.appendChild(steps);
+    legend.appendChild(el('span', { class: 'walk-legend-sep' }));
+    const edges = el('div', { class: 'walk-legend-group' });
+    EDGE_KINDS.forEach(function (k) {
+      const item = el('span', { class: 'walk-legend-item' });
+      const svg = svgEl('svg', { width: '26', height: '8', class: 'walk-legend-line', 'aria-hidden': 'true' });
+      svg.appendChild(svgEl('line', { x1: '1', y1: '4', x2: '25', y2: '4', class: 'edge k-' + k }));
+      item.appendChild(svg);
+      item.appendChild(document.createTextNode(k));
+      edges.appendChild(item);
+    });
+    legend.appendChild(edges);
+    return legend;
+  }
+
+  function buildWalkPanel() {
+    const panel = el('aside', { class: 'flow-panel' });
+
+    const controls = el('div', { class: 'panel-card panel-controls' });
+    const playBtn = el('button', { class: 'btn btn-primary', 'data-wt': 'play', 'aria-pressed': 'false' }, 'Play');
+    const prevBtn = el('button', { class: 'btn', 'data-wt': 'prev' }, '‹ Prev');
+    const nextBtn = el('button', { class: 'btn', 'data-wt': 'next' }, 'Next ›');
+    playBtn.addEventListener('click', togglePlay);
+    prevBtn.addEventListener('click', function () { pausePlayback(); setCurrent(stepInOrder(walk.currentStep, -1), { scroll: true }); });
+    nextBtn.addEventListener('click', function () { pausePlayback(); setCurrent(stepInOrder(walk.currentStep, 1), { scroll: true }); });
+    controls.appendChild(playBtn);
+    controls.appendChild(prevBtn);
+    controls.appendChild(nextBtn);
+    controls.appendChild(el('span', { class: 'step-pos', 'data-wt': 'pos' }));
+    panel.appendChild(controls);
+
+    const body = el('div', { class: 'panel-card panel-body', 'aria-live': 'polite' });
+    body.appendChild(el('span', { class: 'step-kind-badge', 'data-wt': 'badge' }));
+    body.appendChild(el('h3', { class: 'step-title', 'data-wt': 'title' }));
+    body.appendChild(el('p', { class: 'step-detail', 'data-wt': 'detail' }));
+    const codeWrap = el('div', { class: 'step-code', 'data-wt': 'code' });
+    codeWrap.appendChild(el('pre', { class: 'code' })).appendChild(el('code'));
+    body.appendChild(codeWrap);
+    body.appendChild(el('p', { class: 'step-loc', 'data-wt': 'loc' }));
+    panel.appendChild(body);
+
+    panel.appendChild(el('p', { class: 'panel-hint' }, 'Click a node to jump · ← → to step · Space toggles playback'));
+    return panel;
+  }
+
+  function mountWalkthrough(ex, pane, flow) {
+    walk.ex = ex;
+    walk.flow = flow;
+    walk.currentStep = 0;
+    walk.edgeEls = [];
+    walk.nodeEls = [];
+    walk.playOrder = [];
+    walk.rankOf = [];
+    pane.textContent = '';
+    const layout = el('div', { class: 'flow-layout' });
+    const stage = el('div', { class: 'flow-stage' });
+    stage.appendChild(el('div', { class: 'flow-canvas', role: 'group', 'aria-label': 'Step-by-step diagram' }));
+    layout.appendChild(stage);
+    layout.appendChild(buildWalkPanel());
+    pane.appendChild(layout);
+    pane.appendChild(buildWalkLegend());
+    buildWalkDiagram();
+    // Start on the drawing's first step (the layout's topological order).
+    setCurrent(walk.playOrder.length ? walk.playOrder[0] : 0, { scroll: false });
+  }
+
+  /* ─── Walkthrough diagram layout + SVG edges ───
+     a. Layers — longest-path layering over forward edges (an edge is
+        forward when its target has a later data index; backward and self
+        edges are ignored), iterated to a fixpoint; sources land at layer 0.
+     b. Ordering — rows start in data order, then barycenter sweeps over
+        adjacent layers reduce edge crossings.
+     c. Geometry — a row's nodes sit side by side in lanes (uniform node
+        width per diagram: shrunk to fit the stage, floored, and when even
+        the floor cannot fit, the stage scrolls internally so the page
+        never scrolls horizontally). Every row is centered; y advances by
+        the row's tallest card plus a generous layer gap. A branchy flow
+        whose layering collapses to single-node rows (a chain with skip or
+        back edges) is staggered into two columns instead of rendering as
+        one linear column.
+     d. Routing — next-layer edges run bottom port → top port as S-curves
+        through the node-free inter-row band; spanning edges (skipping a
+        layer) route through the left or right gutter on per-edge lanes;
+        backward and self edges keep a right-side bow on per-source lanes.
+        Whenever a side exit would cross a neighbouring card, the edge
+        escapes vertically through a band first. Edge kinds keep their
+        distinct strokes and arrowheads (see .edge.k-* above).
+     Labels are placed with their centre inside an inter-row band or inside
+     the gutter — never on a card — and a light de-collision pass keeps
+     labels from stacking. Edge paths paint below the cards (z-order), label
+     text above them. */
+  // Round to 2 decimals to keep path strings compact.
+  function r2(v) { return Math.round(v * 100) / 100; }
+
+  // Polyline through pts with rounded corners (quadratic beziers).
+  function roundedPath(pts, rad) {
+    if (pts.length < 2) return '';
+    let d = 'M ' + r2(pts[0].x) + ' ' + r2(pts[0].y);
+    for (let k = 1; k < pts.length - 1; k++) {
+      const p = pts[k], a = pts[k - 1], b = pts[k + 1];
+      const d1 = Math.hypot(p.x - a.x, p.y - a.y) || 1;
+      const d2 = Math.hypot(b.x - p.x, b.y - p.y) || 1;
+      const r1 = Math.min(rad, d1 / 2), r2v = Math.min(rad, d2 / 2);
+      d += ' L ' + r2(p.x - (p.x - a.x) / d1 * r1) + ' ' + r2(p.y - (p.y - a.y) / d1 * r1) +
+           ' Q ' + r2(p.x) + ' ' + r2(p.y) + ', ' +
+           r2(p.x + (b.x - p.x) / d2 * r2v) + ' ' + r2(p.y + (b.y - p.y) / d2 * r2v);
+    }
+    const last = pts[pts.length - 1];
+    return d + ' L ' + r2(last.x) + ' ' + r2(last.y);
+  }
+
+  // Stable in-place sort of list by key(value); ties keep the current order.
+  function sortSlots(list, key) {
+    const decorated = list.map(function (v, k) { return { v: v, k: k, key: key(v) }; });
+    decorated.sort(function (a, b) { return (a.key - b.key) || (a.k - b.k); });
+    for (let i = 0; i < list.length; i++) list[i] = decorated[i].v;
+  }
+
+  function makeMarker(id, fillClass, size) {
+    const m = svgEl('marker', {
+      id: id, viewBox: '0 0 10 10', refX: '8.5', refY: '5',
+      markerWidth: String(size), markerHeight: String(size),
+      orient: 'auto', markerUnits: 'userSpaceOnUse',
+    });
+    m.appendChild(svgEl('path', { d: 'M0 0 L10 5 L0 10 Z', class: fillClass }));
+    return m;
+  }
+
+  function buildWalkDiagram() {
+    const diagram = walkCanvas();
+    if (!diagram || !walk.flow) return;
+    const stage = diagram.parentElement;
+    diagram.textContent = '';
+    walk.edgeEls = [];
+    walk.nodeEls = [];
+    walk.playOrder = [];
+    walk.rankOf = [];
+
+    const D = DIAGRAM;
+    const steps = walk.flow.steps;
+    const n = steps.length;
+    if (!n) return;
+    const index = {};                        // step id → data index
+    steps.forEach(function (s, i) { index[s.id] = i; });
+    const edges = walk.flow.flows.filter(function (e) {
+      return index[e.from] !== undefined && index[e.to] !== undefined;
+    });
+
+    // -- (a) Layer assignment: longest-path layering over forward edges --------
+    const layer = new Array(n).fill(0);
+    let changed = true;
+    for (let guard = 0; changed && guard <= n; guard++) {
+      changed = false;
+      edges.forEach(function (e) {
+        const a = index[e.from], b = index[e.to];
+        if (b > a && layer[b] < layer[a] + 1) { layer[b] = layer[a] + 1; changed = true; }
+      });
+    }
+
+    // Dead-end branches (error handlers that exit the program) must not consume
+    // a row on the main spine: pull each terminal up beside its deepest
+    // predecessor so the spine reads as a straight column with side off-ramps.
+    // Terminals on the deepest row are the walkthrough's output and stay put.
+    const succCount = new Array(n).fill(0);
+    edges.forEach(function (e) { succCount[index[e.from]]++; });
+    const deepest = Math.max.apply(null, layer);
+    for (let i = 0; i < n; i++) {
+      if (succCount[i] === 0 && layer[i] > 0 && layer[i] < deepest) {
+        let best = -1;
+        edges.forEach(function (e) {
+          const a = index[e.from], b = index[e.to];
+          if (b === i && layer[a] > best) best = layer[a];
+        });
+        if (best >= 0) layer[i] = best;
+      }
+    }
+    const layerCount = Math.max.apply(null, layer) + 1;
+
+    // -- (b) Within-layer ordering: data order + barycenter sweeps -------------
+    const rows = [];
+    for (let l = 0; l < layerCount; l++) rows.push([]);
+    for (let i = 0; i < n; i++) rows[layer[i]].push(i);
+    const pos = new Array(n);
+    const repos = function () {
+      rows.forEach(function (row) { row.forEach(function (i, k) { pos[i] = k; }); });
+    };
+    repos();
+    const upNbr = [], downNbr = [];          // neighbours in the adjacent layer
+    for (let i = 0; i < n; i++) { upNbr.push([]); downNbr.push([]); }
+    edges.forEach(function (e) {
+      const a = index[e.from], b = index[e.to];
+      if (layer[b] === layer[a] + 1) { upNbr[b].push(a); downNbr[a].push(b); }
+    });
+    function bary(i, nbrs) {
+      if (!nbrs[i].length) return pos[i];    // no neighbours: keep current slot
+      let sum = 0;
+      nbrs[i].forEach(function (j) { sum += pos[j]; });
+      return sum / nbrs[i].length;
+    }
+    for (let sweep = 0; sweep < 2; sweep++) {
+      for (let l = 1; l < layerCount; l++) {
+        sortSlots(rows[l], function (i) { return bary(i, upNbr); });
+        repos();
+      }
+      for (let l = layerCount - 2; l >= 0; l--) {
+        sortSlots(rows[l], function (i) { return bary(i, downNbr); });
+        repos();
+      }
+    }
+    // The data's first step is the walkthrough's entry point; keep it first
+    // in row 0 so the numbered walk (and Play) starts at the top-left.
+    const anchor = rows[0].indexOf(0);
+    if (anchor > 0) { rows[0].splice(anchor, 1); rows[0].unshift(0); repos(); }
+
+    // Draw lanes: pulled-up dead-end terminals take the left lanes of their
+    // row so the spine nodes read as the continuation of the flow.
+    const isSide = function (i, l) { return succCount[i] === 0 && l < deepest; };
+    rows.forEach(function (row, l) {
+      const sides = row.filter(function (i) { return isSide(i, l); });
+      const rest = row.filter(function (i) { return !isSide(i, l); });
+      if (sides.length && rest.length) {
+        row.length = 0;
+        sides.forEach(function (i) { row.push(i); });
+        rest.forEach(function (i) { row.push(i); });
+      }
+    });
+    repos();
+
+    // -- Play order: the layout's topological order (layer by layer, left to
+    // right within a layer). Step numbers, playback and the arrow keys all
+    // follow it, so Play walks the drawing naturally.
+    rows.forEach(function (row, l) {
+      const rest = row.filter(function (i) { return !isSide(i, l); });
+      const sides = row.filter(function (i) { return isSide(i, l); });
+      rest.forEach(function (i) { walk.playOrder.push(i); });
+      sides.forEach(function (i) { walk.playOrder.push(i); });
+    });
+    walk.rankOf = new Array(n);
+    walk.playOrder.forEach(function (i, k) { walk.rankOf[i] = k; });
+
+    // -- Route families ----------------------------------------------------------
+    //   next — drops exactly one layer (bottom→top S-curve)
+    //   span — skips at least one layer (through the left/right gutter)
+    //   back — same layer or upward, incl. self loops (right-side bow)
+    const rowLen = rows.map(function (r) { return r.length; });
+    const spanSide = { left: 0, right: 0 };
+    const routes = edges.map(function (e) {
+      const i = index[e.from], j = index[e.to];
+      const dl = layer[j] - layer[i];
+      if (dl === 0 && i !== j) {
+        // Same-row edge: a pulled-up off-ramp hanging off its parent. Route as
+        // a short bridge under the two cards through the band below the row.
+        return { kind: 'bridge', dir: pos[j] < pos[i] ? 'left' : 'right' };
+      }
+      if (dl === 1) return { kind: 'next' };
+      if (dl >= 2) {
+        // Gutter side follows the edge's horizontal midpoint; ties balance.
+        const fr = (rowLen[layer[i]] > 1 ? pos[i] / (rowLen[layer[i]] - 1) : 0.5) * 0.5 +
+                   (rowLen[layer[j]] > 1 ? pos[j] / (rowLen[layer[j]] - 1) : 0.5) * 0.5;
+        const side = fr > 0.5 ? 'right' : fr < 0.5 ? 'left'
+          : (spanSide.left <= spanSide.right ? 'left' : 'right');
+        spanSide[side]++;
+        return { kind: 'span', side: side };
+      }
+      return { kind: 'back', side: 'right' };
+    });
+    const needLeft = spanSide.left > 0;
+    const needRight = spanSide.right > 0 ||
+      routes.some(function (r) { return r.kind === 'back'; });
+
+    // A branchy flow must never render as a single column — it would read as
+    // a linear top-to-bottom list. When layering yields only single-node rows
+    // (a chain with skip/back edges), stagger consecutive rows into two
+    // columns so the drawing keeps its graph shape.
+    const outDeg = {};
+    walk.flow.flows.forEach(function (e) { outDeg[e.from] = (outDeg[e.from] || 0) + 1; });
+    const branchy = Object.keys(outDeg).some(function (k) { return outDeg[k] >= 2; }) ||
+      edges.some(function (e) { return index[e.to] - index[e.from] >= 2; });
+    const maxRow = Math.max.apply(null, rowLen);
+    const stagger = branchy && maxRow === 1;
+    const colCount = stagger ? 2 : maxRow;
+
+    // -- (c) Geometry: node width, lanes, canvas ---------------------------------
+    const avail = Math.max(300, stage.clientWidth - 20);
+    const estGutter = (needLeft ? D.estGutter : 0) + (needRight ? D.estGutter : 0);
+    const fitW = Math.floor((avail - 2 * D.pad - estGutter - (colCount - 1) * D.laneGap) / colCount);
+    const nodeW = Math.max(D.nodeAbsMinW, Math.min(D.nodeMaxW, fitW));
+    const lanesW = colCount * nodeW + (colCount - 1) * D.laneGap;
+
+    // Right-edge x relative to the lane area (absolute offset still unknown) —
+    // tells whether two side ports line up closely enough for a bow.
+    const relRight = steps.map(function (s, i) {
+      if (stagger) {
+        return (layer[i] % 2) * (nodeW + D.laneGap) + nodeW;
+      }
+      const rowW = rowLen[layer[i]] * nodeW + (rowLen[layer[i]] - 1) * D.laneGap;
+      return (lanesW - rowW) / 2 + pos[i] * (nodeW + D.laneGap) + nodeW;
+    });
+
+    // -- Create node elements (HTML, absolutely positioned) and measure ---------
+    steps.forEach(function (s, i) {
+      const rank = walk.rankOf[i] + 1;
+      const node = el('div', {
+        class: 'node k-' + s.kind,
+        role: 'button',
+        tabindex: '0',
+        'data-idx': String(i),
+        'aria-label': 'Step ' + rank + ' of ' + n + ': ' + s.title + ' (' + s.kind + ')',
+      });
+      const head = el('div', { class: 'node-head' });
+      head.appendChild(el('span', { class: 'node-num' }, String(rank)));
+      head.appendChild(el('span', { class: 'node-kind' }, s.kind));
+      node.appendChild(head);
+      node.appendChild(el('h4', { class: 'node-title' }, s.title));
+      node.addEventListener('click', function () { pausePlayback(); setCurrent(i, { scroll: false }); });
+      node.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          pausePlayback();
+          setCurrent(i, { scroll: false });
+        }
+      });
+      node.style.position = 'absolute';
+      node.style.width = nodeW + 'px';
+      diagram.appendChild(node);
+      walk.nodeEls.push(node);
+    });
+    const h = walk.nodeEls.map(function (node) { return node.offsetHeight; });
+
+    // Row y positions: y advances by the row's tallest card + the layer gap.
+    const rowTop = [], rowMaxH = [];
+    let cursor = D.pad;
+    for (let l = 0; l < layerCount; l++) {
+      rowTop[l] = cursor;
+      let mh = 0;
+      rows[l].forEach(function (i) { mh = Math.max(mh, h[i]); });
+      rowMaxH[l] = mh;
+      cursor += mh + D.layerGap;
+    }
+    const H = cursor - D.layerGap + D.pad;
+
+    // Node rects (x filled in once the canvas width is known).
+    const R = steps.map(function (s, i) {
+      const y = rowTop[layer[i]];
+      return { x: 0, y: y, w: nodeW, h: h[i], cx: 0, cy: y + h[i] / 2,
+               top: y, bottom: y + h[i], left: 0, right: 0 };
+    });
+
+    // Lane-RELATIVE x for every node — the absolute lanesLeft offset is added
+    // below, after the gutter widths are known. The plan pass lays out edge
+    // ports in this relative space; every R.cx must be real before it runs.
+    R.forEach(function (r, i) {
+      let x;
+      if (stagger) {
+        x = (layer[i] % 2) * (nodeW + D.laneGap);
+      } else {
+        const rowW = rowLen[layer[i]] * nodeW + (rowLen[layer[i]] - 1) * D.laneGap;
+        x = (lanesW - rowW) / 2 + pos[i] * (nodeW + D.laneGap);
+      }
+      r.x = r.left = x;
+      r.right = x + nodeW;
+      r.cx = x + nodeW / 2;
+    });
+
+    // Inter-row bands: the node-free strips between consecutive rows (plus a
+    // bottom strip when tall enough). A label centred inside a band can never
+    // sit on a card, whatever its width.
+    const bands = [];
+    for (let l = 0; l < layerCount - 1; l++) {
+      bands.push({ y0: rowTop[l] + rowMaxH[l], y1: rowTop[l + 1] });
+    }
+    const lastBottom = rowTop[layerCount - 1] + rowMaxH[layerCount - 1];
+    if (H - lastBottom >= 16) bands.push({ y0: lastBottom, y1: H });
+    function bandNear(y) {
+      let best = null, bestD = Infinity;
+      bands.forEach(function (b) {
+        const d = Math.abs((b.y0 + b.y1) / 2 - y);
+        if (d < bestD) { bestD = d; best = b; }
+      });
+      return best;
+    }
+
+    // -- Gutter lanes: parallel runs keep their y-intervals disjoint -------------
+    const gutterLanes = { left: [], right: [] };   // per lane: list of [y0, y1]
+    function takeLane(side, a, b) {
+      const ls = gutterLanes[side];
+      for (let k = 0; k < ls.length; k++) {
+        const free = ls[k].every(function (iv) { return b < iv[0] - 6 || a > iv[1] + 6; });
+        if (free) { ls[k].push([a, b]); return k; }
+      }
+      if (ls.length < 5) { ls.push([[a, b]]); return ls.length - 1; }
+      ls[0].push([a, b]);                    // crowded gutter: reuse lane 0
+      return 0;
+    }
+
+    // Per-port counters fan multiple edges out of one card.
+    const portK = new Map();
+    function portOff(key) {
+      const k = portK.get(key) || 0;
+      portK.set(key, k + 1);
+      return [0, 12, -12, 24, -24][Math.min(k, 4)];
+    }
+
+    // Bottom/top port fan-out for next-layer edges (so parallel paths through
+    // one band stay apart).
+    const outOffset = new Map(), inOffset = new Map();
+    const bySource = new Map(), byTarget = new Map();
+    edges.forEach(function (e, ei) {
+      if (routes[ei].kind !== 'next') return;
+      if (!bySource.has(e.from)) bySource.set(e.from, []);
+      bySource.get(e.from).push(e);
+      if (!byTarget.has(e.to)) byTarget.set(e.to, []);
+      byTarget.get(e.to).push(e);
+    });
+    function spreadOut(list) {
+      list.sort(function (a, b) {
+        return (index[a.to] - index[b.to]) || a.label.localeCompare(b.label);
+      });
+      const m = list.length;
+      list.forEach(function (e, k) {
+        const t = m === 1 ? 0.5 : k / (m - 1);
+        outOffset.set(e, (t - 0.5) * 2 * D.sideFrac * nodeW);
+      });
+    }
+    function spreadIn(list) {
+      list.sort(function (a, b) {
+        return (index[a.from] - index[b.from]) || a.label.localeCompare(b.label);
+      });
+      const m = list.length;
+      list.forEach(function (e, k) {
+        const t = m === 1 ? 0.5 : k / (m - 1);
+        inOffset.set(e, (t - 0.5) * 2 * D.sideFrac * nodeW);
+      });
+    }
+    bySource.forEach(spreadOut);
+    byTarget.forEach(spreadIn);
+
+    // -- Plan pass: y-geometry per edge + a gutter lane per gutter edge ----------
+    const bulgeMax = { left: -1, right: -1 };
+    const plan = edges.map(function (e, ei) {
+      const rt = routes[ei];
+      const i = index[e.from], j = index[e.to];
+      if (rt.kind === 'bridge') {
+        return { kind: 'bridge', i: i, j: j, e: e, dir: rt.dir };
+      }
+      if (rt.kind === 'next') {
+        return {
+          kind: 'next', i: i, j: j, e: e,
+          sx: R[i].cx + (outOffset.get(e) || 0), sy: R[i].bottom + 1,
+          ex: R[j].cx + (inOffset.get(e) || 0), ey: R[j].y - 1,
+        };
+      }
+      const side = rt.side;
+      const down = rt.kind === 'span';       // spans descend; backs rise/loop
+      const sOut = side === 'right' ? pos[i] === rowLen[layer[i]] - 1 : pos[i] === 0;
+      const tOut = side === 'right' ? pos[j] === rowLen[layer[j]] - 1 : pos[j] === 0;
+      // A bow only reads (and stays clear of cards) between two ports that
+      // sit on nearly the same vertical line; otherwise run through the gutter.
+      const aligned = Math.abs(relRight[i] - relRight[j]) <= 24;
+      let sy, ty, escX = 0;
+      if (sOut) {
+        sy = R[i].cy + portOff(i + ':' + side);
+      } else {
+        // A side exit would cross a neighbouring card: escape vertically
+        // through the band below (downward) or above (upward) the source row.
+        escX = R[i].cx + portOff(i + ':esc');
+        sy = down ? Math.max(R[i].bottom + D.escape,
+                             rowTop[layer[i]] + rowMaxH[layer[i]] + 6)
+                  : R[i].y - D.escape;
+        sy = Math.max(sy, 2);
+      }
+      ty = tOut ? R[j].cy + portOff(j + ':' + side)
+                : Math.max(R[j].y - D.approach, 2);  // approach from above
+      const lane = takeLane(side, Math.min(sy, ty), Math.max(sy, ty));
+      // Even between aligned ports, a bow is only clear when no card in an
+      // intermediate row straddles the bow's apex column.
+      let bow = rt.kind === 'back' && sOut && tOut && aligned;
+      if (bow) {
+        const apex = relRight[i] + 0.75 * (46 + 20 * lane) + 2;
+        for (let l = Math.min(layer[i], layer[j]) + 1;
+             l < Math.max(layer[i], layer[j]) && bow; l++) {
+          for (let rk = 0; rk < rows[l].length && bow; rk++) {
+            const k = rows[l][rk];
+            if (relRight[k] - nodeW < apex && relRight[k] > relRight[i] + 2) bow = false;
+          }
+        }
+      }
+      if (bow && lane > bulgeMax[side]) {
+        bulgeMax[side] = lane;               // bows reserve extra gutter width
+      }
+      return {
+        kind: bow ? 'bulge' : 'run',
+        i: i, j: j, e: e, side: side, down: down, lane: lane,
+        sOut: sOut, tOut: tOut, sy: sy, ty: ty, escX: escX,
+      };
+    });
+
+    // -- Gutter widths, canvas size, lane x positions -----------------------------
+    function gutterW(side) {
+      const count = gutterLanes[side].length;
+      if (!count) return 0;
+      let w = Math.max(D.gutterMin, 14 + count * D.gutterLane + 6);
+      const b = 46 + 20 * Math.max(0, bulgeMax[side]);
+      return Math.max(w, Math.round(b * 0.75) + 14);
+    }
+    const gWL = gutterW('left'), gWR = gutterW('right');
+    const canvasW = Math.round(2 * D.pad + gWL + lanesW + gWR);
+    const lanesLeft = D.pad + gWL;
+    const lanesRight = lanesLeft + lanesW;
+
+    // Shift the plan's lane-relative anchors into absolute canvas coordinates.
+    plan.forEach(function (p) {
+      if (typeof p.sx === 'number') p.sx += lanesLeft;
+      if (typeof p.ex === 'number') p.ex += lanesLeft;
+      if (p.escX) p.escX += lanesLeft;
+    });
+    function laneX(side, k) {
+      return side === 'right' ? lanesRight + 14 + k * D.gutterLane
+                              : lanesLeft - 14 - k * D.gutterLane;
+    }
+
+    // Node x: rows centered over the lane area; staggered flows use two fixed
+    // columns so consecutive rows sit side by side.
+    R.forEach(function (r, i) {
+      let x;
+      if (stagger) {
+        x = lanesLeft + (layer[i] % 2) * (nodeW + D.laneGap);
+      } else {
+        const rowW = rowLen[layer[i]] * nodeW + (rowLen[layer[i]] - 1) * D.laneGap;
+        x = lanesLeft + (lanesW - rowW) / 2 + pos[i] * (nodeW + D.laneGap);
+      }
+      r.x = r.left = x;
+      r.right = x + nodeW;
+      r.cx = x + nodeW / 2;
+      walk.nodeEls[i].style.left = x + 'px';
+      walk.nodeEls[i].style.top = r.y + 'px';
+    });
+
+    diagram.style.width = canvasW + 'px';
+    diagram.style.height = H + 'px';
+    // Scroll only when the finished canvas genuinely exceeds the stage (rare —
+    // happens when the node floor had to clamp on very wide rows); otherwise the
+    // whole diagram fits and nothing is ever cut off. The page itself never does.
+    stage.style.overflowX = canvasW > stage.clientWidth - 2 ? 'auto' : 'hidden';
+
+    // -- SVG: arrowhead defs; edge paths paint below the node cards, labels ----
+    // live in a separate SVG layered above them (see .label-svg above).
+    const svg = svgEl('svg', {
+      class: 'edge-svg', width: String(canvasW), height: String(H),
+      viewBox: '0 0 ' + canvasW + ' ' + H, 'aria-hidden': 'true',
+    });
+    const labelSvg = svgEl('svg', {
+      class: 'label-svg', width: String(canvasW), height: String(H),
+      viewBox: '0 0 ' + canvasW + ' ' + H, 'aria-hidden': 'true',
+    });
+    const defs = svgEl('defs');
+    EDGE_KINDS.forEach(function (k) {
+      defs.appendChild(makeMarker('arrow-' + k, 'marker-fill-' + k, 7));
+      defs.appendChild(makeMarker('arrow-' + k + '-on', 'marker-fill-' + k, 10));
+    });
+    svg.appendChild(defs);
+
+    // Label placement with de-collision: keep the (estimated) label boxes
+    // from stacking. Band-mode labels may also slide horizontally — their
+    // row is node-free across the full canvas width — while gutter-mode
+    // labels only slide vertically (their x stays inside the gutter).
+    const measureCtx = document.createElement('canvas').getContext('2d');
+    measureCtx.font = '600 11px "IBM Plex Sans", system-ui, sans-serif';
+    const placedLabels = [];
+    function placeLabel(px, py, text, mode, band) {
+      const w = measureCtx.measureText(text).width + 12, hh = 14;
+      let x = px, y = py;
+      if (mode === 'band') {
+        x = Math.max(Math.min(px, canvasW - w / 2 - 4), Math.min(w / 2 + 4, canvasW / 2));
+        if (band) {
+          y = Math.max(Math.min(py, band.y1 - 10),
+                       Math.min(band.y0 + 10, (band.y0 + band.y1) / 2));
+        }
+      }
+      const clear = function (cx, cy) {
+        if (cx - w / 2 < 2 || cx + w / 2 > canvasW - 2 || cy < 8 || cy > H - 8) return false;
+        return !placedLabels.some(function (p) {
+          return Math.abs(p.x - cx) < (p.w + w) / 2 + 4 &&
+                 Math.abs(p.y - cy) < (p.h + hh) / 2 + 2;
+        });
+      };
+      let ok = false;
+      [0, -16, 16, -30, 30, -46, 46].some(function (dy) {
+        const cy = y + dy;
+        const inBand = !band || (cy > band.y0 + 8 && cy < band.y1 - 8);
+        if (inBand && clear(x, cy)) { y = cy; ok = true; return true; }
+        return false;
+      });
+      if (!ok && mode === 'band') {
+        [-30, 30, -60, 60, -90, 90].some(function (dx) {
+          if (clear(x + dx, y)) { x += dx; ok = true; return true; }
+          return false;
+        });
+      }
+      placedLabels.push({ x: x, y: y, w: w, h: hh });
+      return { x: Math.round(x), y: Math.round(y) };
+    }
+
+    // True when the cubic (p0..p3) never enters a node card interior (2px
+    // inset; ports sit 1px outside cards by design).
+    function curveClearsCard(p0, p1, p2, p3) {
+      for (let s = 0.03; s < 1; s += 0.047) {
+        const u = 1 - s;
+        const x = u * u * u * p0.x + 3 * u * u * s * p1.x + 3 * u * s * s * p2.x + s * s * s * p3.x;
+        const y = u * u * u * p0.y + 3 * u * u * s * p1.y + 3 * u * s * s * p2.y + s * s * s * p3.y;
+        for (let k = 0; k < R.length; k++) {
+          if (x > R[k].x + 2 && x < R[k].right - 2 && y > R[k].top + 2 && y < R[k].bottom - 2) return false;
+        }
+      }
+      return true;
+    }
+
+    // -- Paths + labels -----------------------------------------------------------
+    edges.forEach(function (e, ei) {
+      const p = plan[ei];
+      const i = p.i, j = p.j;
+      let d, label;
+
+      if (p.kind === 'bridge') {
+        // Short hook under the row: source side port → band below the row →
+        // target side port. Stays inside the card-free gap between the two.
+        const sxPort = p.dir === 'left' ? R[i].left - 1 : R[i].right + 1;
+        const txPort = p.dir === 'left' ? R[j].right + 1 : R[j].left - 1;
+        const by = Math.max(R[i].bottom, R[j].bottom) + 10;
+        d = roundedPath([
+          { x: sxPort, y: R[i].cy }, { x: sxPort, y: by },
+          { x: txPort, y: by }, { x: txPort, y: R[j].cy },
+        ], 10);
+        label = placeLabel((sxPort + txPort) / 2, by, e.label, 'band', bandNear(by));
+      } else if (p.kind === 'next') {
+        // S-curve from the source's bottom port to the target's top port; the
+        // cubic midpoint lands in the inter-row band between them.
+        const drop = Math.max(26, (p.ey - p.sy) * 0.42);
+        const p0 = { x: p.sx, y: p.sy }, p1 = { x: p.sx, y: p.sy + drop };
+        const p2 = { x: p.ex, y: p.ey - drop }, p3 = { x: p.ex, y: p.ey };
+        const band = bands[layer[i]];          // the band below the source row
+        if (curveClearsCard(p0, p1, p2, p3)) {
+          d = 'M ' + r2(p.sx) + ' ' + r2(p.sy) +
+              ' C ' + r2(p1.x) + ' ' + r2(p1.y) + ', ' + r2(p2.x) + ' ' + r2(p2.y) +
+              ', ' + r2(p.ex) + ' ' + r2(p.ey);
+          const mid = cubicMid(p0, p1, p2, p3);
+          label = placeLabel(mid.x, mid.y, e.label, 'band', bandNear(mid.y));
+        } else {
+          // The sweep would graze a taller neighbour card in the source row:
+          // jog through the node-free band centre instead.
+          const midY = band ? (band.y0 + band.y1) / 2 : (p.sy + p.ey) / 2;
+          d = roundedPath([
+            { x: p.sx, y: p.sy }, { x: p.sx, y: midY },
+            { x: p.ex, y: midY }, { x: p.ex, y: p.ey },
+          ], 12);
+          label = placeLabel((p.sx + p.ex) / 2, midY, e.label, 'band', band);
+        }
+      } else if (p.kind === 'bulge') {
+        // Right-side bow between two outermost side ports (backward / self).
+        let b = 46 + p.lane * 20;
+        if (stagger) b = Math.min(b, 24);    // bow through the column gap
+        const sx = R[i].right + 1, ex = R[j].right + 1;
+        const p0 = { x: sx, y: p.sy }, p1 = { x: sx + b, y: p.sy };
+        const p2 = { x: ex + b, y: p.ty }, p3 = { x: ex, y: p.ty };
+        d = 'M ' + r2(sx) + ' ' + r2(p.sy) +
+            ' C ' + r2(p1.x) + ' ' + r2(p1.y) + ', ' + r2(p2.x) + ' ' + r2(p2.y) +
+            ', ' + r2(ex) + ' ' + r2(p.ty);
+        const mid = cubicMid(p0, p1, p2, p3);
+        const band = bandNear(mid.y);
+        label = placeLabel(mid.x, band ? (band.y0 + band.y1) / 2 : mid.y - 8,
+                           e.label, band ? 'band' : 'gutter', band);
+      } else {
+        // Gutter run: side port (or a band escape) → vertical run on this
+        // edge's lane → side port or top-port approach into the target.
+        const lx = laneX(p.side, p.lane);
+        const pts = [];
+        if (p.sOut) {
+          pts.push({ x: p.side === 'right' ? R[i].right + 1 : R[i].left - 1, y: p.sy });
+        } else {
+          pts.push({ x: p.escX, y: p.down ? R[i].bottom + 1 : R[i].y - 1 });
+          pts.push({ x: p.escX, y: p.sy });
+        }
+        pts.push({ x: lx, y: p.sy });
+        pts.push({ x: lx, y: p.ty });
+        if (p.tOut) {
+          pts.push({ x: p.side === 'right' ? R[j].right + 1 : R[j].left - 1, y: p.ty });
+        } else {
+          pts.push({ x: R[j].cx, y: p.ty });
+          pts.push({ x: R[j].cx, y: R[j].y - 1 });
+        }
+        d = roundedPath(pts, 12);
+        const runMidY = (p.sy + p.ty) / 2;
+        const band = bandNear(runMidY);
+        label = placeLabel(lx, band ? (band.y0 + band.y1) / 2 : runMidY,
+                           e.label, band ? 'band' : 'gutter', band);
+      }
+
+      const path = svgEl('path', {
+        d: d,
+        class: 'edge k-' + e.kind,
+        'marker-end': 'url(#arrow-' + e.kind + ')',
+      });
+      svg.appendChild(path);
+
+      const text = svgEl('text', {
+        x: String(label.x), y: String(label.y),
+        class: 'edge-label k-' + e.kind,
+      });
+      text.textContent = e.label;
+      labelSvg.appendChild(text);
+
+      walk.edgeEls.push({ path: path, label: text, kind: e.kind, toIdx: j });
+    });
+
+    diagram.appendChild(svg);
+    diagram.appendChild(labelSvg);
+  }
+
+  /* ─── Walkthrough current step, playback & keyboard ─── */
+  // Step code: plain text immediately, Shiki highlight swapped in when ready
+  // (the want-key guard drops stale async renders after a fast step change).
+  function setStepCode(idx, s) {
+    const wrap = $('[data-wt="code"]', walk.pane);
+    if (!wrap) return;
+    wrap.dataset.want = String(idx);
+    const key = walk.ex.id + '#s' + idx;
+    const html = codeCache.get(key);
+    if (html) { wrap.innerHTML = html; return; }
+    wrap.innerHTML = '<pre class="code"><code>' + esc(s.code) + '</code></pre>';
+    highlight(s.code, 'go', false).then((h) => {
+      codeCache.set(key, h);
+      if (wrap.dataset.want === String(idx) && wrap.isConnected) wrap.innerHTML = h;
+    }).catch(() => {});
+  }
+
+  function setCurrent(i, opts) {
+    if (!walk.flow || !walk.pane) return;
+    const n = walk.flow.steps.length;
+    walk.currentStep = Math.max(0, Math.min(n - 1, i));
+    // Visible step numbers follow the layout's play order, not data order.
+    const rank = walk.rankOf.length === n && walk.rankOf[walk.currentStep] !== undefined
+      ? walk.rankOf[walk.currentStep]
+      : walk.currentStep;
+
+    walk.nodeEls.forEach(function (node, idx) {
+      const isCur = idx === walk.currentStep;
+      node.classList.toggle('current', isCur);
+      if (isCur) node.setAttribute('aria-current', 'step');
+      else node.removeAttribute('aria-current');
+    });
+
+    // Incoming edges of the current step animate more strongly.
+    walk.edgeEls.forEach(function (rec) {
+      const active = rec.toIdx === walk.currentStep;
+      rec.path.classList.toggle('active', active);
+      rec.path.setAttribute('marker-end', 'url(#arrow-' + rec.kind + (active ? '-on' : '') + ')');
+      rec.label.classList.toggle('active', active);
+    });
+
+    // Side panel content
+    const s = walk.flow.steps[walk.currentStep];
+    const badge = $('[data-wt="badge"]', walk.pane);
+    badge.className = 'step-kind-badge k-' + s.kind;
+    badge.textContent = s.kind;
+    $('[data-wt="title"]', walk.pane).textContent = s.title;
+    $('[data-wt="detail"]', walk.pane).textContent = s.detail;
+    setStepCode(walk.currentStep, s);
+    $('[data-wt="loc"]', walk.pane).textContent = s.file + ':' + s.lines +
+      '  ·  step ' + (rank + 1) + ' of ' + n;
+    $('[data-wt="pos"]', walk.pane).textContent = 'Step ' + (rank + 1) + ' / ' + n;
+
+    $('[data-wt="prev"]', walk.pane).disabled = walk.currentStep === 0;
+    $('[data-wt="next"]', walk.pane).disabled = walk.currentStep === n - 1;
+
+    if (opts && opts.scroll && walk.nodeEls[walk.currentStep]) {
+      walk.nodeEls[walk.currentStep].scrollIntoView({
+        block: 'nearest',
+        behavior: motionOK ? 'smooth' : 'auto',
+      });
+    }
+  }
+
+  function togglePlay() {
+    if (walk.playing) pausePlayback();
+    else startPlayback();
+  }
+
+  // The step `delta` places away from data index `fromIdx` in play order (the
+  // layout's topological order). Falls back to data order if the diagram has
+  // not been laid out yet.
+  function stepInOrder(fromIdx, delta) {
+    const n = walk.flow ? walk.flow.steps.length : 0;
+    const ordered = walk.playOrder.length === n && walk.rankOf.length === n &&
+      walk.rankOf[fromIdx] !== undefined;
+    const rank = ordered ? walk.rankOf[fromIdx] : fromIdx;
+    const k = Math.max(0, Math.min(n - 1, rank + delta));
+    return ordered ? walk.playOrder[k] : k;
+  }
+
+  function startPlayback() {
+    if (!walkActive()) return;
+    // Restart from the drawing's first step when play is pressed at the end.
+    const last = walk.playOrder.length ? walk.playOrder[walk.playOrder.length - 1] : walk.flow.steps.length - 1;
+    if (walk.currentStep === last) setCurrent(walk.playOrder.length ? walk.playOrder[0] : 0, { scroll: true });
+    walk.playing = true;
+    walkCanvas().classList.add('playing');
+    updatePlayButton();
+    scheduleTick();
+  }
+
+  function scheduleTick() {
+    clearTimeout(walk.timer);
+    walk.timer = setTimeout(function () {
+      if (!walk.playing || !walkActive()) return;
+      const last = walk.playOrder.length ? walk.playOrder[walk.playOrder.length - 1] : walk.flow.steps.length - 1;
+      if (walk.currentStep !== last) {
+        setCurrent(stepInOrder(walk.currentStep, 1), { scroll: true });
+        scheduleTick();
+      } else {
+        pausePlayback();          // hold on the last step
+      }
+    }, STEP_MS);
+  }
+
+  function pausePlayback() {
+    walk.playing = false;
+    clearTimeout(walk.timer);
+    const canvas = walkCanvas();
+    if (canvas) canvas.classList.remove('playing');
+    updatePlayButton();
+  }
+
+  function stopPlayback() {
+    pausePlayback();
+    walk.currentStep = 0;
+  }
+
+  function updatePlayButton() {
+    const btn = walk.pane && $('[data-wt="play"]', walk.pane);
+    if (!btn) return;
+    btn.textContent = walk.playing ? 'Pause' : 'Play';
+    btn.setAttribute('aria-pressed', walk.playing ? 'true' : 'false');
+  }
+
+  // ← / → step through the example in play order, Space toggles playback —
+  // only while the Step-through tab is the selected view, never from inputs,
+  // and arrows yield to tab buttons (whose own arrow handlers rotate tabs).
+  document.addEventListener('keydown', function (e) {
+    if (e.altKey || e.ctrlKey || e.metaKey) return;
+    const t = e.target;
+    if (t instanceof Element && t.matches('input, textarea, select')) return;
+    if (!walkActive()) return;
+    const tabLike = t instanceof Element && t.closest('[role="tab"], button, a');
+    if (e.key === 'ArrowRight') {
+      if (tabLike) return;
+      e.preventDefault();
+      pausePlayback();
+      setCurrent(stepInOrder(walk.currentStep, 1), { scroll: true });
+    } else if (e.key === 'ArrowLeft') {
+      if (tabLike) return;
+      e.preventDefault();
+      pausePlayback();
+      setCurrent(stepInOrder(walk.currentStep, -1), { scroll: true });
+    } else if (e.key === ' ') {
+      // Space toggles playback unless focus is on a control that handles Space
+      // itself (buttons, links, or a diagram node, which jumps to that step).
+      if (tabLike || (t instanceof Element && t.closest('.node'))) return;
+      e.preventDefault();
+      togglePlay();
+    }
+  });
+
+  // Re-layout the diagram when the viewport changes (keeps the current step).
+  window.addEventListener('resize', debounce(function () {
+    if (!walkActive()) return;
+    const wasPlaying = walk.playing;
+    buildWalkDiagram();
+    setCurrent(walk.currentStep, { scroll: false });
+    if (wasPlaying) walkCanvas().classList.add('playing');
+  }, 150));
+
+  /* Show the Diagram or Step-through pane. Loads the walkthrough data on
+     first demand; an idempotent no-op when the pane already shows this
+     example (hash-driven re-entry must not re-mount or scroll). */
+  function setFlowView(on) {
+    const pane = $('#pane-flow-walk', detail);
+    if (!pane) return;
+    if (!on) {
+      pane.hidden = true;
+      pausePlayback();
+      return;
+    }
+    pane.hidden = false;
+    const ex = state.current;
+    if (!ex) return;
+    const leaf = leafOf(ex.id);
+    if (walk.pane === pane && walk.leaf === leaf) return;   // already loaded/loading/errored
+    stopPlayback();
+    walk.pane = pane;
+    walk.leaf = leaf;
+    walk.ex = ex;
+    walk.flow = null;
+    pane.textContent = '';
+    pane.appendChild(el('p', { class: 'diagram-status' }, 'Loading walkthrough…'));
+    loadFlow(leaf).then((data) => {
+      if (walk.pane !== pane || walk.leaf !== leaf || !pane.isConnected) return;
+      if (data) {
+        mountWalkthrough(ex, pane, data);
+      } else {
+        pane.textContent = '';
+        pane.innerHTML = '<div class="wt-error"><h3>Walkthrough unavailable</h3>' +
+          '<p class="summary">The step-through data for this example could not be loaded ' +
+          '(<code>data/' + esc(leaf) + '.js</code>). The diagram and source views still work.</p></div>';
+        live('Walkthrough could not be loaded');
+      }
+    });
+  }
+
+  function select(id, { scroll = false, focus = false, walkOn = false } = {}) {
+    const ex = state.all.find((e) => e.id === id);
+    if (!ex) return false;
+    state.current = ex;
+    $$('.ex-link', list).forEach((a) => {
+      if (a.dataset.id === id) a.setAttribute('aria-current', 'page');
+      else a.removeAttribute('aria-current');
+    });
+    const link = $(`.ex-link[data-id="${CSS.escape(id)}"]`, list);
+    if (link) {
+      const lr = link.getBoundingClientRect(), cr = list.getBoundingClientRect();
+      if (lr.top < cr.top || lr.bottom > cr.bottom) list.scrollTop += lr.top - cr.top - cr.height / 3;
+    }
+    renderDetail(ex, walkOn);
+    document.title = `${prettyName(ex.name)} · TypeSafe SDK for Go`;
+    if (matchMedia('(max-width: 900px)').matches) setSideOpen(false);
+    if (scroll) detail.scrollIntoView({ block: 'start' });
+    if (focus) $('#detail-title').focus({ preventScroll: true });
+    return true;
+  }
+
+  // "#/examples/<id>" (+ optional "/walkthrough" suffix selecting the
+  // Step-through tab). Example ids contain slashes, so the suffix is
+  // stripped before lookup — no example leaf is named "walkthrough".
+  function parseExampleHash() {
+    const m = location.hash.match(/^#\/examples\/(.+)$/);
+    if (!m) return null;
+    let id;
+    try { id = decodeURIComponent(m[1]); } catch (e) { id = m[1]; }
+    let walk = false;
+    if (id.endsWith('/walkthrough')) { id = id.slice(0, -'/walkthrough'.length); walk = true; }
+    return { id, walk };
+  }
+
+  function route({ initial = false } = {}) {
+    const h = parseExampleHash();
+    if (h) {
+      // Same example: just flip the flow tab — no re-render, no scroll churn.
+      if (state.current?.id === h.id) {
+        flowTabSelect?.($(h.walk ? '#tab-walk' : '#tab-flow', detail));
+        return;
+      }
+      if (select(h.id, { scroll: true, focus: !initial, walkOn: h.walk })) return;
+    }
+    if (initial || !state.current) select(state.all[0].id);
+  }
+  window.addEventListener('hashchange', () => route());
+
+  async function loadExamples() {
+    try {
+      const res = await fetch('examples.json', { cache: 'no-cache' });
+      if (!res.ok) throw new Error(res.status + ' ' + res.statusText);
+      state.data = await res.json();
+    } catch (e) {
+      detail.innerHTML = `<div class="panel" style="padding:1.5rem"><h3 style="margin-bottom:.5rem">Examples could not be loaded</h3><p class="summary">Generate the catalog with <code>go run ./tools/pagegen</code>, then serve <code>docs/github-page</code> over HTTP (for example <code>python -m http.server -d docs/github-page</code>).</p></div>`;
+      list.innerHTML = '';
+      console.error(e);
+      return;
+    }
+    state.all = state.data.catalogs.flatMap((c) => c.examples.map((ex) => ({
+      ...ex, _hay: [ex.id, ex.description, ex.summary, c.title].join(' ').toLowerCase(),
+    })));
+    $$('[data-total]').forEach((el) => { el.textContent = state.all.length; });
+    applyFilter();
+    route({ initial: true });
+    if (state.current && location.hash.startsWith('#/examples/')) {
+      // Highlighting and web fonts reflow the page above; re-anchor once they settle.
+      Promise.allSettled([staticHighlight, document.fonts.ready]).then(() => detail.scrollIntoView({ block: 'start' }));
+    }
+  }
+
+  /* ─── Boot ─── */
+  const howEl = $('[data-mermaid="how"]');
+  const io = new IntersectionObserver((entries) => {
+    if (entries.some((e) => e.isIntersecting)) { io.disconnect(); renderDiagram(howEl, 'how', HOW); }
+  }, { rootMargin: '400px' });
+  io.observe(howEl);
+  const staticHighlight = highlightStatic();
+  loadExamples();
+</script>
+</body>
+</html>

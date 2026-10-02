@@ -27,6 +27,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `routing`, and `ranking`; `quickstart` and `retries-errors` stay at the
   `examples/` root.
 
+- Four more cookbook catalogs implementing 60 proposed Go patterns:
+  `examples/go-software-use-cases/` (20 general Go software patterns),
+  `examples/api-use-cases/` (10 REST and GraphQL patterns),
+  `examples/relational-db-use-cases/` (10 PostgreSQL patterns), and
+  `examples/testing-use-cases/` (20 live evaluation and review patterns;
+  routine `go test` targets stay offline).
+
+- GitHub Pages documentation site (`docs/github-page/`): an example browser
+  with rendered `flow.mmd` flow diagrams and syntax-highlighted source for
+  every example, lazy-loaded per-example step-through walkthroughs
+  (`docs/github-page/data/<leaf>.js`), and an embedded presentation
+  (`slides.html`). The catalog is generated at deploy time by the
+  stdlib-only `tools/pagegen` (which fails the build if an example lacks a
+  diagram or README row) and deployed by `.github/workflows/pages.yml` on
+  the `github-page` branch.
+
 ### Security
 
 - Deliberate hardening behavior changes: wire body logging is redacted by
@@ -61,6 +77,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `synctest` bubbles instead. Only the `rand` jitter seam remains.
 
 ### Fixed
+
+- Duplicate response header lines (e.g. repeated `retry-after` or
+  `x-typesafe-request-id`) now resolve to the first value, matching the
+  Python SDK's header lookup, instead of being comma-joined into one
+  unparseable string that silently fell back to default backoff.
 
 - Parity fixes from the third 2026-09-19 SDK parity review (Python v0.7.0
   baseline; no `Version` bump — the parity baseline is unchanged):
@@ -135,6 +156,9 @@ Initial release, at feature parity with the Python SDK v0.7.0.
 - `Client.Models.List`: the models available to the account.
 - Typed response objects with grouped views (`Nouls`, `Choices`, `Scores`),
   token usage, request ID, and a buffered raw HTTP response.
+- Standalone response parsers `ParseSystemOneResponse` and
+  `ParseListModelsResponse` for decoding an `*http.Response` outside the
+  client (status classification, body buffering, and validation included).
 - Error taxonomy matched with `errors.As`: `APIError` subclasses for
   400/401/403/404/422/429/5xx, `ResponseValidationError` with a dotted
   `FieldPath`, `ConnectionError`, and `TimeoutError` (satisfies `net.Error`).

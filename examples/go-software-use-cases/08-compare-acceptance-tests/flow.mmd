@@ -1,0 +1,15 @@
+flowchart TD
+  S[/"Requirement + tests"/]:::state
+  S --> L[/"for each test (2)"/]:::state
+  L --> C(["client.SystemOne"]):::sdk
+  C --> Q1["behavior · Noul"]:::noul
+  C --> Q2["failure_path · Noul"]:::noul
+  C -. "request error" .-> E1("Review test manually; mark uncertain"):::fail
+  Q1 --> P1["covered if any p ≥ 0.80<br/>uncertain if 0.20 to 0.80 exclusive"]:::policy
+  Q2 --> P1
+  E1 --> P2{"any uncertain?"}:::policy
+  P1 --> P2
+  P2 -- yes --> O1("Uncertain; reviewer inspects tests"):::outcome
+  P2 -- no --> P3{"behavior and failure<br/>path both covered?"}:::policy
+  P3 -- no --> O2("Likely acceptance gap"):::outcome
+  P3 -- yes --> O3("Tests appear relevant; run and review"):::outcome

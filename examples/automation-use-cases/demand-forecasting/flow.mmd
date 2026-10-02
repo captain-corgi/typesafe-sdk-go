@@ -1,0 +1,17 @@
+flowchart TD
+  S[/"for each sales note (3)"/]:::state
+  S --> C(["client.SystemOne"]):::sdk
+  C -. "request error" .-> E1("Print error, skip note"):::fail
+  C --> Q1["signal battery · 4× Noul<br/>purchase_intent · urgency · supply_concern ·<br/>competitive_mention"]:::noul
+  C --> Q2["interest · Score<br/>cool · interested · must have"]:::score
+  Q1 --> P0["sum signals, mean over 3 notes"]:::policy
+  Q2 --> P0
+  P0 --> P1{"mean interest ≥ 1.0 and<br/>mean intent ≥ 0.4?"}:::policy
+  P1 -- yes --> O1("forecast: revise demand UP"):::outcome
+  P1 -- no --> P2{"mean interest below 0.5?"}:::policy
+  P2 -- yes --> O2("forecast: revise demand DOWN"):::outcome
+  P2 -- no --> O3("forecast: hold, keep watching"):::outcome
+  P0 --> P3{"supply share ≥ 0.5?"}:::policy
+  P3 -- yes --> O4("risk flag: supply may cap revenue"):::outcome
+  P0 --> P4{"competitor share ≥ 0.5?"}:::policy
+  P4 -- yes --> O5("risk flag: competitive pressure"):::outcome

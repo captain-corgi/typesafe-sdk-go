@@ -1,0 +1,12 @@
+flowchart TD
+  S[/"upload help text, exit code 0"/]:::state
+  S --> V{"exit 0 and mentions<br/>--input and --dry-run?"}:::policy
+  V -- no --> E0("Exit: deterministic help assertion failed"):::fail
+  V -- yes --> C(["client.SystemOne"]):::sdk
+  C --> Q1["explains · Choice<br/>required_flag · optional_flag · both · neither"]:::choice
+  C -. "request error" .-> E1("INCONCLUSIVE help meaning"):::fail
+  Q1 --> P1{"confidence below 0.85?"}:::policy
+  P1 -- yes --> O1("INCONCLUSIVE help meaning"):::outcome
+  P1 -- no --> P2{"choice == both?"}:::policy
+  P2 -- no --> O2("REVIEW semantic diff:<br/>expected both, inferred choice"):::outcome
+  P2 -- yes --> O3("REVIEW help meaning appears stable"):::outcome

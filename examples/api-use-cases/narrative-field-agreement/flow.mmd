@@ -1,0 +1,10 @@
+flowchart TD
+  S[/"Deployment request<br/>environment · operation · reason"/]:::state
+  S --> P0{"environment, operation, reason valid?<br/>reason 1-500 chars"}:::policy
+  P0 -- no --> O0("reject_invalid_environment / operation / reason"):::outcome
+  P0 -- yes --> C(["client.SystemOne"]):::sdk
+  C --> Q1["agrees · Noul<br/>reason matches typed fields"]:::noul
+  C -. "request error" .-> E1("clarification_or_review"):::fail
+  Q1 --> P1{"agrees ≥ 0.80?"}:::policy
+  P1 -- yes --> O1("continue_validated_request"):::outcome
+  P1 -- no --> O2("clarification_or_review"):::outcome

@@ -426,15 +426,17 @@ func val(p *float64) float64 {
 	return *p
 }
 
-func TestDuplicateHeadersJoined(t *testing.T) {
-	// Like the Python client's header lookup, duplicate lines are comma-
-	// joined, so conflicting values fail to parse instead of silently
-	// honoring the first.
+func TestDuplicateHeadersFirstValue(t *testing.T) {
+	// Like the Python client's httpx Headers.get, duplicate lines resolve to
+	// the first value; later duplicates are ignored, not comma-joined.
 	headers := http.Header{"Retry-After": []string{"5", "3"}}
-	if got := parseRetryAfter(headers); got != nil {
-		t.Errorf("parseRetryAfter(duplicates) = %v, want nil", *got)
+	if got := parseRetryAfter(headers); got == nil || *got != 5000 {
+		t.Errorf("parseRetryAfter(duplicates) = %v, want 5000 (ms from the first line)", *got)
 	}
-	if raw, present := headerValue(headers, "Retry-After"); !present || raw != "5, 3" {
-		t.Errorf("headerValue = %q, %v; want \"5, 3\", true", raw, present)
+	if raw, present := headerValue(headers, "Retry-After"); !present || raw != "5" {
+		t.Errorf("headerValue = %q, %v; want \"5\", true", raw, present)
+	}
+	if got, present := headerValue(http.Header{"X-Request-Id": []string{"a", "b"}}, "x-request-id"); !present || got != "a" {
+		t.Errorf("headerValue(case-insensitive duplicates) = %q, %v; want \"a\", true", got, present)
 	}
 }

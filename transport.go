@@ -155,7 +155,10 @@ func execute[T any](ctx context.Context, c *Client, req *preparedRequest, overri
 			if parsed, ok := outcome.value.(T); ok {
 				return parsed, nil
 			}
-			return zero, nil
+			// Unreachable through the public API (parseAny adapts the typed
+			// parse), but a mismatch must not masquerade as a successful zero
+			// result.
+			return zero, newTypeSafeError("parse callback returned %T instead of the request's result type", outcome.value)
 		}
 		err := outcome.err
 

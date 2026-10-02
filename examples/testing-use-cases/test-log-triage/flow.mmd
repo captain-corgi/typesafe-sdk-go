@@ -1,0 +1,11 @@
+flowchart TD
+  S[/"go test -json log + CI exit code 1"/]:::state
+  S --> P0["decode events: collect output,<br/>note fail action"]:::policy
+  P0 --> P1{"exit nonzero, fail seen,<br/>excerpt non-empty?"}:::policy
+  P1 -- no --> E0("log.Fatal: test-run assertion failed"):::fail
+  P1 -- yes --> C(["client.SystemOne"]):::sdk
+  C --> Q1["kind · Choice<br/>assertion · timeout · external_dependency<br/>race_report · other"]:::choice
+  C -. "request error" .-> E1("INCONCLUSIVE; CI exit remains failed"):::fail
+  Q1 --> P2{"confidence below 0.85<br/>or choice other?"}:::policy
+  P2 -- yes --> O1("INCONCLUSIVE label;<br/>CI exit remains failed"):::outcome
+  P2 -- no --> O2("REVIEW tentative label; CI exit<br/>remains failed; retain raw logs"):::outcome

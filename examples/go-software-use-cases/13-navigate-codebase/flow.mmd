@@ -1,0 +1,17 @@
+flowchart TD
+  S[/"Description + known repo tree"/]:::state
+  S --> C1(["client.SystemOne (area)"]):::sdk
+  C1 --> Q1["area · Choice<br/>sdk · examples · governance · other"]:::choice
+  C1 -. "request error" .-> E1("Search manually"):::fail
+  Q1 --> P1{"confidence ≥ 0.70?"}:::policy
+  P1 -- no --> O1("Inspect top two areas by probability"):::outcome
+  P1 -- yes --> P2{"known area?"}:::policy
+  P2 -- no --> O2("No known area; search manually"):::outcome
+  P2 -- yes --> C2(["client.SystemOne (file)"]):::sdk
+  C2 --> Q2["file · Choice<br/>files in area · other"]:::choice
+  C2 -. "request error" .-> E2("File choice unavailable; inspect area"):::fail
+  Q2 --> P3{"confidence ≥ 0.70, not other,<br/>and file known?"}:::policy
+  P3 -- no --> O3("File uncertain; inspect area"):::outcome
+  P3 -- yes --> P4{"os.Stat path exists?"}:::policy
+  P4 -- no --> O4("Path missing; inspect repository"):::outcome
+  P4 -- yes --> O5("candidate path"):::outcome

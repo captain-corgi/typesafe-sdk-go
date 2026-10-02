@@ -1575,6 +1575,22 @@ func TestConcurrentCallsWithDistinctOverrides(t *testing.T) {
 	}
 }
 
+// A parse callback returning a nil value with a nil error must surface an
+// error instead of silently succeeding with the zero result — the generic
+// assertion in execute fails for a nil interface, and a mismatched parse is
+// an SDK bug, not a successful empty response.
+func TestExecuteRejectsNilParseResult(t *testing.T) {
+	client := newTransportClient(t, roundTripperFunc(func(req *http.Request) (*http.Response, error) {
+		return textResponse(req, http.StatusOK, `{}`), nil
+	}))
+	req := &preparedRequest{method: http.MethodPost, url: "https://api.typesafe.ai/v1/systemone"}
+	if _, err := execute(t.Context(), client, req, nil, func(*http.Response, []byte) (any, error) {
+		return nil, nil
+	}); err == nil {
+		t.Fatal("execute should error when the parse callback yields no value and no error")
+	}
+}
+
 // --- helpers -----------------------------------------------------------------
 
 func newTransportClient(t *testing.T, transport roundTripperFunc) *Client {

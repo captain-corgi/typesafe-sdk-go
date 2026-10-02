@@ -1,0 +1,18 @@
+flowchart TD
+  S[/"for each player case (2)<br/>report, chat log, account stats"/]:::state
+  S --> C(["client.SystemOne"]):::sdk
+  C -. "request error" .-> E1("Print error, skip to next case"):::fail
+  C --> Q1["credible_cheating · Noul"]:::noul
+  C --> Q2["toxic_chat · Noul"]:::noul
+  C --> Q3["frustration · Score<br/>mild · heated · tilting (printed only)"]:::score
+  C --> Q4["churn_risk · Noul"]:::noul
+  Q1 --> P1{"cheating ≥ 0.5?"}:::policy
+  Q2 --> P2{"toxic ≥ 0.5?"}:::policy
+  Q4 --> P3{"churn ≥ 0.5?"}:::policy
+  P1 -- yes --> A1("escalate to anti-cheat with replay clip"):::outcome
+  P2 -- yes --> A2("chat mute + conduct warning"):::outcome
+  P3 -- yes --> A3("win-back outreach + retention offer"):::outcome
+  P1 -- no --> P4{"no actions collected?"}:::policy
+  P2 -- no --> P4
+  P3 -- no --> P4
+  P4 -- yes --> O4("no action, close report"):::outcome

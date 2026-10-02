@@ -1,0 +1,18 @@
+flowchart TD
+  S[/"for each listing (2)<br/>title, description, price"/]:::state
+  S --> C(["client.SystemOne"]):::sdk
+  C -. "request error" .-> E1("Print error, skip to next listing"):::fail
+  C --> Q1["category · Choice<br/>electronics · home · personal_care · other"]:::choice
+  C --> Q2["condition · Choice<br/>new · refurbished · used"]:::choice
+  C --> Q3["prohibited_item · Noul"]:::noul
+  C --> Q4["counterfeit_signal · Noul"]:::noul
+  C --> Q5["listing_quality · Score<br/>sparse · adequate · detailed"]:::score
+  Q3 --> P1{"prohibited ≥ 0.5?"}:::policy
+  P1 -- yes --> O1("action: remove listing"):::outcome
+  P1 -- no --> P2{"counterfeit ≥ 0.5?"}:::policy
+  Q4 --> P2
+  P2 -- yes --> O2("action: hold for brand verification"):::outcome
+  P2 -- no --> P3{"category confidence below 0.6?"}:::policy
+  Q1 --> P3
+  P3 -- yes --> O3("action: hold, ask seller for category"):::outcome
+  P3 -- no --> O4("action: publish listing"):::outcome

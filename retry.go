@@ -198,7 +198,8 @@ func isSDKErrorSelector(err error) bool {
 	switch err.(type) {
 	case *APIError, *BadRequestError, *AuthenticationError, *PermissionDeniedError,
 		*NotFoundError, *UnprocessableEntityError, *RateLimitError, *InternalServerError,
-		*ResponseValidationError, *ConnectionError, *TimeoutError, *TypeSafeError:
+		*ResponseTooLargeError, *ResponseValidationError, *ConnectionError,
+		*TimeoutError, *TypeSafeError:
 		return true
 	}
 	return false

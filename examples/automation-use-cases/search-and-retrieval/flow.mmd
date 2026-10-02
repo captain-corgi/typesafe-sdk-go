@@ -1,0 +1,11 @@
+flowchart TD
+  S[/"Query + for each passage (5 KB entries)"/]:::state
+  S --> C(["client.SystemOne"]):::sdk
+  C --> Q1["answers · Noul<br/>states the carry-on rule?"]:::noul
+  C --> Q2["relevance · Score<br/>irrelevant · related · directly answers"]:::score
+  Q1 --> P1{"answers ≥ 0.5?"}:::policy
+  Q2 --> P2
+  P1 -- no --> O0("Dropped from context"):::outcome
+  P1 -- yes --> P2["Sort kept passages by relevance, desc"]:::policy
+  P2 --> P3["Take top 2"]:::policy
+  P3 --> O1("Print selected RAG context"):::outcome
