@@ -327,8 +327,8 @@ Runnable cookbook programs live in [`examples/`](examples/README.md).
 The `automation-use-cases/` and `task-categories/` catalogs mirror the docs
 [use-case map](https://docs.typesafe.ai/concepts/use-case-map). Additional
 `go-software-use-cases/`, `api-use-cases/`, `relational-db-use-cases/`, and
-`testing-use-cases/` catalogs implement the proposed patterns in
-[`plans/20260923-jev-go-software-use-cases/`](plans/20260923-jev-go-software-use-cases/).
+`testing-use-cases/` catalogs implement 60 proposed Go patterns: 20 general
+Go software, 10 REST and GraphQL API, 10 relational-database, and 20 testing.
 Two basics — `quickstart` and `retries-errors` — sit at the root. Each example
 runs against the live API with `TYPESAFE_API_KEY` set:
 

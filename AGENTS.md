@@ -23,11 +23,8 @@ but the package is named `typesafe` (like `go-openai`). Requires Go 1.27+.
   detail also has a lazy-loaded step-through walkthrough tab; its
   hand-maintained per-example data lives in `docs/github-page/data/<leaf>.js`
   (shape documented in `docs/github-page/data/README.md`), separate from
-  pagegen's `examples.json`. Each example's
-  detail view also has a lazy-loaded step-through walkthrough tab; its
-  hand-maintained data lives in `docs/github-page/data/<leaf>.js` (shape
-  documented in `docs/github-page/data/README.md`), separate from pagegen's
-  generated `examples.json`.
+  pagegen's `examples.json`. `index.html` also embeds `slides.html`, a
+  standalone presentation.
 - `plans/2026-09-19-typesafe-sdk-go/` — `plan.md` (design, file-by-file spec)
   and `contracts.md` (behavioral contracts distilled from the reference SDKs:
   wire forms, headers, error message extraction, retry semantics). Read
