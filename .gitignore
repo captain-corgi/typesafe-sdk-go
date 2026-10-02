@@ -14,4 +14,7 @@ docs/github-page/examples.json
 # Editor and tooling noise.
 .idea/
 .vscode/
+.zcode*/
+.zcodeignore
+.factory/
 references
