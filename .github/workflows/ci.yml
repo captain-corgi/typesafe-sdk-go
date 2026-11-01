@@ -104,15 +104,13 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          # Pinned to the module's minimum toolchain: Go stable emits export
-          # data version 5, which staticcheck 2026.2.1 cannot decode (its
-          # bundled x/tools supports at most version 4). The Test matrix keeps
-          # a stable-toolchain run.
-          go-version: "1.27.x"
+          go-version: stable
       # Run as a tool dependency rather than a module requirement, so the SDK
-      # itself keeps zero dependencies.
+      # itself keeps zero dependencies. 2026.2.2 is the first release whose
+      # bundled x/tools reads the export data format Go 1.27.2+ emits; older
+      # pins fail on stdlib imports with any current toolchain.
       - name: Staticcheck
-        run: go run honnef.co/go/tools/cmd/staticcheck@2026.2.1 ./...
+        run: go run honnef.co/go/tools/cmd/staticcheck@2026.2.2 ./...
 
   vulncheck:
     name: Govulncheck
