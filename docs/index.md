@@ -1,9 +1,9 @@
 # TypeSafe AI SDK for Go — Documentation
 
 [TypeSafe AI](https://typesafe.ai) answers typed, named questions about a piece
-of state in a single request ("System One"). This is the documentation for the
-Go client SDK: `package typesafe`, zero runtime dependencies, at feature parity
-with the Python SDK v0.7.0.
+of state — including images — in a single request ("System One"). This is the
+documentation for the Go client SDK: `package typesafe`, zero runtime
+dependencies, at feature parity with the Python SDK v0.7.5.
 
 The [README](../README.md) is the quick-start and API quick reference. These
 pages explain how the SDK behaves, why it is built the way it is, and where each
@@ -34,7 +34,7 @@ explain it.
 - [`plans/2026-09-19-typesafe-sdk-go/plan.md`](../plans/2026-09-19-typesafe-sdk-go/plan.md)
   owns the design decisions and the file-by-file spec.
 - Parity policy: where the Python and JavaScript references disagree, the
-  **Python SDK v0.7.0 wins**. Deliberate Go deviations are ledgered in
+  **Python SDK v0.7.5 wins**. Deliberate Go deviations are ledgered in
   [README §"Deviations from the Python SDK"](../README.md#deviations-from-the-python-sdk)
   and plan §6; keep both lists accurate when behavior changes.
 - Every behavioral claim in these pages is exercised by the table-driven test

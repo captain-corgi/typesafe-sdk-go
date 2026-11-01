@@ -106,9 +106,11 @@ jobs:
         with:
           go-version: stable
       # Run as a tool dependency rather than a module requirement, so the SDK
-      # itself keeps zero dependencies.
+      # itself keeps zero dependencies. 2026.2.2 is the first release whose
+      # bundled x/tools reads the export data format Go 1.27.2+ emits; older
+      # pins fail on stdlib imports with any current toolchain.
       - name: Staticcheck
-        run: go run honnef.co/go/tools/cmd/staticcheck@2026.2.1 ./...
+        run: go run honnef.co/go/tools/cmd/staticcheck@2026.2.2 ./...
 
   vulncheck:
     name: Govulncheck

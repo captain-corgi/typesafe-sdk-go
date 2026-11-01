@@ -9,7 +9,7 @@
 //
 // # Questions
 //
-// There are three question primitives:
+// There are four question primitives:
 //
 //   - [Noul] asks a yes/no question and answers with [NoulAnswer], a
 //     probability between 0 and 1.
@@ -19,6 +19,9 @@
 //   - [Score] rates state against an ordered rubric and answers with
 //     [ScoreAnswer], the expected score plus a confidence, a legend mapping
 //     score levels to rubric entries, and per-level probabilities.
+//   - [Box] locates what its instructions describe in the request's image
+//     and answers with [BoxAnswer], the box's edges as fractions of the
+//     image plus a confidence.
 //
 // Questions may also be supplied as raw dictionaries ([RawQuestion]) for
 // fields this SDK does not model; raw questions are passed through to the API
@@ -26,6 +29,21 @@
 // Raw score criteria implementing JSON or text marshaling are encoded once per
 // call and left for API validation. Ordinary empty criteria and cyclic
 // pointer/interface chains are rejected before network I/O.
+//
+// # Images
+//
+// State and question content may include images. An [Image] (aliased as
+// [Asset]) is created with [NewImageFromBytes], [NewImageFromFile], or
+// [NewImageFromBase64]; data is read and validated lazily, once, on first
+// use. Place an *Image anywhere in content, or reference it from any string
+// through its stable reference ([Image.Reference], the same as
+// [Image.String]): fmt functions interpolate it. A request carrying assets
+// is sent as multipart/form-data, one part per asset; [SystemOneParams.Assets]
+// names images by alias, and [Client.AttachAssets] attaches them to every
+// call on the client until the returned single-shot detach runs. Image
+// requests must opt in with a TypeSafe-Danger-Zone-Images header, which the
+// SDK never sets itself. Non-finite numbers (NaN, ±Inf) anywhere in a
+// request body serialize as the strings "NaN", "Infinity", and "-Infinity".
 //
 // # Quick start
 //
@@ -47,7 +65,9 @@
 //
 // Explicit client options take precedence over environment variables, which in
 // turn take precedence over defaults. Empty or whitespace-only environment
-// values are ignored.
+// values are ignored. The resolved API key is validated at construction —
+// printable ASCII without whitespace — and an invalid non-empty explicit key
+// never falls back to the environment.
 //
 //	[TYPESAFE_API_KEY]       API key (required unless WithAPIKey is used)
 //	[TYPESAFE_BASE_URL]      API root (default "https://api.typesafe.ai")

@@ -8,7 +8,9 @@ import (
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"regexp"
 	"slices"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -202,4 +204,145 @@ func swapLogger(t *testing.T, l *slog.Logger) {
 	t.Helper()
 	previous := loggerPtr.Swap(l)
 	t.Cleanup(func() { loggerPtr.Store(previous) })
+}
+
+// --- multipart and asset test helpers (mirroring the Python suite) ---------
+
+// pngFixture and jpegFixture are the image fixtures shared by the asset
+// tests; only format identification happens in the SDK.
+var (
+	pngFixture  = []byte("\x89PNG\r\n\x1a\nimage data")
+	jpegFixture = []byte("\xff\xd8\xffimage data")
+)
+
+// assetOKBody is the empty System One success body used by asset tests.
+const assetOKBody = `{"model": "vision", "usage": {}, "answers": {}}`
+
+var (
+	partNameRegex        = regexp.MustCompile(`name="([^"]+)"`)
+	partContentTypeRegex = regexp.MustCompile(`Content-Type: ([^\r\n]+)`)
+)
+
+// multipartPart is one parsed part of a multipart/form-data body.
+type multipartPart struct {
+	head    []byte
+	content []byte
+}
+
+// multipartParts splits a multipart/form-data request body into its parts'
+// headers and contents, keyed by part name; the boundary is parsed from the
+// Content-Type header, mirroring the Python suite's helper.
+func multipartParts(t *testing.T, contentType string, body []byte) map[string]multipartPart {
+	t.Helper()
+	boundary, ok := strings.CutPrefix(contentType, "multipart/form-data; boundary=")
+	if !ok {
+		t.Fatalf("not a multipart content type: %q", contentType)
+	}
+	marker := []byte("--" + boundary)
+	chunks := bytes.Split(body, marker)
+	if len(chunks[0]) != 0 {
+		t.Fatalf("body must start with the boundary marker, got %q", chunks[0])
+	}
+	if last := chunks[len(chunks)-1]; !bytes.Equal(last, []byte("--\r\n")) {
+		t.Fatalf("body must end with the closing marker --%s--\\r\\n, got %q", boundary, last)
+	}
+	parts := make(map[string]multipartPart)
+	for _, chunk := range chunks[1 : len(chunks)-1] {
+		trimmed := bytes.TrimSuffix(bytes.TrimPrefix(chunk, []byte("\r\n")), []byte("\r\n"))
+		head, content, _ := bytes.Cut(trimmed, []byte("\r\n\r\n"))
+		match := partNameRegex.FindSubmatch(head)
+		if match == nil {
+			t.Fatalf("part head has no name: %q", head)
+		}
+		parts[string(match[1])] = multipartPart{head: head, content: content}
+	}
+	return parts
+}
+
+// requestBody decodes a request's JSON body; for a multipart upload, each
+// asset's "part" is replaced by its "data" bytes and "content_type",
+// mirroring the Python suite's helper.
+func requestBody(t *testing.T, contentType string, body []byte) map[string]any {
+	t.Helper()
+	if !strings.HasPrefix(contentType, "multipart/form-data") {
+		return decodeJSONMap(t, body)
+	}
+	parts := multipartParts(t, contentType, body)
+	decoded := decodeJSONMap(t, parts[requestPartName].content)
+	entries, ok := decoded["assets"].(map[string]any)
+	if !ok {
+		t.Fatalf("multipart body has no assets map: %v", decoded["assets"])
+	}
+	for _, value := range entries {
+		entry, ok := value.(map[string]any)
+		if !ok {
+			t.Fatalf("asset entry is not an object: %v", value)
+		}
+		if _, has := entry["format"]; has {
+			t.Fatalf("multipart asset entries must not carry format: %v", entry)
+		}
+		name, _ := entry["part"].(string)
+		part, ok := parts[name]
+		if !ok {
+			t.Fatalf("asset part %q missing", name)
+		}
+		delete(entry, "part")
+		entry["data"] = part.content
+		match := partContentTypeRegex.FindSubmatch(part.head)
+		if match == nil {
+			t.Fatalf("part %q has no Content-Type header: %q", name, part.head)
+		}
+		entry["content_type"] = string(match[1])
+	}
+	return decoded
+}
+
+// newAssetCaptureClient builds a client whose transport records each request
+// and answers with an empty System One success body.
+func newAssetCaptureClient(t *testing.T) (*Client, *trackingTransport) {
+	t.Helper()
+	transport := &trackingTransport{inner: func(w http.ResponseWriter, r *http.Request) {
+		writeJSON(w, http.StatusOK, assetOKBody)
+	}}
+	client, err := NewClient(WithAPIKey("test-key"), WithHTTPClient(&http.Client{Transport: transport}))
+	if err != nil {
+		t.Fatalf("NewClient: %v", err)
+	}
+	t.Cleanup(client.Close)
+	return client, transport
+}
+
+// systemOneWithAssets runs a minimal SystemOne request carrying assets.
+func systemOneWithAssets(t *testing.T, client *Client, state JSONContent, questions Questions, assets map[string]*Image) (*SystemOneResponse, error) {
+	t.Helper()
+	return client.SystemOne(t.Context(), &SystemOneParams{State: state, Questions: questions, Assets: assets})
+}
+
+// capturedRequest is one recorded SystemOne request with its decoded body.
+type capturedRequest struct {
+	contentType string
+	body        []byte
+	decoded     map[string]any
+}
+
+// newBodyCaptureClient builds a client whose transport records each request
+// body, decoded through requestBody, alongside the raw wire form.
+func newBodyCaptureClient(t *testing.T) (*Client, *[]capturedRequest) {
+	t.Helper()
+	captured := &[]capturedRequest{}
+	transport := &trackingTransport{inner: func(w http.ResponseWriter, r *http.Request) {
+		data := readAll(r.Body)
+		*captured = append(*captured, capturedRequest{
+			contentType: r.Header.Get("Content-Type"),
+			body:        data,
+			decoded:     requestBody(t, r.Header.Get("Content-Type"), data),
+		})
+		writeJSON(w, http.StatusOK, assetOKBody)
+	}}
+	client, err := NewClient(WithAPIKey("test-key"), WithHTTPClient(&http.Client{Transport: transport}))
+	if err != nil {
+		t.Fatalf("NewClient: %v", err)
+	}
+	t.Cleanup(client.Close)
+	return client, captured
 }

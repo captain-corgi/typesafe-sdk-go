@@ -3,6 +3,7 @@ package typesafe
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -410,4 +411,59 @@ func TestRawBodyReadableAfterParse(t *testing.T) {
 	}
 	// Usage of fmt keeps the import stable for future assertions.
 	_ = fmt.Sprint
+}
+
+// TestBoxQuestionWireContract pins the box question wire form.
+func TestBoxQuestionWireContract(t *testing.T) {
+	bare, err := json.Marshal(Box{})
+	if err != nil || string(bare) != `{"type":"box"}` {
+		t.Errorf("Box{} = %s (%v), want {\"type\":\"box\"}", bare, err)
+	}
+	described, err := json.Marshal(Box{Instructions: "The dog"})
+	if err != nil || string(described) != `{"type":"box","instructions":"The dog"}` {
+		t.Errorf("Box wire form = %s (%v)", described, err)
+	}
+}
+
+// TestBoxAnswerWireContract pins the box answer decode contract end to end:
+// the four required edges, a present-and-nullable confidence, dotted error
+// paths, and the memoized Boxes() view.
+func TestBoxAnswerWireContract(t *testing.T) {
+	server := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		writeJSON(w, http.StatusOK, `{"model": "jev-preview", "usage": {},
+		  "answers": {"b": {"type": "box", "box": {"top": 0.2, "bottom": 0.66, "left": 0.19, "right": 0.68}, "confidence": null}}}`)
+	})
+	client := newLoggedOutClient(t, server.URL)
+	result, err := systemOneCall(t, client, "x", Questions{"q": Box{}})
+	if err != nil {
+		t.Fatalf("SystemOne: %v", err)
+	}
+	if box := result.Boxes()["b"]; box.Confidence != nil || box.Box.Top != 0.2 || box.Box.Right != 0.68 {
+		t.Errorf("box answer = %+v", box)
+	}
+}
+
+// TestMultipartAssetsWireContract pins the multipart body shape: the assets
+// map entries carry "type" before "part" (hand-encoded, since the encoder
+// sorts map keys), each part claims exactly one asset, and protected headers
+// survive the multipart switch.
+func TestMultipartAssetsWireContract(t *testing.T) {
+	client, transport := newAssetCaptureClient(t)
+	if _, err := systemOneWithAssets(t, client, "<photo>", Questions{"q": Noul{Instructions: "?"}}, map[string]*Image{"<photo>": NewImageFromBytes(pngFixture)}); err != nil {
+		t.Fatalf("SystemOne: %v", err)
+	}
+	request := transport.requests[0]
+	contentType := request.request.Header.Get("Content-Type")
+	parts := multipartParts(t, contentType, request.body)
+	// The raw bytes keep "type" first inside every assets entry.
+	if !bytes.Contains(parts[requestPartName].content, []byte(`"assets":{"<photo>":{"type":"image","part":"asset-0"}}`)) {
+		t.Errorf("assets entries must be hand-encoded with type first: %s", parts[requestPartName].content)
+	}
+	if !bytes.Contains(parts["asset-0"].head, []byte(`Content-Disposition: form-data; name="asset-0"; filename="asset-0"`)) {
+		t.Errorf("asset disposition = %q", parts["asset-0"].head)
+	}
+	// Bodies are never compressed in the Go SDK (no stdlib zstd).
+	if encoding := request.request.Header.Get("Content-Encoding"); encoding != "" {
+		t.Errorf("Content-Encoding = %q, must never be set", encoding)
+	}
 }

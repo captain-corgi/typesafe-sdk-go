@@ -15,9 +15,9 @@ import (
 )
 
 // Answer is a typed answer to a single question, identified by its concrete
-// type: [NoulAnswer], [ChoiceAnswer], or [ScoreAnswer]. Answer kinds this SDK
-// version does not model are dropped from Answers (with a warning) but remain
-// available on [SystemOneResponse.Raw].
+// type: [NoulAnswer], [ChoiceAnswer], [ScoreAnswer], or [BoxAnswer]. Answer
+// kinds this SDK version does not model are dropped from Answers (with a
+// warning) but remain available on [SystemOneResponse.Raw].
 type Answer interface {
 	isAnswer()
 }
@@ -49,6 +49,24 @@ type ScoreAnswer struct {
 
 func (ScoreAnswer) isAnswer() {}
 
+// BoxCoordinates is a located box's edges as fractions of the image's height
+// (Top and Bottom) and width (Left and Right), each from 0 to 1.
+type BoxCoordinates struct {
+	Top    float64
+	Bottom float64
+	Left   float64
+	Right  float64
+}
+
+// BoxAnswer is a located box with its confidence; a nil Confidence means the
+// model did not provide it.
+type BoxAnswer struct {
+	Box        BoxCoordinates
+	Confidence *float64
+}
+
+func (BoxAnswer) isAnswer() {}
+
 // Usage holds the token counts for a request; a nil field means the API did
 // not report that count.
 type Usage struct {
@@ -73,6 +91,8 @@ type SystemOneResponse struct {
 	choices     map[string]ChoiceAnswer
 	scoresOnce  sync.Once
 	scores      map[string]ScoreAnswer
+	boxesOnce   sync.Once
+	boxes       map[string]BoxAnswer
 }
 
 // Nouls returns the yes/no answers keyed by question name. The view is
@@ -117,6 +137,20 @@ func (r *SystemOneResponse) Scores() map[string]ScoreAnswer {
 	return r.scores
 }
 
+// Boxes returns the box answers keyed by question name. The view is
+// memoized; do not mutate the returned map.
+func (r *SystemOneResponse) Boxes() map[string]BoxAnswer {
+	r.boxesOnce.Do(func() {
+		r.boxes = make(map[string]BoxAnswer)
+		for name, answer := range r.Answers {
+			if typed, ok := answer.(BoxAnswer); ok {
+				r.boxes[name] = typed
+			}
+		}
+	})
+	return r.boxes
+}
+
 // ModelMetadata describes a single available model.
 type ModelMetadata struct {
 	Name        string
@@ -135,7 +169,7 @@ type ListModelsResponse struct {
 }
 
 // knownAnswerTypes are the answer discriminators this SDK models.
-var knownAnswerTypes = map[string]struct{}{"noul": {}, "choice": {}, "score": {}}
+var knownAnswerTypes = map[string]struct{}{"noul": {}, "choice": {}, "score": {}, "box": {}}
 
 // ParseSystemOneResponse decodes an HTTP response from POST /v1/systemone
 // into a [SystemOneResponse] — the Go counterpart of the Python SDK's
@@ -370,6 +404,9 @@ func decodeAnswer(raw json.RawMessage) (Answer, string) {
 	case "score":
 		value, path := decodeScoreAnswer(entry)
 		return value, path
+	case "box":
+		value, path := decodeBoxAnswer(entry)
+		return value, path
 	default:
 		return nil, ""
 	}
@@ -426,6 +463,51 @@ func decodeScoreAnswer(entry map[string]json.RawMessage) (Answer, string) {
 		return nil, "probabilities." + *badKey
 	}
 	return ScoreAnswer{Score: score, Confidence: confidence, Legend: legend, Probabilities: probabilities}, ""
+}
+
+// decodeBoxAnswer decodes a box answer: the four required box edges and a
+// present-but-nullable confidence. Extra fields are ignored.
+func decodeBoxAnswer(entry map[string]json.RawMessage) (Answer, string) {
+	rawBox := entry["box"]
+	if rawBox == nil || rawIsNull(rawBox) {
+		return nil, "box"
+	}
+	var fields map[string]json.RawMessage
+	if err := json.Unmarshal(rawBox, &fields); err != nil || fields == nil {
+		return nil, "box"
+	}
+	var box BoxCoordinates
+	for _, edge := range []struct {
+		name   string
+		target *float64
+	}{{"top", &box.Top}, {"bottom", &box.Bottom}, {"left", &box.Left}, {"right", &box.Right}} {
+		value, ok := decodeFloatStrict(fields[edge.name])
+		if !ok {
+			return nil, "box." + edge.name
+		}
+		*edge.target = value
+	}
+	confidence, ok := decodeOptionalFloatStrict(entry["confidence"])
+	if !ok {
+		return nil, "confidence"
+	}
+	return BoxAnswer{Box: box, Confidence: confidence}, ""
+}
+
+// decodeOptionalFloatStrict decodes a JSON number whose key must be present
+// but whose value may be null.
+func decodeOptionalFloatStrict(raw json.RawMessage) (*float64, bool) {
+	if raw == nil {
+		return nil, false
+	}
+	if rawIsNull(raw) {
+		return nil, true
+	}
+	value, ok := decodeFloatStrict(raw)
+	if !ok {
+		return nil, false
+	}
+	return &value, true
 }
 
 // decodeUsage decodes the optional token counts. An empty path means success.
