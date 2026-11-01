@@ -341,7 +341,7 @@ func TestAttachmentsScopedToClient(t *testing.T) {
 		t.Fatalf("AttachAssets: %v", err)
 	}
 	defer detach()
-	sendInline(t, other, fmt.Sprintf("%s", image), inlineQuestions)
+	sendInline(t, other, image.String(), inlineQuestions)
 	if keys := assetKeys((*otherCaptured)[0].decoded); keys != nil {
 		t.Errorf("attachments must not leak to another client: %v", keys)
 	}

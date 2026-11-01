@@ -327,6 +327,9 @@ func (c *Client) SystemOne(ctx context.Context, params *SystemOneParams) (*Syste
 	if params.State == nil {
 		return nil, newTypeSafeError("State is required.")
 	}
+	// Snapshot attachments at entry so a concurrent detach ends later calls,
+	// never one already preparing; Python snapshots at call time too.
+	attached := c.attached.snapshot()
 	questions, err := normalizeQuestions(params.Questions)
 	if err != nil {
 		return nil, err
@@ -365,7 +368,7 @@ func (c *Client) SystemOne(ctx context.Context, params *SystemOneParams) (*Syste
 	}
 	contentType := ""
 	if _, overridden := body["assets"]; !overridden {
-		pending := collectPendingAssets(content, params.Assets, c.attached.snapshot(), assetsCtx.found)
+		pending := collectPendingAssets(content, params.Assets, attached, assetsCtx.found)
 		if len(pending) > 0 {
 			// The API rejects an empty assets map, so the key is sent only
 			// when at least one asset is pending.

@@ -405,8 +405,12 @@ attempt's error. Policy snapshotted per call (per-call `Retry` replaces the clie
     (redacted), `body`, and on responses `status`.
 - Redaction (single choke point for DEBUG header dumps): header names in
   {`authorization`, `proxy-authorization`, `x-api-key`, `api-key`, `cookie`, `set-cookie`}
-  (case-insensitive) **or containing** `token`/`secret` → value masked. Bodies are not redacted.
-- API key never appears in any error message or log.
+  (case-insensitive) **or containing** `token`/`secret` → value masked. Bodies follow the body
+  mode (`SetLogBodyMode` / `TYPESAFE_LOG_BODY`): `redacted` by default (string values replaced),
+  `off`, or `full` only on explicit opt-in.
+- API key never appears in SDK-generated errors, redacted headers, or masked logs. The SDK sends
+  it only in the `Authorization` header, never in a body; a caller who puts a secret into request
+  state can see it echoed under `full` body logging.
 
 ## 6. Pre-network validation (before any I/O)
 

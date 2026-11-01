@@ -579,6 +579,8 @@ func TestValidationNoul(t *testing.T) {
 		{"raw without either", RawQuestion{"type": "noul"}, `Noul question "q" has neither instructions nor criteria; at least one is required.`},
 		{"raw empty criteria", RawQuestion{"type": "noul", "criteria": map[string]any{}}, `Noul question "q" has neither instructions nor criteria; at least one is required.`},
 		{"raw null-valued criteria", RawQuestion{"type": "noul", "criteria": map[string]any{"true": nil}}, `Noul question "q" has neither instructions nor criteria; at least one is required.`},
+		{"typed typed-nil outcome", Noul{Criteria: &NoulCriteria{True: (*NoulCriteria)(nil)}}, `Noul question "q" has neither instructions nor criteria; at least one is required.`},
+		{"raw typed-nil outcome", RawQuestion{"type": "noul", "criteria": map[string]any{"true": (*NoulCriteria)(nil)}}, `Noul question "q" has neither instructions nor criteria; at least one is required.`},
 		{"raw criteria not an object", RawQuestion{"type": "noul", "criteria": "x"}, `Noul question "q" criteria must be an object.`},
 		{"raw criteria is a list", RawQuestion{"type": "noul", "criteria": []any{"x"}}, `Noul question "q" criteria must be an object.`},
 	}

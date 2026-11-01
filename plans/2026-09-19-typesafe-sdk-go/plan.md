@@ -55,7 +55,8 @@ if err != nil { ... }
 fmt.Println(resp.Choices()["category"].Choice) // "billing"
 fmt.Println(resp.Nouls()["urgent"].Noul)       // 0.92
 
-models, err := client.Models.List(ctx) // []typesafe.ModelMetadata
+modelsResp, err := client.Models.List(ctx, nil) // *typesafe.ListModelsResponse
+fmt.Println(modelsResp.Models[0].Name)
 ```
 
 Per-call overrides, error handling, retries:
@@ -67,7 +68,7 @@ resp, err := client.SystemOne(ctx, &typesafe.SystemOneParams{
     Timeout:      5 * time.Second,                 // per-call timeout
     Retry:        &typesafe.RetryPolicy{MaxRetries: 4},
     ExtraHeaders: map[string]string{"X-Custom": "v"},
-    ExtraBody:    map[string]any{"custom_field": 1}, // last-write-wins merge, can override "model"
+    ExtraBody:    map[string]any{"custom_field": 1}, // last-write-wins merge; "state", "model", "questions" are reserved and rejected
 })
 
 var rl *typesafe.RateLimitError
@@ -102,7 +103,7 @@ programs in the same module — demonstrative, not part of the public API surfac
 
 | File | Contract coverage (ported from the Python suite) |
 | --- | --- |
-| `client_test.go` | Exact round-trip wire body (`{state, model, questions}`; nil optionals omitted; nested explicit nulls kept); `ExtraBody` override incl. `model`; raw-question passthrough (unknown fields sent untouched); error mapping table w/ exact `Error()` strings; transport-error classification (connect errors → Connection, timeouts → Timeout, cause preserved); header protection matrix (user can't override Authorization/Accept/UA/SDK/Runtime; Retry-Count always stripped from input); timeout precedence (call > client > default 10s); per-call override isolation; Close semantics (closes owned + supplied idle conns; reuse after close errors); concurrent calls w/ distinct overrides don't interfere (`-race`); v0.7.5: `State is required.`, multipart content-type switch, `assets` key omitted when none pending, ExtraBody-`assets` override skips reading |
+| `client_test.go` | Exact round-trip wire body (`{state, model, questions}`; nil optionals omitted; nested explicit nulls kept); `ExtraBody` reserved-field rejection (`state`/`model`/`questions` error before I/O); raw-question passthrough (unknown fields sent untouched); error mapping table w/ exact `Error()` strings; transport-error classification (connect errors → Connection, timeouts → Timeout, cause preserved); header protection matrix (user can't override Authorization/Accept/UA/SDK/Runtime; Retry-Count always stripped from input); timeout precedence (call > client > default 10s); per-call override isolation; Close semantics (closes owned + supplied idle conns; reuse after close errors); concurrent calls w/ distinct overrides don't interfere (`-race`); v0.7.5: `State is required.`, multipart content-type switch, `assets` key omitted when none pending, ExtraBody-`assets` override skips reading |
 | `questions_test.go` | Pre-network validation (empty questions, missing/invalid `type`, missing `criteria`, empty score **and** choice criteria, noul object-criteria and instructions-or-criteria checks → error before any request); wire-form omission/preservation rules; discriminator tags; `Box{}` → `{"type":"box"}` with optional instructions omitted |
 | `assets_test.go` | v0.7.5: reference shape/uniqueness/identity-compare; constructors (lazy path read, cached resolution, base64 matrix); the data checks with exact messages; first failing alias named; multipart part list and dispositions (sorted alias order — deviation §6.14); octet-stream for unknown signatures; assets map wire form `{"type","part"}`; one part per key; payload reused on retry |
 | `inline_images_test.go` | v0.7.5: placed images serialize as alias/reference in state, typed questions, raw dicts; alias + reference combine; formatted-text references; attachment scoping/nesting/per-client/goroutines/refcounted holds; single-shot detach; unknown lookalike references stay text; ExtraBody override; `Asset '<reference>': …` error naming |
@@ -119,7 +120,7 @@ programs in the same module — demonstrative, not part of the public API surfac
 
 - `README.md` — install, quickstart, config/env table, questions & responses reference, images, error handling, retry policy, per-call overrides, deviations note
 - `LICENSE` — MIT
-- `CHANGELOG.md` — 0.7.0 entry (parity with Python v0.7.0); 0.7.5.0 entry (the v0.7.5 sync)
+- `CHANGELOG.md` — 0.7.0 entry (parity with Python v0.7.0); 0.7.5 entry (the v0.7.5 sync)
 - `examples/` — cookbook examples + `examples/README.md` index (§8)
 - `.gitignore` — standard Go
 - `.github/workflows/ci.yml` — gofmt check, `go vet`, `go test -race ./...` on latest stable + previous Go

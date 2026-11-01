@@ -234,7 +234,7 @@ func normalizeQuestions(questions Questions) (Questions, error) {
 		question := questions[name]
 		switch typed := question.(type) {
 		case Noul:
-			if err := validateNoul(name, typed.Instructions, typed.Criteria != nil && (typed.Criteria.True != nil || typed.Criteria.False != nil)); err != nil {
+			if err := validateNoul(name, typed.Instructions, typed.Criteria != nil && (describesOutcomeValue(typed.Criteria.True) || describesOutcomeValue(typed.Criteria.False))); err != nil {
 				return nil, err
 			}
 		case Choice:
@@ -337,21 +337,29 @@ func validateRawNoul(name string, question RawQuestion) error {
 // mappingDescribesOutcome reports whether a mapping criteria holds at least
 // one non-null value, mirroring Python's any(value is not None ...).
 func mappingDescribesOutcome(value any) bool {
-	described := false
 	iter := reflect.ValueOf(value).MapRange()
 	for iter.Next() {
-		entry := iter.Value()
-		switch entry.Kind() {
-		case reflect.Interface, reflect.Ptr, reflect.Map, reflect.Slice, reflect.Func, reflect.Chan:
-			described = !entry.IsNil()
-		default:
-			described = true
-		}
-		if described {
+		if describesOutcomeValue(iter.Value().Interface()) {
 			return true
 		}
 	}
 	return false
+}
+
+// describesOutcomeValue reports whether a criteria outcome is described:
+// present, and not a typed nil pointer, map, or slice. Python's
+// `value is not None` cannot express a typed nil, but one encodes as JSON
+// null, so it counts as undescribed.
+func describesOutcomeValue(value any) bool {
+	if value == nil {
+		return false
+	}
+	switch reflected := reflect.ValueOf(value); reflected.Kind() {
+	case reflect.Ptr, reflect.Map, reflect.Slice, reflect.Func, reflect.Chan:
+		return !reflected.IsNil()
+	default:
+		return true
+	}
 }
 
 // rawCriteriaLength reports the element/key/character count of a raw score

@@ -1704,6 +1704,39 @@ func TestWalkGuards(t *testing.T) {
 	}
 }
 
+func TestWalkAllowsOverlappingSlices(t *testing.T) {
+	outer := make([]any, 1)
+	outer[0] = outer[:0]
+	client, captured := newBodyCaptureClient(t)
+	if _, err := systemOneWithAssets(t, client, outer, Questions{"q": Noul{Instructions: "ok"}}, nil); err != nil {
+		t.Fatalf("overlapping (non-cyclic) slices must encode: %v", err)
+	}
+	if !bytes.Contains((*captured)[0].body, []byte(`[[]]`)) {
+		t.Errorf("state = %s; want the nested empty subslice encoded", (*captured)[0].body)
+	}
+}
+
+func TestNoulCriteriaCycleGuard(t *testing.T) {
+	criteria := &NoulCriteria{}
+	criteria.True = criteria
+	attempts := 0
+	client := newDeterministicClient(t, func(req *http.Request) (*http.Response, error) {
+		attempts++
+		return jsonResponse(http.StatusOK, resultBody), nil
+	})
+	_, err := client.SystemOne(t.Context(), &SystemOneParams{
+		State:     "s",
+		Questions: Questions{"q": Noul{Criteria: criteria}},
+	})
+	var sdkErr *TypeSafeError
+	if !errors.As(err, &sdkErr) || !strings.Contains(err.Error(), "could not be encoded as JSON") {
+		t.Fatalf("expected an encoding error, got %v", err)
+	}
+	if attempts != 0 {
+		t.Errorf("cyclic criteria reached the network (%d attempts)", attempts)
+	}
+}
+
 // pointerMarshalerDoc has a pointer-receiver marshaler: unwrapping &doc and
 // re-encoding the bare value would silently replace its custom wire form.
 type pointerMarshalerDoc struct{ Body string }

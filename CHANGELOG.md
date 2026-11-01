@@ -120,7 +120,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   SDK failure. Specific-type, `*APIError`, timeout-to-connection, and
   `net.Error` matches are unchanged, as are error strings and metadata.
 
-## [0.7.5.0] - 2026-11-01
+## [0.7.5] - 2026-11-01
 
 Sync to Python SDK v0.7.5 parity (`Version = "0.7.5"`). Carries the v0.7.1 →
 v0.7.5 deltas: multimodal image support, the Box question type, non-finite
@@ -226,4 +226,4 @@ Initial release, at feature parity with the Python SDK v0.7.0.
 - Cookbook examples under `examples/` (stdlib only).
 
 [0.7.0]: https://github.com/captain-corgi/typesafe-sdk-go/releases/tag/v0.7.0
-[0.7.5.0]: https://github.com/captain-corgi/typesafe-sdk-go/releases/tag/v0.7.5.0
+[0.7.5]: https://github.com/captain-corgi/typesafe-sdk-go/releases/tag/v0.7.5

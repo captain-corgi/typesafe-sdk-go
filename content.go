@@ -15,6 +15,14 @@ import (
 // cycle before encoding.
 var errRequestBodyCycle = errors.New("request body contains a cycle")
 
+// walkKey identifies a walked container on the active path. Slices key by
+// backing-array pointer and length: a subslice shares its parent's pointer,
+// and only a slice holding its own full header recurses.
+type walkKey struct {
+	ptr    uintptr
+	length int
+}
+
 // assetContext threads the per-request asset state through the body walk.
 type assetContext struct {
 	// aliases maps Assets members by pointer identity; every placed
@@ -26,7 +34,7 @@ type assetContext struct {
 	// Arrays are traversed but never keyed: reflect.Value.Pointer panics on
 	// arrays, and an array cannot form a cycle without passing through a
 	// keyed kind.
-	seen map[uintptr]struct{}
+	seen map[walkKey]struct{}
 	// replacements counts substitutions so containers are rebuilt only when a
 	// descendant changed; untouched subtrees pass by reference to the encoder
 	// and image-free bodies encode byte-identically to a body with no walk.
@@ -36,7 +44,7 @@ type assetContext struct {
 func newAssetContext(assets map[string]*Image) *assetContext {
 	ctx := &assetContext{
 		found: make(map[string]*Image),
-		seen:  make(map[uintptr]struct{}),
+		seen:  make(map[walkKey]struct{}),
 	}
 	if len(assets) > 0 {
 		ctx.aliases = make(map[*Image]string, len(assets))
@@ -93,15 +101,19 @@ func rewriteContent(value any, ctx *assetContext) (any, error) {
 		if typed == nil {
 			return value, nil
 		}
-		before := ctx.replacements
-		walked, err := rewriteNoulCriteriaValue(*typed, ctx)
-		if err != nil {
-			return nil, err
-		}
-		if ctx.replacements == before {
-			return value, nil
-		}
-		return walked, nil
+		// Guarded like any pointer kind: a criteria whose outcome points back
+		// at itself would otherwise recurse until the stack overflows.
+		return rewriteKeyed(reflect.ValueOf(typed), value, ctx, func() (any, error) {
+			before := ctx.replacements
+			walked, err := rewriteNoulCriteriaValue(*typed, ctx)
+			if err != nil {
+				return nil, err
+			}
+			if ctx.replacements == before {
+				return value, nil
+			}
+			return walked, nil
+		})
 	case RawQuestion:
 		if typed == nil {
 			return value, nil
@@ -329,7 +341,10 @@ func rewriteSlice(items []any, ctx *assetContext) (any, error) {
 // rewriteKeyed runs walk under the cycle guard, keyed by the container's
 // identity for the duration of its subtree.
 func rewriteKeyed(reflected reflect.Value, original any, ctx *assetContext, walk func() (any, error)) (any, error) {
-	key := reflected.Pointer()
+	key := walkKey{ptr: reflected.Pointer()}
+	if reflected.Kind() == reflect.Slice {
+		key.length = reflected.Len()
+	}
 	if _, seen := ctx.seen[key]; seen {
 		return nil, errRequestBodyCycle
 	}
