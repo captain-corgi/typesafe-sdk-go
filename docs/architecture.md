@@ -156,7 +156,7 @@ Decisions that shape everything above, with their rationale:
 - **Hand-written wire structs, no codegen** — the question/answer set is
   small and stable; codegen would add a build step and a dependency for
   nothing (plan §1).
-- **Python v0.7.0 is the parity baseline** — where Python and JS references
+- **Python v0.7.5 is the parity baseline** — where Python and JS references
   disagree, Python wins; deliberate Go deviations are ledgered in
   [README §Deviations](../README.md#deviations-from-the-python-sdk) and
   [plan §6](../plans/2026-09-19-typesafe-sdk-go/plan.md).

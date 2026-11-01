@@ -68,8 +68,9 @@ func setHeader(headers http.Header, name, value string) {
 
 // prepareRequest merges headers (client defaults → per-call extras, then
 // protected headers force-set last), encodes the body, and resolves the
-// per-attempt timeout.
-func prepareRequest(cfg *config, method, path string, body []byte, timeout time.Duration, extraHeaders map[string]string) (*preparedRequest, error) {
+// per-attempt timeout. A non-empty contentType overrides the JSON default
+// (the multipart asset path); an empty body never carries a Content-Type.
+func prepareRequest(cfg *config, method, path string, body []byte, contentType string, timeout time.Duration, extraHeaders map[string]string) (*preparedRequest, error) {
 	headers := cfg.defaultHeaders.Clone()
 	if headers == nil {
 		headers = http.Header{}
@@ -81,7 +82,10 @@ func prepareRequest(cfg *config, method, path string, body []byte, timeout time.
 	setHeader(headers, authorizationHeader, "Bearer "+cfg.apiKey)
 	setHeader(headers, acceptHeader, jsonContentType)
 	if body != nil {
-		setHeader(headers, contentTypeHeader, jsonContentType)
+		if contentType == "" {
+			contentType = jsonContentType
+		}
+		setHeader(headers, contentTypeHeader, contentType)
 	}
 	setHeader(headers, userAgentHeader, sdkName+"/"+Version)
 	setHeader(headers, sdkHeader, sdkName+"/"+Version)

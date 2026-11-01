@@ -46,6 +46,21 @@ const (
 	retryAfterHeader    = "retry-after"
 	retryAfterMSHeader  = "retry-after-ms"
 
+	// pngSignature and jpegSignature are the file signatures sniffed to label
+	// image upload parts; anything else is sent as octetStreamContentType and
+	// the API detects the real format.
+	pngSignature           = "\x89PNG\r\n\x1a\n"
+	jpegSignature          = "\xff\xd8\xff"
+	octetStreamContentType = "application/octet-stream"
+	multipartContentType   = "multipart/form-data; boundary="
+	requestPartName        = "request"
+	assetPartFormat        = "asset-%d"
+	// keepAliveConnsPerHost and keepAliveIdleTimeout mirror the Python SDK's
+	// connection pool (100 connections kept alive 30s); Go's default keeps
+	// only 2 idle connections per host.
+	keepAliveConnsPerHost = 100
+	keepAliveIdleTimeout  = 30 * time.Second
+
 	// maxErrorBodyLength caps the raw body text embedded in an APIError message.
 	maxErrorBodyLength = 200
 	// maxLoggedBodyBytes caps the body text embedded in a DEBUG wire log.

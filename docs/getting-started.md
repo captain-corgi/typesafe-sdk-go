@@ -60,6 +60,7 @@ fmt.Println(resp.Scores()["tone"].Score)       // 1.4 — expected value, may be
 | `Noul` | yes/no | `NoulAnswer{Noul float64}` — probability of true, 0..1 |
 | `Choice` | classification | `ChoiceAnswer{Choice string, Confidence float64, Probabilities map[string]float64}` |
 | `Score` | rubric scoring | `ScoreAnswer{Score, Confidence float64, Legend map[int]any, Probabilities map[int]float64}` |
+| `Box` | locate in an image | `BoxAnswer{Box BoxCoordinates, Confidence *float64}` — edges as fractions of the image |
 
 Questions are values: build them inline. Validation happens **before any
 network I/O** — a bad question map fails fast with a `*typesafe.TypeSafeError`
@@ -78,12 +79,20 @@ flowchart TD
     q["What does one answer look like?"] --> c1["A probability that a<br>yes/no statement is true"]
     q --> c2["One label chosen<br>from a set"]
     q --> c3["A number against an<br>ordered rubric"]
+    q --> c5["A box around something<br>in an image"]
     q --> c4["A shape this SDK<br>does not model"]
-    c1 --> t1["Noul<br>(both fields optional)"]
-    c2 --> t2["Choice<br>(criteria required)"]
+    c1 --> t1["Noul<br>(instructions or a described outcome required)"]
+    c2 --> t2["Choice<br>(non-empty criteria required)"]
     c3 --> t3["Score<br>(non-empty criteria, levels from zero)"]
+    c5 --> t5["Box<br>(instructions optional; needs an image in the request)"]
     c4 --> t4["RawQuestion<br>(passthrough; the API validates)"]
 ```
+
+State can also be multimodal: place an `*typesafe.Image` in state or question
+content, or reference one from text via its stable reference, and the SDK
+uploads the bytes as multipart asset parts — see the Images section of the
+[README](../README.md#images) and the runnable programs under
+[`examples/multimodal/`](../examples/multimodal/).
 
 ## Error handling and retries in one minute
 
@@ -94,10 +103,12 @@ backoff — you usually configure nothing.
 
 ## Runnable examples
 
-Cookbook programs live in [`examples/`](../examples/README.md): quickstart,
-ticket triage, intent routing, lead scoring, guardrails, re-ranking, and
-retries/error handling. Each is a `package main` program, standard library
-only, and runs against the live API:
+Cookbook programs live in [`examples/`](../examples/README.md): `quickstart`
+and `retries-errors` at the root, plus catalogs mirroring the docs use-case
+map (`automation-use-cases/`, `task-categories/`, `go-software-use-cases/`,
+`api-use-cases/`, `relational-db-use-cases/`, `testing-use-cases/`) and the
+experimental images feature (`multimodal/`). Each is a `package main`
+program, standard library only, and runs against the live API:
 
 ```sh
 TYPESAFE_API_KEY=ts_live_... go run ./examples/quickstart
