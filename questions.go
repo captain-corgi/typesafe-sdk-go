@@ -8,7 +8,7 @@ import (
 )
 
 // Question is a typed or raw question about the request state. The zero
-// interface is implemented only by [Noul], [Choice], [Score], and
+// interface is implemented only by [Noul], [Choice], [Score], [Box], and
 // [RawQuestion]; the concrete type determines the statically-known answer
 // type.
 type Question interface {
@@ -174,6 +174,32 @@ func (q Score) MarshalJSON() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
+// Box is a question that locates what its Instructions describe in the
+// request's image, answered by [BoxAnswer] with box coordinates and a
+// confidence. Instructions are optional; a nil Instructions is omitted from
+// the wire form.
+type Box struct {
+	Instructions JSONContent
+}
+
+func (Box) isQuestion() {}
+
+// MarshalJSON emits the wire form: "type" first, then the optional
+// "instructions" when set.
+func (q Box) MarshalJSON() ([]byte, error) {
+	buf := bytes.NewBufferString(`{"type":"box"`)
+	if q.Instructions != nil {
+		encoded, err := marshalJSONCompact(q.Instructions)
+		if err != nil {
+			return nil, err
+		}
+		buf.WriteString(`,"instructions":`)
+		buf.Write(encoded)
+	}
+	buf.WriteString("}")
+	return buf.Bytes(), nil
+}
+
 // RawQuestion is a wire passthrough for question shapes this SDK does not
 // model: it is sent to the API untouched (unknown fields included), and the
 // API is the schema validator. The client only checks the minimal shape: a
@@ -195,24 +221,36 @@ func (q RawQuestion) answerType() string {
 // normalizeQuestions validates questions before any network I/O and returns a
 // shallow copy for the wire body. It raises a *TypeSafeError when the map is
 // empty, a raw question lacks a non-empty string "type", a raw choice/score
-// question lacks "criteria", or score criteria (typed or raw) is empty.
-func normalizeQuestions(questions Questions) (map[string]Question, error) {
+// question lacks "criteria", score or choice criteria (typed or raw) is
+// empty, or a noul question has non-object criteria or neither instructions
+// nor a described outcome. Names are visited in sorted order so the reported
+// failure is deterministic.
+func normalizeQuestions(questions Questions) (Questions, error) {
 	if len(questions) == 0 {
 		return nil, newTypeSafeError("At least one question is required.")
 	}
-	normalized := make(map[string]Question, len(questions))
-	for name, question := range questions {
+	normalized := make(Questions, len(questions))
+	for _, name := range sortedKeys(questions) {
+		question := questions[name]
 		switch typed := question.(type) {
 		case Noul:
-			// Nothing to validate: both fields are optional.
+			if err := validateNoul(name, typed.Instructions, typed.Criteria != nil && (typed.Criteria.True != nil || typed.Criteria.False != nil)); err != nil {
+				return nil, err
+			}
 		case Choice:
 			if typed.Criteria == nil {
 				return nil, newTypeSafeError("Question %q requires %q.", name, "criteria")
+			}
+			if err := validateChoiceCriteria(name, len(typed.Criteria)); err != nil {
+				return nil, err
 			}
 		case Score:
 			if err := validateScoreCriteria(name, len(typed.Criteria)); err != nil {
 				return nil, err
 			}
+		case Box:
+			// Nothing to validate: instructions are optional and box
+			// questions carry no criteria.
 		case RawQuestion:
 			kind := typed.answerType()
 			if kind == "" {
@@ -222,14 +260,27 @@ func normalizeQuestions(questions Questions) (map[string]Question, error) {
 				if _, ok := typed["criteria"]; !ok {
 					return nil, newTypeSafeError("Question %q requires %q.", name, "criteria")
 				}
-				if kind == "score" {
-					length, err := rawCriteriaLength(name, typed["criteria"])
-					if err != nil {
-						return nil, err
-					}
-					if err := validateScoreCriteria(name, length); err != nil {
-						return nil, err
-					}
+			}
+			switch kind {
+			case "score":
+				length, err := rawCriteriaLength(name, typed["criteria"])
+				if err != nil {
+					return nil, err
+				}
+				if err := validateScoreCriteria(name, length); err != nil {
+					return nil, err
+				}
+			case "choice":
+				length, err := rawCriteriaLength(name, typed["criteria"])
+				if err != nil {
+					return nil, err
+				}
+				if err := validateChoiceCriteria(name, length); err != nil {
+					return nil, err
+				}
+			case "noul":
+				if err := validateRawNoul(name, typed); err != nil {
+					return nil, err
 				}
 			}
 		default:
@@ -247,6 +298,60 @@ func validateScoreCriteria(name string, length int) error {
 		return newTypeSafeError("Score question %q has no criteria; at least one score is required.", name)
 	}
 	return nil
+}
+
+// validateChoiceCriteria rejects a choice question with no criteria; at least
+// one choice is required.
+func validateChoiceCriteria(name string, length int) error {
+	if length == 0 {
+		return newTypeSafeError("Choice question %q has no criteria; at least one choice is required.", name)
+	}
+	return nil
+}
+
+// validateNoul rejects a noul question with neither instructions nor a
+// described outcome; at least one is required.
+func validateNoul(name string, instructions any, describedOutcome bool) error {
+	if instructions == nil && !describedOutcome {
+		return newTypeSafeError("Noul question %q has neither instructions nor criteria; at least one is required.", name)
+	}
+	return nil
+}
+
+// validateRawNoul applies the noul rules to a raw question dictionary: the
+// criteria must be an object when present, and instructions or at least one
+// non-null criteria value is required.
+func validateRawNoul(name string, question RawQuestion) error {
+	criteria, hasCriteria := question["criteria"]
+	if hasCriteria && criteria != nil {
+		if reflect.ValueOf(criteria).Kind() != reflect.Map {
+			return newTypeSafeError("Noul question %q criteria must be an object.", name)
+		}
+	}
+	if !hasCriteria || criteria == nil {
+		return validateNoul(name, question["instructions"], false)
+	}
+	return validateNoul(name, question["instructions"], mappingDescribesOutcome(criteria))
+}
+
+// mappingDescribesOutcome reports whether a mapping criteria holds at least
+// one non-null value, mirroring Python's any(value is not None ...).
+func mappingDescribesOutcome(value any) bool {
+	described := false
+	iter := reflect.ValueOf(value).MapRange()
+	for iter.Next() {
+		entry := iter.Value()
+		switch entry.Kind() {
+		case reflect.Interface, reflect.Ptr, reflect.Map, reflect.Slice, reflect.Func, reflect.Chan:
+			described = !entry.IsNil()
+		default:
+			described = true
+		}
+		if described {
+			return true
+		}
+	}
+	return false
 }
 
 // rawCriteriaLength reports the element/key/character count of a raw score
@@ -320,4 +425,5 @@ var (
 	_ json.Marshaler = NoulCriteria{}
 	_ json.Marshaler = Choice{}
 	_ json.Marshaler = Score{}
+	_ json.Marshaler = Box{}
 )

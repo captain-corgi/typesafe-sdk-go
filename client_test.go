@@ -1,10 +1,12 @@
 package typesafe
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"net"
 	"net/http"
 	"strings"
@@ -124,7 +126,7 @@ func TestExtraBodyEmptyAndNilAllowed(t *testing.T) {
 	client := newLoggedOutClient(t, server.URL)
 	for _, extra := range []map[string]JSONValue{nil, {}} {
 		if _, err := client.SystemOne(t.Context(), &SystemOneParams{
-			State: "hi", Questions: Questions{"q": RawQuestion{"type": "noul"}}, ExtraBody: extra,
+			State: "hi", Questions: Questions{"q": RawQuestion{"type": "noul", "instructions": "?"}}, ExtraBody: extra,
 		}); err != nil {
 			t.Fatalf("SystemOne with ExtraBody=%v: %v", extra, err)
 		}
@@ -140,7 +142,7 @@ func TestUnserializableRequestBody(t *testing.T) {
 	client := newLoggedOutClient(t, server.URL)
 	_, err := client.SystemOne(t.Context(), &SystemOneParams{
 		State:     "x",
-		Questions: Questions{"q": RawQuestion{"type": "noul"}},
+		Questions: Questions{"q": RawQuestion{"type": "noul", "instructions": "?"}},
 		ExtraBody: map[string]JSONValue{"bad": make(chan int)},
 	})
 	var typeSafeErr *TypeSafeError
@@ -736,7 +738,7 @@ func TestInjectedClientTimeoutIsDefaultNotCap(t *testing.T) {
 	defer systemOneClient.Close()
 	if _, err := systemOneClient.SystemOne(t.Context(), &SystemOneParams{
 		State:     "x",
-		Questions: Questions{"q": RawQuestion{"type": "noul"}},
+		Questions: Questions{"q": RawQuestion{"type": "noul", "instructions": "?"}},
 	}); err != nil {
 		t.Fatalf("SystemOne: %v", err)
 	}
@@ -862,10 +864,11 @@ func TestRedirectsNotFollowed(t *testing.T) {
 	}
 }
 
-// TestExplicitAPIKeyVerbatim: a non-blank explicit key is used verbatim (only
-// env values are trimmed), and a whitespace-only explicit key falls through
-// to the environment.
-func TestExplicitAPIKeyVerbatim(t *testing.T) {
+// TestExplicitAPIKeyStripped: explicit keys are whitespace-stripped like
+// Python's resolve_and_validate_api_key (both sources strip), and a
+// whitespace-only explicit key falls through to the environment (Go's
+// documented zero-value deviation).
+func TestExplicitAPIKeyStripped(t *testing.T) {
 	var auth string
 	transport := roundTripperFunc(func(req *http.Request) (*http.Response, error) {
 		auth = req.Header.Get("Authorization")
@@ -880,8 +883,8 @@ func TestExplicitAPIKeyVerbatim(t *testing.T) {
 	if _, err := client.Models.List(t.Context(), nil); err != nil {
 		t.Fatalf("List: %v", err)
 	}
-	if auth != "Bearer  padded " {
-		t.Errorf("Authorization = %q, want verbatim padded key", auth)
+	if auth != "Bearer padded" {
+		t.Errorf("Authorization = %q, want the stripped padded key", auth)
 	}
 
 	t.Setenv(EnvAPIKey, "env-key")
@@ -983,7 +986,7 @@ func TestExtraHeadersCaseInsensitive(t *testing.T) {
 	defer client.Close()
 	if _, err := client.SystemOne(t.Context(), &SystemOneParams{
 		State:     "x",
-		Questions: Questions{"q": RawQuestion{"type": "noul"}},
+		Questions: Questions{"q": RawQuestion{"type": "noul", "instructions": "?"}},
 		ExtraHeaders: map[string]string{
 			"x-team": "call", // different casing than the default header
 		},
@@ -1025,7 +1028,7 @@ func TestProtectedHeadersCaseVariants(t *testing.T) {
 	defer client.Close()
 	if _, err := client.SystemOne(t.Context(), &SystemOneParams{
 		State:     "x",
-		Questions: Questions{"q": RawQuestion{"type": "noul"}},
+		Questions: Questions{"q": RawQuestion{"type": "noul", "instructions": "?"}},
 		ExtraHeaders: map[string]string{
 			"cOnTeNt-TyPe": "text/plain", // must be restored to application/json
 		},
@@ -1406,7 +1409,7 @@ func TestCloseSemantics(t *testing.T) {
 			t.Errorf("expected ErrClientClosed, got %v", err)
 		}
 		_, err = client.SystemOne(t.Context(), &SystemOneParams{
-			State: "x", Questions: Questions{"q": Noul{}},
+			State: "x", Questions: Questions{"q": Noul{Instructions: "?"}},
 		})
 		if !errors.Is(err, ErrClientClosed) {
 			t.Errorf("SystemOne after close: %v", err)
@@ -1623,4 +1626,298 @@ func TestUnparseableBaseURLFailsFast(t *testing.T) {
 	if !errors.Is(err, ErrInvalidBaseURL) {
 		t.Fatalf("expected ErrInvalidBaseURL, got %v", err)
 	}
+}
+
+// --- v0.7.5 sync: non-finite numbers, the asset walk, keep-alive, compression ---
+
+func TestNonFiniteNumbersAsString(t *testing.T) {
+	client, transport := newAssetCaptureClient(t)
+	positiveInf, negativeInf := math.Inf(1), math.Inf(-1)
+	_, err := client.SystemOne(t.Context(), &SystemOneParams{
+		State: map[string]any{
+			"value": math.NaN(),
+			"arr":   []any{1.0, positiveInf, negativeInf},
+			"typed": []float64{1, positiveInf},
+			"map":   map[string]float64{"inf": negativeInf},
+			"fixed": [2]float64{positiveInf, 2},
+		},
+		Questions: Questions{"q": Noul{Instructions: "ok"}},
+		ExtraBody: map[string]JSONValue{"temperature": math.NaN()},
+	})
+	if err != nil {
+		t.Fatalf("SystemOne: %v", err)
+	}
+	body := transport.requests[0].body
+	if !bytes.Contains(body, []byte(`"value":"NaN"`)) ||
+		!bytes.Contains(body, []byte(`"arr":[1,"Infinity","-Infinity"]`)) ||
+		!bytes.Contains(body, []byte(`"typed":[1,"Infinity"]`)) ||
+		!bytes.Contains(body, []byte(`"map":{"inf":"-Infinity"}`)) ||
+		!bytes.Contains(body, []byte(`"fixed":["Infinity",2]`)) ||
+		!bytes.Contains(body, []byte(`"temperature":"NaN"`)) {
+		t.Errorf("non-finite floats must serialize as the strings NaN/Infinity/-Infinity: %s", body)
+	}
+
+	client2, transport2 := newAssetCaptureClient(t)
+	value := math.Inf(1)
+	if _, err := systemOneWithAssets(t, client2, map[string]any{"p": &value}, Questions{"q": Noul{Instructions: "ok"}}, nil); err != nil {
+		t.Fatalf("SystemOne with *float64: %v", err)
+	}
+	if !bytes.Contains(transport2.requests[0].body, []byte(`"p":"Infinity"`)) {
+		t.Errorf("a non-finite float behind a pointer must stringify: %s", transport2.requests[0].body)
+	}
+}
+
+func TestWalkGuards(t *testing.T) {
+	cyclicMap := map[string]any{"safe": "value"}
+	cyclicMap["self"] = cyclicMap
+	cyclicSlice := make([]any, 1)
+	cyclicSlice[0] = cyclicSlice
+	selfPointer := new(any)
+	*selfPointer = selfPointer
+	tests := []struct {
+		name  string
+		state any
+	}{
+		{"cyclic state map", cyclicMap},
+		{"cyclic state slice", cyclicSlice},
+		{"pointer-only cycle", selfPointer},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			attempts := 0
+			client := newDeterministicClient(t, func(req *http.Request) (*http.Response, error) {
+				attempts++
+				return jsonResponse(http.StatusOK, resultBody), nil
+			})
+			_, err := client.SystemOne(t.Context(), &SystemOneParams{
+				State:     tt.state,
+				Questions: Questions{"q": Noul{Instructions: "ok"}},
+			})
+			var sdkErr *TypeSafeError
+			if !errors.As(err, &sdkErr) || !strings.Contains(err.Error(), "could not be encoded as JSON") {
+				t.Fatalf("expected an encoding error, got %v", err)
+			}
+			if attempts != 0 {
+				t.Errorf("cyclic body reached the network (%d attempts)", attempts)
+			}
+		})
+	}
+}
+
+// pointerMarshalerDoc has a pointer-receiver marshaler: unwrapping &doc and
+// re-encoding the bare value would silently replace its custom wire form.
+type pointerMarshalerDoc struct{ Body string }
+
+func (d *pointerMarshalerDoc) MarshalJSON() ([]byte, error) { return []byte(`"custom-doc"`), nil }
+
+func TestWalkValues(t *testing.T) {
+	tests := []struct {
+		name    string
+		state   any
+		check   func(t *testing.T, body []byte)
+		wantErr string
+	}{
+		{
+			name:  "typed-nil image serializes as null",
+			state: []any{(*Image)(nil), "text"},
+			check: func(t *testing.T, body []byte) {
+				if !bytes.Contains(body, []byte(`[null,"text"]`)) {
+					t.Errorf("typed-nil *Image must serialize as null: %s", body)
+				}
+			},
+		},
+		{
+			name:    "bare image value is rejected verbatim",
+			state:   Image{},
+			wantErr: "Images must be passed as *Image.",
+		},
+		{
+			name:  "nil containers stay null",
+			state: map[string]any{"map": map[string]any(nil), "slice": []any(nil)},
+			check: func(t *testing.T, body []byte) {
+				if !bytes.Contains(body, []byte(`"map":null`)) || !bytes.Contains(body, []byte(`"slice":null`)) {
+					t.Errorf("nil containers must stay null: %s", body)
+				}
+			},
+		},
+		{
+			name: "pointer-wrapped image is collected",
+			state: func() any {
+				image := NewImageFromBytes(pngFixture)
+				pointer := &image
+				return map[string]any{"photo": pointer}
+			}(),
+			check: func(t *testing.T, body []byte) {
+				if !bytes.Contains(body, []byte(`"photo":"<image:`)) {
+					t.Errorf("a **Image must serialize as the image's reference: %s", body)
+				}
+			},
+		},
+		{
+			name: "pointer to slice holding an image is collected",
+			state: func() any {
+				image := NewImageFromBytes(pngFixture)
+				slice := &[]any{image}
+				return map[string]any{"photos": slice}
+			}(),
+			check: func(t *testing.T, body []byte) {
+				if !bytes.Contains(body, []byte(`"photos":["<image:`)) {
+					t.Errorf("a *[]any must be walked through: %s", body)
+				}
+			},
+		},
+		{
+			name:  "nil pointer to slice stays null",
+			state: map[string]any{"photos": (*[]any)(nil)},
+			check: func(t *testing.T, body []byte) {
+				if !bytes.Contains(body, []byte(`"photos":null`)) {
+					t.Errorf("a nil *[]any must stay null: %s", body)
+				}
+			},
+		},
+		{
+			name:  "pointer-receiver marshaler passes through untouched",
+			state: map[string]any{"doc": &pointerMarshalerDoc{Body: "hi"}},
+			check: func(t *testing.T, body []byte) {
+				if !bytes.Contains(body, []byte(`"doc":"custom-doc"`)) {
+					t.Errorf("a value with a pointer-receiver marshaler must keep its custom wire form: %s", body)
+				}
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			client, transport := newAssetCaptureClient(t)
+			_, err := systemOneWithAssets(t, client, tt.state, Questions{"q": Noul{Instructions: "ok"}}, nil)
+			if tt.wantErr != "" {
+				var sdkErr *TypeSafeError
+				if !errors.As(err, &sdkErr) || err.Error() != tt.wantErr {
+					t.Fatalf("error = %v, want %q", err, tt.wantErr)
+				}
+				if transport.requestCount() != 0 {
+					t.Fatal("rejected body reached the network")
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("SystemOne: %v", err)
+			}
+			tt.check(t, transport.requests[0].body)
+		})
+	}
+}
+
+func TestMultipartHeadersRoundTrip(t *testing.T) {
+	client, transport := newAssetCaptureClient(t)
+	if _, err := systemOneWithAssets(t, client, "<photo>", Questions{"q": Noul{Instructions: "?"}}, map[string]*Image{"<photo>": NewImageFromBytes(pngFixture)}); err != nil {
+		t.Fatalf("SystemOne: %v", err)
+	}
+	headers := transport.requests[0].request.Header
+	if contentType := headers.Get("Content-Type"); !strings.HasPrefix(contentType, "multipart/form-data; boundary=") {
+		t.Errorf("Content-Type = %q", contentType)
+	}
+	if accept := headers.Get("Accept"); accept != "application/json" {
+		t.Errorf("Accept = %q", accept)
+	}
+	if auth := headers.Get("Authorization"); auth != "Bearer test-key" {
+		t.Errorf("Authorization = %q", auth)
+	}
+	if ua := headers.Get("User-Agent"); ua != "typesafe-sdk/"+Version {
+		t.Errorf("User-Agent = %q", ua)
+	}
+	if sdk := headers.Get("X-TypeSafe-SDK"); sdk != "typesafe-sdk/"+Version {
+		t.Errorf("X-TypeSafe-SDK = %q", sdk)
+	}
+	if runtime := headers.Get("X-TypeSafe-Runtime"); runtime == "" {
+		t.Error("X-TypeSafe-Runtime missing")
+	}
+}
+
+func TestDefaultTransportKeepAlive(t *testing.T) {
+	client, err := NewClient(WithAPIKey("test-key"))
+	if err != nil {
+		t.Fatalf("NewClient: %v", err)
+	}
+	defer client.Close()
+	transport, ok := client.httpClient.Transport.(*http.Transport)
+	if !ok {
+		t.Fatalf("SDK-owned transport is %T", client.httpClient.Transport)
+	}
+	if transport.MaxIdleConnsPerHost != keepAliveConnsPerHost {
+		t.Errorf("MaxIdleConnsPerHost = %d, want %d", transport.MaxIdleConnsPerHost, keepAliveConnsPerHost)
+	}
+	if transport.IdleConnTimeout != keepAliveIdleTimeout {
+		t.Errorf("IdleConnTimeout = %v, want %v", transport.IdleConnTimeout, keepAliveIdleTimeout)
+	}
+	if transport.MaxConnsPerHost != 0 {
+		t.Errorf("MaxConnsPerHost = %d, must stay unset", transport.MaxConnsPerHost)
+	}
+
+	userTransport := http.DefaultTransport.(*http.Transport).Clone()
+	userTransport.MaxIdleConnsPerHost = 3
+	userTransport.IdleConnTimeout = time.Minute
+	supplied, err := NewClient(WithAPIKey("test-key"), WithHTTPClient(&http.Client{Transport: userTransport}))
+	if err != nil {
+		t.Fatalf("NewClient: %v", err)
+	}
+	defer supplied.Close()
+	// A user-supplied transport is shared, never mutated.
+	if supplied.httpClient.Transport != http.RoundTripper(userTransport) {
+		t.Fatal("WithHTTPClient must keep the caller's transport instance")
+	}
+	if userTransport.MaxIdleConnsPerHost != 3 || userTransport.IdleConnTimeout != time.Minute {
+		t.Error("WithHTTPClient transport settings must not be tuned by the SDK")
+	}
+}
+
+// TestNeverCompressed pins the Go zstd deviation: Go's standard library has
+// no zstd implementation, so bodies are never compressed and no compression
+// option exists.
+func TestNeverCompressed(t *testing.T) {
+	t.Run("large JSON body", func(t *testing.T) {
+		client, transport := newAssetCaptureClient(t)
+		bigState := strings.Repeat("x", 2048)
+		if _, err := systemOneWithAssets(t, client, bigState, Questions{"q": Noul{Instructions: "?"}}, nil); err != nil {
+			t.Fatalf("SystemOne: %v", err)
+		}
+		request := transport.requests[0]
+		if got := request.request.Header.Get("Content-Encoding"); got != "" {
+			t.Errorf("Content-Encoding = %q, must never be set", got)
+		}
+		if len(request.body) < 1024 {
+			t.Fatalf("body must exceed the 1024-byte compression threshold, got %d bytes", len(request.body))
+		}
+		if !bytes.Contains(request.body, []byte(bigState)) {
+			t.Error("body must be sent uncompressed")
+		}
+	})
+	t.Run("multipart body", func(t *testing.T) {
+		client, transport := newAssetCaptureClient(t)
+		if _, err := systemOneWithAssets(t, client, "<photo>", Questions{"q": Noul{Instructions: "?"}}, map[string]*Image{"<photo>": NewImageFromBytes(bytes.Repeat(pngFixture, 512))}); err != nil {
+			t.Fatalf("SystemOne: %v", err)
+		}
+		request := transport.requests[0]
+		if got := request.request.Header.Get("Content-Encoding"); got != "" {
+			t.Errorf("Content-Encoding = %q, must never be set", got)
+		}
+		if len(request.body) < 1024 {
+			t.Fatalf("multipart body must exceed the threshold, got %d bytes", len(request.body))
+		}
+	})
+	t.Run("GET models", func(t *testing.T) {
+		transport := &trackingTransport{inner: func(w http.ResponseWriter, r *http.Request) {
+			writeJSON(w, http.StatusOK, `{"models": []}`)
+		}}
+		client, err := NewClient(WithAPIKey("test-key"), WithHTTPClient(&http.Client{Transport: transport}))
+		if err != nil {
+			t.Fatalf("NewClient: %v", err)
+		}
+		defer client.Close()
+		if _, err := client.Models.List(t.Context(), nil); err != nil {
+			t.Fatalf("List: %v", err)
+		}
+		if got := transport.requests[0].request.Header.Get("Content-Encoding"); got != "" {
+			t.Errorf("Content-Encoding = %q, must never be set", got)
+		}
+	})
 }

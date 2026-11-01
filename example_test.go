@@ -2,6 +2,7 @@ package typesafe_test
 
 import (
 	"context"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"log"
@@ -193,4 +194,85 @@ func ExampleRetryPolicy() {
 	fmt.Println("done")
 	// Output:
 	// done
+}
+
+// ExampleNewImageFromBase64 builds an image from base64 text, places it as
+// the request state, and references it from a question.
+func ExampleNewImageFromBase64() {
+	png := "\x89PNG\r\n\x1a\n" + "tiny image"
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, `{"model": "jev-preview", "usage": {},
+		  "answers": {"damaged": {"type": "noul", "noul": 0.12}}}`)
+	}))
+	defer server.Close()
+
+	client, err := typesafe.NewClient(
+		typesafe.WithAPIKey("demo-key"),
+		typesafe.WithBaseURL(server.URL), typesafe.WithAllowInsecureHTTP(),
+	)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer client.Close()
+
+	photo, err := typesafe.NewImageFromBase64(base64.StdEncoding.EncodeToString([]byte(png)))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	resp, err := client.SystemOne(context.Background(), &typesafe.SystemOneParams{
+		State: photo,
+		Questions: typesafe.Questions{
+			"damaged": typesafe.Noul{Instructions: "Is the product damaged?"},
+		},
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println("damaged:", resp.Nouls()["damaged"].Noul)
+	// Output:
+	// damaged: 0.12
+}
+
+// ExampleBox locates a region in an image and reads the box answer, handling
+// a missing confidence.
+func ExampleBox() {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, `{"model": "jev-preview", "usage": {},
+		  "answers": {"dog": {"type": "box",
+		    "box": {"top": 0.21, "bottom": 0.66, "left": 0.19, "right": 0.68},
+		    "confidence": 0.87}}}`)
+	}))
+	defer server.Close()
+
+	client, err := typesafe.NewClient(
+		typesafe.WithAPIKey("demo-key"),
+		typesafe.WithBaseURL(server.URL), typesafe.WithAllowInsecureHTTP(),
+	)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer client.Close()
+
+	photo := typesafe.NewImageFromBytes([]byte("\x89PNG\r\n\x1a\nphoto bytes"))
+	resp, err := client.SystemOne(context.Background(), &typesafe.SystemOneParams{
+		State: photo,
+		Questions: typesafe.Questions{
+			"dog": typesafe.Box{Instructions: "The dog"},
+		},
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	dog := resp.Boxes()["dog"]
+	fmt.Printf("top: %.2f right: %.2f\n", dog.Box.Top, dog.Box.Right)
+	if dog.Confidence != nil {
+		fmt.Printf("confidence: %.2f\n", *dog.Confidence)
+	} else {
+		fmt.Println("confidence: unavailable")
+	}
+	// Output:
+	// top: 0.21 right: 0.68
+	// confidence: 0.87
 }
