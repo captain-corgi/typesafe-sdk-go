@@ -77,6 +77,23 @@ func TestPlacedMemberAliasAndLiteralReference(t *testing.T) {
 	}
 }
 
+func TestPointerQuestionsCarryPlacedImages(t *testing.T) {
+	image := NewImageFromBytes(pngFixture)
+	client, captured := newBodyCaptureClient(t)
+	state := map[string]any{"note": &Noul{Instructions: image}}
+	if _, err := systemOneWithAssets(t, client, state, inlineQuestions, nil); err != nil {
+		t.Fatalf("SystemOne: %v", err)
+	}
+	request := (*captured)[0]
+	compareJSON(t, map[string]any{
+		"note": map[string]any{"type": "noul", "instructions": image.Reference()},
+	}, request.decoded["state"])
+	assets := request.decoded["assets"].(map[string]any)
+	if _, ok := assets[image.Reference()]; !ok {
+		t.Fatalf("pointer-question image not collected: %v", keysOfAny(assets))
+	}
+}
+
 func TestFormattedImageFoundInContent(t *testing.T) {
 	image := NewImageFromBytes(pngFixture)
 	client, captured := newBodyCaptureClient(t)

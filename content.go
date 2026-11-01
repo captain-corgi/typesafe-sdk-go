@@ -95,6 +95,29 @@ func rewriteContent(value any, ctx *assetContext) (any, error) {
 		return rewriteScore(typed, ctx)
 	case Box:
 		return rewriteBox(typed, ctx)
+	case *Noul:
+		if typed == nil {
+			return value, nil
+		}
+		// JSON(*T) is byte-identical to JSON(T); pointer questions walk like
+		// their values instead of hitting the opaque-marshaler passthrough,
+		// which would emit an image reference nothing collects.
+		return rewriteNoul(*typed, ctx)
+	case *Choice:
+		if typed == nil {
+			return value, nil
+		}
+		return rewriteChoice(*typed, ctx)
+	case *Score:
+		if typed == nil {
+			return value, nil
+		}
+		return rewriteScore(*typed, ctx)
+	case *Box:
+		if typed == nil {
+			return value, nil
+		}
+		return rewriteBox(*typed, ctx)
 	case NoulCriteria:
 		return rewriteNoulCriteriaValue(typed, ctx)
 	case *NoulCriteria:
