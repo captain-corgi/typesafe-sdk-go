@@ -1,0 +1,7 @@
+flowchart TD
+  S[/"Generated red PNG + text, both in State"/]:::state
+  S --> C(["client.SystemOne<br/>multipart: request part + image part"]):::sdk
+  C --> Q1["is_red · Noul"]:::noul
+  C --> Q2["dominant · Choice<br/>red · blue · neither"]:::choice
+  Q1 --> O1("Print the solid-color probability"):::outcome
+  Q2 --> O2("Print the dominant label and p per label"):::outcome

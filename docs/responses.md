@@ -32,6 +32,16 @@ classDiagram
         Legend map level to any
         Probabilities map level to float64
     }
+    class BoxAnswer {
+        Box BoxCoordinates
+        Confidence *float64
+    }
+    class BoxCoordinates {
+        Top float64
+        Bottom float64
+        Left float64
+        Right float64
+    }
     class Usage {
         InputTokens *int
         OutputTokens *int
@@ -44,10 +54,12 @@ classDiagram
         Description string
         ReleaseDate string
     }
-    note for Answer "Sealed: NoulAnswer, ChoiceAnswer, ScoreAnswer"
+    note for Answer "Sealed: NoulAnswer, ChoiceAnswer, ScoreAnswer, BoxAnswer"
     Answer <|.. NoulAnswer
     Answer <|.. ChoiceAnswer
     Answer <|.. ScoreAnswer
+    Answer <|.. BoxAnswer
+    BoxAnswer --> BoxCoordinates : edges as fractions, 0..1
     SystemOneResponse --> Usage
     SystemOneResponse --> Answer : Answers, keyed by question name
     ListModelsResponse --> ModelMetadata
@@ -64,13 +76,20 @@ resp.Nouls()["urgent"].Noul       // float64
 resp.Choices()["category"].Choice // string
 resp.Scores()["tone"].Score       // float64 (expected value; may be fractional)
 resp.Scores()["tone"].Legend      // map[int]any — level → rubric entry
+resp.Boxes()["dog"].Box.Top       // float64 — fraction of image height
+resp.Boxes()["dog"].Box.Left      // float64 — fraction of image width
+resp.Boxes()["dog"].Confidence    // *float64 (nil when unreported)
 resp.RequestID                    // "" when the x-typesafe-request-id header is absent
 resp.Raw                          // *http.Response with a buffered, readable body
 ```
 
-The `Nouls()` / `Choices()` / `Scores()` views are type-filtered projections
-of `Answers`, memoized after first use. Score `legend` and `probabilities`
-arrive with string keys on the wire and are coerced to `map[int]...`.
+The `Nouls()` / `Choices()` / `Scores()` / `Boxes()` views are type-filtered
+projections of `Answers`, memoized after first use. Score `legend` and
+`probabilities` arrive with string keys on the wire and are coerced to
+`map[int]...`. Box coordinates are fractions of the image — `Top`/`Bottom`
+of its height, `Left`/`Right` of its width, each 0..1 and the expected
+value of its edge; each is the answer to a `Box` question about the
+request's image.
 
 ## Decode pipeline
 
@@ -82,7 +101,7 @@ flowchart TB
     d2 --> d3["Decode model and optional usage"]
     d3 --> d4["Decode each answer independently from its raw JSON"]
     d4 --> d5{"Answer type known?"}
-    d5 -->|noul / choice / score| d6["Typed answer into Answers"]
+    d5 -->|noul / choice / score / box| d6["Typed answer into Answers"]
     d5 -->|unknown type| d7["Drop with slog.Warn<br>raw payload still readable via resp.Raw"]
     d4 --> d8{"Structural failure?"}
     d8 -->|yes| x2["*ResponseValidationError<br>FieldPath names the first bad field"]
@@ -100,7 +119,8 @@ Behavioral points with parity weight:
   numbers like `1e400`, or usage counts beyond `int64` fail validation
   ([README deviation 5](../README.md#deviations-from-the-python-sdk)).
 - **`FieldPath` is dotted**, with list indices as `[i]`:
-  `answers.tone.confidence`, `models[1].name`, `answers.s.legend.x`. (Do not
+  `answers.tone.confidence`, `models[1].name`, `answers.s.legend.x`,
+  `answers.where.box.top`. (Do not
   confuse this with FastAPI error `loc` rendering, which joins with dots —
   see [Error handling](errors.md#how-the-message-is-extracted).)
 - Every response carries `RequestID` (from the `x-typesafe-request-id`

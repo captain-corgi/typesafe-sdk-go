@@ -2,6 +2,9 @@ package typesafe
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
 	"math/rand/v2"
 	"net/http"
 	"sync/atomic"
@@ -150,6 +153,7 @@ type Client struct {
 	httpClient *http.Client
 	retry      RetryPolicy
 	Models     *Models
+	attached   attachedAssets
 
 	closed atomic.Bool
 
@@ -205,7 +209,17 @@ func NewClient(opts ...Option) (*Client, error) {
 		// the SDK made — a nil Transport would delegate CloseIdleConnections
 		// to the shared http.DefaultTransport pool.
 		httpClient = &http.Client{
-			Transport:     http.DefaultTransport.(*http.Transport).Clone(),
+			Transport: func() http.RoundTripper {
+				transport := http.DefaultTransport.(*http.Transport).Clone()
+				// Keep-alive: Go's default transport pools only 2 idle
+				// connections per host for 90s; the Python SDK keeps 100 for
+				// 30s. MaxConnsPerHost stays unset: it caps connections by
+				// queueing requests before dialing, which would silently
+				// change latency semantics.
+				transport.MaxIdleConnsPerHost = keepAliveConnsPerHost
+				transport.IdleConnTimeout = keepAliveIdleTimeout
+				return transport
+			}(),
 			CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse },
 		}
 	} else {
@@ -289,17 +303,33 @@ type SystemOneParams struct {
 	// ExtraBody holds additional top-level request-body fields. SDK-owned
 	// fields (state, model, and questions) cannot be overridden; other fields
 	// are shallow-merged and object values are replaced rather than deep-merged.
+	// An ExtraBody "assets" key replaces the SDK asset machinery entirely:
+	// Assets and placed images are neither read nor validated, and the body
+	// stays plain JSON with that value verbatim.
 	ExtraBody map[string]JSONValue
+	// Assets names images for referencing them from request content: each
+	// entry is uploaded as one asset part under its alias — even when the
+	// body never names it — and every placed occurrence of the image
+	// serializes as that alias. A nil or empty map sends no assets. Aliases
+	// and image data are validated only when assets are actually sent.
+	Assets map[string]*Image
 }
 
-// SystemOne answers named questions about text or structured state in a
-// single request. Questions are validated before any network I/O; the
-// returned response carries answers keyed by question name, the model used,
-// token usage, the request ID, and the buffered raw HTTP response.
+// SystemOne answers named questions about text, structured state, or images
+// in a single request. Questions are validated before any network I/O; placed
+// and referenced images are collected and uploaded as multipart asset parts;
+// the returned response carries answers keyed by question name, the model
+// used, token usage, the request ID, and the buffered raw HTTP response.
 func (c *Client) SystemOne(ctx context.Context, params *SystemOneParams) (*SystemOneResponse, error) {
 	if params == nil {
 		params = &SystemOneParams{}
 	}
+	if params.State == nil {
+		return nil, newTypeSafeError("State is required.")
+	}
+	// Snapshot attachments at entry so a concurrent detach ends later calls,
+	// never one already preparing; Python snapshots at call time too.
+	attached := c.attached.snapshot()
 	questions, err := normalizeQuestions(params.Questions)
 	if err != nil {
 		return nil, err
@@ -320,18 +350,104 @@ func (c *Client) SystemOne(ctx context.Context, params *SystemOneParams) (*Syste
 	for _, key := range sortedKeys(params.ExtraBody) {
 		body[key] = params.ExtraBody[key]
 	}
-	content, err := encodeBody(body)
+	assetsCtx := newAssetContext(params.Assets)
+	walkedAny, err := rewriteContent(body, assetsCtx)
+	if err != nil {
+		if errors.Is(err, errRequestBodyCycle) {
+			return nil, newTypeSafeError("The request body could not be encoded as JSON")
+		}
+		return nil, err
+	}
+	walked := walkedAny.(map[string]any)
+	content, err := encodeBody(walked)
 	if err != nil {
 		return nil, err
 	}
 	if params.Timeout < 0 {
 		return nil, newTypeSafeError("timeout must be a positive, finite number of seconds.")
 	}
-	req, err := prepareRequest(c.config, http.MethodPost, systemOnePath, content, params.Timeout, params.ExtraHeaders)
+	contentType := ""
+	if _, overridden := body["assets"]; !overridden {
+		pending := collectPendingAssets(content, params.Assets, attached, assetsCtx.found)
+		if len(pending) > 0 {
+			// The API rejects an empty assets map, so the key is sent only
+			// when at least one asset is pending.
+			entries := make(map[string]json.RawMessage, len(pending))
+			parts := make([]part, 0, len(pending)+1)
+			for index := range pending {
+				name := fmt.Sprintf(assetPartFormat, index)
+				// Hand-encoded so "type" precedes "part"; the encoder would
+				// sort a map's keys the other way.
+				entries[pending[index].name] = json.RawMessage(`{"type":"image","part":"` + name + `"}`)
+			}
+			walked["assets"] = entries
+			requestContent, err := encodeBody(walked)
+			if err != nil {
+				return nil, err
+			}
+			resolved, err := resolvePendingAssets(pending)
+			if err != nil {
+				return nil, err
+			}
+			parts = append(parts, part{name: requestPartName, contentType: jsonContentType, content: requestContent})
+			for index, image := range resolved {
+				name := fmt.Sprintf(assetPartFormat, index)
+				parts = append(parts, part{name: name, contentType: image.contentType, content: image.data, filename: name})
+			}
+			contentType, content = encodeMultipart(parts)
+		}
+	}
+	req, err := prepareRequest(c.config, http.MethodPost, systemOnePath, content, contentType, params.Timeout, params.ExtraHeaders)
 	if err != nil {
 		return nil, err
 	}
 	return execute(ctx, c, req, params.Retry, parseSystemOneResponse)
+}
+
+// collectPendingAssets builds the ordered pending-asset list: every Assets
+// entry in sorted-key order — each is uploaded even when the body never names
+// it — then each reference found in the encoded body that names a known image
+// (attached assets, Assets values by reference, and images placed in the
+// content), in order of first appearance. A reference equal to an existing
+// alias never overwrites the alias's entry.
+func collectPendingAssets(content []byte, assets map[string]*Image, attached, found map[string]*Image) []pendingAsset {
+	known := make(map[string]*Image, len(attached)+len(assets)+len(found))
+	for reference, asset := range attached {
+		known[reference] = asset
+	}
+	for _, name := range sortedKeys(assets) {
+		if asset := assets[name]; asset != nil {
+			known[asset.reference] = asset
+		}
+	}
+	for reference, asset := range found {
+		known[reference] = asset
+	}
+
+	pending := make([]pendingAsset, 0, len(assets))
+	seen := make(map[string]struct{}, len(assets))
+	for _, name := range sortedKeys(assets) {
+		pending = append(pending, pendingAsset{name: name, image: assets[name]})
+		seen[name] = struct{}{}
+	}
+	if len(known) == 0 {
+		return pending
+	}
+	// References are JSON-safe ASCII, so one scan of the encoded body finds
+	// them inside every string.
+	for _, match := range referenceRegex.FindAll(content, -1) {
+		reference := string(match)
+		if _, exists := seen[reference]; exists {
+			continue
+		}
+		asset, ok := known[reference]
+		if !ok {
+			continue
+		}
+		pending = append(pending, pendingAsset{name: reference, image: asset})
+		seen[reference] = struct{}{}
+	}
+	return pending
 }
 
 // ModelsListParams describes one GET /v1/models call. The zero values of the
@@ -358,7 +474,7 @@ func (m *Models) List(ctx context.Context, params *ModelsListParams) (*ListModel
 	if params.Timeout < 0 {
 		return nil, newTypeSafeError("timeout must be a positive, finite number of seconds.")
 	}
-	req, err := prepareRequest(m.client.config, http.MethodGet, modelsPath, nil, params.Timeout, params.ExtraHeaders)
+	req, err := prepareRequest(m.client.config, http.MethodGet, modelsPath, nil, "", params.Timeout, params.ExtraHeaders)
 	if err != nil {
 		return nil, err
 	}

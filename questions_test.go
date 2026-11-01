@@ -392,9 +392,11 @@ func TestTypedChoiceRequiresCriteria(t *testing.T) {
 	if err == nil || err.Error() != `Question "q" requires "criteria".` {
 		t.Errorf("typed choice without criteria: %v", err)
 	}
-	// An explicitly empty (non-nil) criteria map is sent as-is.
-	if _, err := normalizeQuestions(Questions{"q": Choice{Criteria: ChoiceCriteria{}}}); err != nil {
-		t.Errorf("explicitly empty choice criteria should pass: %v", err)
+	// Since the v0.7.3 Python sync, an explicitly empty (non-nil) criteria
+	// map is rejected too.
+	_, err = normalizeQuestions(Questions{"q": Choice{Criteria: ChoiceCriteria{}}})
+	if err == nil || err.Error() != `Choice question "q" has no criteria; at least one choice is required.` {
+		t.Errorf("typed choice with empty criteria: %v", err)
 	}
 }
 
@@ -514,5 +516,192 @@ func compareJSON(t *testing.T, want, got any) {
 	}
 	if string(w) != string(g) {
 		t.Errorf("mismatch:\n want %s\n  got %s", w, g)
+	}
+}
+
+func TestBoxWire(t *testing.T) {
+	compareJSON(t, map[string]any{"type": "box"}, wireEncode(t, Box{}))
+	compareJSON(t, map[string]any{"type": "box", "instructions": "The dog"}, wireEncode(t, Box{Instructions: "The dog"}))
+	if _, present := wireEncode(t, Box{})["instructions"]; present {
+		t.Error("nil instructions must be omitted")
+	}
+	encoded, err := json.Marshal(Box{Instructions: "The dog"})
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+	if want := `{"type":"box"`; string(encoded[:len(want)]) != want {
+		t.Errorf("wire form should start with %q, got %s", want, encoded)
+	}
+	if _, err := normalizeQuestions(Questions{"q": Box{}}); err != nil {
+		t.Errorf("bare Box must pass validation: %v", err)
+	}
+}
+
+func TestRawBoxPassthrough(t *testing.T) {
+	// A raw box question gets only the generic raw-question validation.
+	raw := RawQuestion{"type": "box"}
+	if _, err := normalizeQuestions(Questions{"q": raw}); err != nil {
+		t.Fatalf("raw box: %v", err)
+	}
+	if _, err := normalizeQuestions(Questions{"q": RawQuestion{"type": "box", "instructions": "The dog", "future": 1}}); err != nil {
+		t.Fatalf("raw box with extra fields: %v", err)
+	}
+}
+
+func TestValidationChoiceEmpty(t *testing.T) {
+	tests := []struct {
+		name     string
+		question Question
+	}{
+		{"typed empty criteria", Choice{Criteria: ChoiceCriteria{}}},
+		{"raw empty criteria", RawQuestion{"type": "choice", "criteria": map[string]any{}}},
+		{"raw null criteria", RawQuestion{"type": "choice", "criteria": nil}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := normalizeQuestions(Questions{"q": tt.question})
+			want := `Choice question "q" has no criteria; at least one choice is required.`
+			if err == nil || err.Error() != want {
+				t.Fatalf("error = %v, want %q", err, want)
+			}
+		})
+	}
+}
+
+func TestValidationNoul(t *testing.T) {
+	tests := []struct {
+		name     string
+		question Question
+		want     string
+	}{
+		{"typed without either", Noul{}, `Noul question "q" has neither instructions nor criteria; at least one is required.`},
+		{"typed with empty criteria", Noul{Criteria: &NoulCriteria{}}, `Noul question "q" has neither instructions nor criteria; at least one is required.`},
+		{"raw without either", RawQuestion{"type": "noul"}, `Noul question "q" has neither instructions nor criteria; at least one is required.`},
+		{"raw empty criteria", RawQuestion{"type": "noul", "criteria": map[string]any{}}, `Noul question "q" has neither instructions nor criteria; at least one is required.`},
+		{"raw null-valued criteria", RawQuestion{"type": "noul", "criteria": map[string]any{"true": nil}}, `Noul question "q" has neither instructions nor criteria; at least one is required.`},
+		{"typed typed-nil outcome", Noul{Criteria: &NoulCriteria{True: (*NoulCriteria)(nil)}}, `Noul question "q" has neither instructions nor criteria; at least one is required.`},
+		{"raw typed-nil outcome", RawQuestion{"type": "noul", "criteria": map[string]any{"true": (*NoulCriteria)(nil)}}, `Noul question "q" has neither instructions nor criteria; at least one is required.`},
+		{"raw criteria not an object", RawQuestion{"type": "noul", "criteria": "x"}, `Noul question "q" criteria must be an object.`},
+		{"raw criteria is a list", RawQuestion{"type": "noul", "criteria": []any{"x"}}, `Noul question "q" criteria must be an object.`},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := normalizeQuestions(Questions{"q": tt.question})
+			if err == nil || err.Error() != tt.want {
+				t.Fatalf("error = %v, want %q", err, tt.want)
+			}
+		})
+	}
+	for _, question := range []Question{
+		Noul{Instructions: "?"},
+		Noul{Criteria: &NoulCriteria{True: "yes"}},
+		RawQuestion{"type": "noul", "instructions": "?"},
+		RawQuestion{"type": "noul", "criteria": map[string]any{"true": "yes"}},
+	} {
+		if _, err := normalizeQuestions(Questions{"q": question}); err != nil {
+			t.Errorf("valid noul rejected: %v", err)
+		}
+	}
+}
+
+func TestValidationStateRequired(t *testing.T) {
+	attempts := 0
+	client := newDeterministicClient(t, func(req *http.Request) (*http.Response, error) {
+		attempts++
+		return jsonResponse(http.StatusOK, resultBody), nil
+	})
+	_, err := client.SystemOne(t.Context(), &SystemOneParams{
+		State:     nil,
+		Questions: Questions{"q": Noul{Instructions: "?"}},
+	})
+	if err == nil || err.Error() != "State is required." {
+		t.Fatalf("error = %v, want %q", err, "State is required.")
+	}
+	// State is checked before the questions, mirroring the Python SDK.
+	_, err = client.SystemOne(t.Context(), &SystemOneParams{
+		State:     nil,
+		Questions: Questions{},
+	})
+	if err == nil || err.Error() != "State is required." {
+		t.Fatalf("error = %v, want the state error before the questions error, got %v", err, err)
+	}
+	if attempts != 0 {
+		t.Errorf("stateless request reached the network (%d attempts)", attempts)
+	}
+}
+
+func TestValidationBeforeNetwork(t *testing.T) {
+	tests := []struct {
+		name    string
+		params  *SystemOneParams
+		message string
+	}{
+		{
+			"empty questions",
+			&SystemOneParams{State: "x"},
+			"At least one question is required.",
+		},
+		{
+			"raw question without type",
+			&SystemOneParams{State: "x", Questions: Questions{"q": RawQuestion{"instructions": "?"}}},
+			`Question "q" must be a question object or a dictionary with a nonempty string "type".`,
+		},
+		{
+			"raw choice missing criteria",
+			&SystemOneParams{State: "x", Questions: Questions{"q": RawQuestion{"type": "choice"}}},
+			`Question "q" requires "criteria".`,
+		},
+		{
+			"raw score missing criteria",
+			&SystemOneParams{State: "x", Questions: Questions{"q": RawQuestion{"type": "score"}}},
+			`Question "q" requires "criteria".`,
+		},
+		{
+			"empty score criteria",
+			&SystemOneParams{State: "x", Questions: Questions{"q": Score{}}},
+			`Score question "q" has no criteria; at least one score is required.`,
+		},
+		{
+			"empty choice criteria",
+			&SystemOneParams{State: "x", Questions: Questions{"q": Choice{Criteria: ChoiceCriteria{}}}},
+			`Choice question "q" has no criteria; at least one choice is required.`,
+		},
+		{
+			"noul criteria not an object",
+			&SystemOneParams{State: "x", Questions: Questions{"q": RawQuestion{"type": "noul", "criteria": "x"}}},
+			`Noul question "q" criteria must be an object.`,
+		},
+		{
+			"noul with neither",
+			&SystemOneParams{State: "x", Questions: Questions{"q": Noul{}}},
+			`Noul question "q" has neither instructions nor criteria; at least one is required.`,
+		},
+		{
+			"state required",
+			&SystemOneParams{Questions: Questions{"q": Noul{Instructions: "?"}}},
+			"State is required.",
+		},
+		{
+			"negative timeout",
+			&SystemOneParams{State: "x", Questions: Questions{"q": Noul{Instructions: "?"}}, Timeout: -time.Second},
+			"timeout must be a positive, finite number of seconds.",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			attempts := 0
+			client := newDeterministicClient(t, func(req *http.Request) (*http.Response, error) {
+				attempts++
+				return jsonResponse(http.StatusOK, resultBody), nil
+			})
+			_, err := client.SystemOne(t.Context(), tt.params)
+			var sdkErr *TypeSafeError
+			if !errors.As(err, &sdkErr) || err.Error() != tt.message {
+				t.Fatalf("error = %v, want %q", err, tt.message)
+			}
+			if attempts != 0 {
+				t.Errorf("invalid request reached the network (%d attempts)", attempts)
+			}
+		})
 	}
 }

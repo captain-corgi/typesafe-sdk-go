@@ -1,0 +1,10 @@
+flowchart TD
+  A["client.AttachAssets(image)<br/>two nested holds on one reference"]:::sdk
+  A --> S1[/"Call 1: reference interpolated into State text"/]:::state
+  A --> S2[/"Call 2: same reference, no placed image"/]:::state
+  S1 --> Q1["is_red · Noul"]:::noul
+  S2 --> Q2["uniformity · Score<br/>patchy · mostly uniform · entirely uniform"]:::score
+  Q1 --> O1("Both calls upload the attached image"):::outcome
+  Q2 --> O2
+  A --> D["defer detach()<br/>single-shot; last hold ends the attachment"]:::policy
+  D --> O2("Later calls send no unrequested asset"):::outcome

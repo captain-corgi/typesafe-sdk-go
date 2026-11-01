@@ -20,7 +20,7 @@ func TestSecurityReservedExtraBodyFieldsFailBeforeTransport(t *testing.T) {
 			})
 			_, err := client.SystemOne(t.Context(), &SystemOneParams{
 				State:     "state",
-				Questions: Questions{"question": Noul{}},
+				Questions: Questions{"question": Noul{Instructions: "?"}},
 				ExtraBody: map[string]JSONValue{key: true},
 			})
 			if err == nil || !strings.Contains(err.Error(), `ExtraBody cannot override the reserved field`) {
@@ -77,7 +77,7 @@ func TestSecurityAPIKeyNeverAppearsInWireLogs(t *testing.T) {
 				t.Fatalf("NewClient: %v", err)
 			}
 			t.Cleanup(client.Close)
-			if _, err := systemOneCall(t, client, "safe state", Questions{"q": Noul{}}); err != nil {
+			if _, err := systemOneCall(t, client, "safe state", Questions{"q": Noul{Instructions: "?"}}); err != nil {
 				t.Fatalf("SystemOne: %v", err)
 			}
 			if strings.Contains(logs.String(), apiKey) {
@@ -111,7 +111,7 @@ func TestSecuritySensitiveBodiesOnlyAppearInFullWireLogs(t *testing.T) {
 				t.Fatalf("NewClient: %v", err)
 			}
 			t.Cleanup(client.Close)
-			if _, err := systemOneCall(t, client, sensitiveState, Questions{"q": Noul{}}); err != nil {
+			if _, err := systemOneCall(t, client, sensitiveState, Questions{"q": Noul{Instructions: "?"}}); err != nil {
 				t.Fatalf("SystemOne: %v", err)
 			}
 			logged := logs.String()

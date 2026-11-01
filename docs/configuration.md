@@ -30,6 +30,11 @@ Blank-value semantics, which trip people up:
 - Zero-value sentinels: a zero `time.Duration` timeout means "unset"
   (inherit), and an empty `Model` means "use the default"
   ([README deviation 9](../README.md#deviations-from-the-python-sdk)).
+- The resolved API key is validated at construction — printable ASCII
+  without whitespace, with a static message that never echoes the key — and
+  a non-empty but invalid explicit key does not fall back to the
+  environment. Both key sources (option and `TYPESAFE_API_KEY`) are
+  edge-stripped first.
 
 Settings: API key (`TYPESAFE_API_KEY`), base URL (`TYPESAFE_BASE_URL`,
 trailing slashes stripped), default model (`TYPESAFE_DEFAULT_MODEL`),

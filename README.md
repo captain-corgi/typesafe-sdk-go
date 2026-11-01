@@ -6,9 +6,9 @@
 [![Go Reference](https://pkg.go.dev/badge/github.com/captain-corgi/typesafe-sdk-go.svg)](https://pkg.go.dev/github.com/captain-corgi/typesafe-sdk-go)
 
 A Go client SDK for the [TypeSafe AI API](https://typesafe.ai) — typed answers
-to named questions about any state, in a single request. **Zero runtime
-dependencies** (Go standard library only), with feature parity to the Python
-SDK v0.7.0.
+to named questions about any state, including images, in a single request.
+**Zero runtime dependencies** (Go standard library only), with feature parity
+to the Python SDK v0.7.5.
 
 ```go
 client, err := typesafe.NewClient() // reads TYPESAFE_API_KEY
@@ -44,6 +44,7 @@ back — that is the "type safety":
 | **Noul** | yes/no | `NoulAnswer{Noul float64}` — probability of true, 0..1 |
 | **Choice** | classification | `ChoiceAnswer{Choice, Confidence, Probabilities}` |
 | **Score** | rubric scoring | `ScoreAnswer{Score, Confidence, Legend, Probabilities}` |
+| **Box** | locate in an image | `BoxAnswer{Box BoxCoordinates, Confidence}` — edges as fractions |
 
 ## Installation
 
@@ -63,7 +64,10 @@ import "github.com/captain-corgi/typesafe-sdk-go" // package typesafe
 Explicit options beat environment variables, which beat defaults. Environment
 values are trimmed and ignored when blank. Empty explicit strings inherit;
 whitespace-only explicit API keys also inherit. Other explicit strings, including
-base URLs, model names, and nonblank API keys, are preserved verbatim.
+base URLs, model names, and nonblank API keys, are preserved verbatim. The
+resolved API key is validated at construction — printable ASCII without
+whitespace — and a non-empty but invalid explicit key never falls back to the
+environment.
 
 | Setting | Option | Environment | Default |
 | --- | --- | --- | --- |
@@ -117,6 +121,9 @@ typesafe.Score{
     Instructions: "How urgent is this message?",
     Criteria:     typesafe.ScoreCriteria{"can wait", "this week", "today"},
 }
+
+// Locate something in the request's image (see Images below).
+typesafe.Box{Instructions: "The dog"}
 ```
 
 Raw dictionaries pass through to the API untouched (unknown fields included)
@@ -130,13 +137,109 @@ Raw dictionaries pass through to the API untouched (unknown fields included)
 
 Questions are validated **before any network I/O**: an empty question map, a
 raw question without a non-empty string `type`, a choice/score question
-without `criteria`, or empty score criteria all fail fast with a
-`*typesafe.TypeSafeError`.
+without `criteria`, empty score **or** choice criteria, a noul question whose
+criteria is not an object or that has neither instructions nor a described
+outcome, or a missing state all fail fast with a `*typesafe.TypeSafeError`.
 
 Raw score criteria may use custom JSON or text marshalers. Their output is left
 for the API to validate; the SDK encodes them once per call and reuses the body
 on retries. Ordinary empty criteria and cyclic pointer/interface chains are
 rejected before network I/O.
+
+## Images
+
+State and question content may include images. An `*typesafe.Image` (aliased
+as `Asset`) is created from bytes, a file path, or base64 text:
+
+```go
+photo, err := typesafe.NewImageFromBase64(b64) // decodes now
+if err != nil { return err }
+chart  := typesafe.NewImageFromFile("chart.png") // read at request preparation
+avatar := typesafe.NewImageFromBytes(pngBytes)   // copied once, at first use
+```
+
+Data is read and validated lazily, once, on first use — the cached resolution
+is reused by every later request, and image payloads are identical across
+retries. There are no client-side size or count limits; only format sniffing
+happens here (PNG/JPEG magic, else `application/octet-stream`) and the API
+validates image contents (its documented 16 MiB/pixel/32 MiB limits are
+server-side).
+
+Two ways to use an image:
+
+1. **Place it in content** — anywhere in state or question
+   instructions/criteria, at any nesting: `map[string]any{"photo": photo,
+   "caption": "before"}`. A placed image serializes as its alias when it is
+   a member of the call's `Assets` map, else as its reference.
+2. **Reference it from text** — every image mints a stable reference,
+   `<image:` + 32 hex characters + `>`, returned by `photo.Reference()` and
+   `photo.String()` (so `fmt.Sprintf` interpolates it). Reference text is
+   sent verbatim; references are found by scanning the encoded body, inside
+   any string anywhere. The reference must name an image the request knows
+   — one placed in content, passed in `Assets`, or attached to the client
+   (below); a lookalike reference naming nothing known is sent as plain
+   text with no asset.
+
+```go
+resp, err := client.SystemOne(ctx, &typesafe.SystemOneParams{
+    State: map[string]any{
+        "photo": photo, // placed — serialized as the alias "product"
+        "note":  "The product photo on file",
+    },
+    Assets: map[string]*typesafe.Image{"product": photo}, // alias → image; nil/empty sends none
+    Questions: typesafe.Questions{
+        "dog":   typesafe.Box{Instructions: "The dog"},
+        "breed": typesafe.Choice{Instructions: "Which breed is the dog?",
+            Criteria: typesafe.ChoiceCriteria{"labrador": nil, "poodle": nil}},
+    },
+})
+```
+
+Every `Assets` entry is uploaded (under its alias) even when the body never
+names it; each is one multipart part. A request carrying any assets is sent
+as `multipart/form-data` — a first JSON part named `request`, then one part
+per asset, with an `assets` map (`{"<alias>": {"type": "image", "part":
+"asset-N"}}`) added to the JSON body. The SDK never emits base64 assets; that
+wire form stays reachable only through `ExtraBody["assets"]`, which replaces
+the asset machinery entirely (assets are then neither read nor validated).
+
+For a scope wider than one call, attach images to the client — the idiomatic
+home for text references:
+
+```go
+detach, err := client.AttachAssets(chart)
+if err != nil { return err }
+defer detach() // single-shot: releases this scope's hold
+// now any call whose text mentions chart.Reference() uploads the chart,
+// without placing it in each request
+```
+
+Until `detach` runs, every call on this client sends each attached image whose
+reference appears in the request. Attachments nest, are refcounted (an image
+attached by overlapping scopes stays attached until the last one detaches),
+are per-client, and are safe for concurrent use. The returned function is
+single-shot — a second call is a no-op, because holds are counted per
+reference and an unguarded double call would silently detach an asset still
+held by another scope.
+
+Images must be passed as `*Image` (a bare `Image` value in content is
+rejected); images compare by identity, so two images built from identical
+bytes are distinct assets. Images are experimental on the API side: every
+image request must opt in with a `TypeSafe-Danger-Zone-Images: true` header —
+the SDK never auto-sets it; pass it via `WithHeaders` or per-call
+`ExtraHeaders`. Runnable multimodal programs live under
+[`examples/multimodal/`](examples/multimodal/).
+
+Non-finite numbers (`NaN`, `±Inf`) anywhere in the body — including
+`ExtraBody` — are serialized as the strings `"NaN"`, `"Infinity"`, and
+`"-Infinity"`, matching the Python SDK. The boundary: this covers values the
+SDK's body walk reaches (string-keyed maps, slices, arrays, pointers); it
+does not cover fields of your own structs (still rejected by `encoding/json`),
+values behind custom `json.Marshaler`/`TextMarshaler` implementations (never
+invoked, per the marshaler-passthrough rule), or maps whose key type is not
+exactly `string` (`map[int]float64`, defined string-key types) — those pass
+through untouched, so a non-finite value inside one fails encoding instead of
+being stringified.
 
 ## Responses
 
@@ -154,6 +257,9 @@ resp.Choices()["category"].Probabilities   // map[string]float64
 resp.Scores()["tone"].Score                // float64 (expected value; may be fractional)
 resp.Scores()["tone"].Legend               // map[int]any  — level → rubric entry
 resp.Scores()["tone"].Probabilities        // map[int]float64
+resp.Boxes()["dog"].Box.Top                // float64 — fraction of image height
+resp.Boxes()["dog"].Box.Left               // float64 — fraction of image width
+resp.Boxes()["dog"].Confidence             // *float64 (nil when unreported)
 resp.RequestID                   // from the x-typesafe-request-id header
 resp.Raw                         // *http.Response with a buffered, readable body
 ```
@@ -291,6 +397,9 @@ carry `X-TypeSafe-Retry-Count: <n>` (never on the first attempt).
 `ExtraBody` is a shallow merge for additional top-level fields. The SDK-owned
 `state`, `model`, and `questions` fields are reserved and attempting to
 override any of them returns a `*typesafe.TypeSafeError` before network I/O.
+An `ExtraBody` key `assets` is *not* reserved: it replaces the SDK's asset
+machinery entirely — images (passed, placed, or attached) are neither read nor
+validated, and the body stays plain JSON with your value verbatim.
 
 ## Logging
 
@@ -328,9 +437,12 @@ The `automation-use-cases/` and `task-categories/` catalogs mirror the docs
 [use-case map](https://docs.typesafe.ai/concepts/use-case-map). Additional
 `go-software-use-cases/`, `api-use-cases/`, `relational-db-use-cases/`, and
 `testing-use-cases/` catalogs implement the proposed patterns in
-[`plans/20260923-jev-go-software-use-cases/`](plans/20260923-jev-go-software-use-cases/).
-Two basics — `quickstart` and `retries-errors` — sit at the root. Each example
-runs against the live API with `TYPESAFE_API_KEY` set:
+[`plans/20260923-jev-go-software-use-cases/`](plans/20260923-jev-go-software-use-cases/),
+and `multimodal/` covers the experimental images feature (state images,
+`Box` locating and cropping, the three constructors, attached assets, images
+as choice criteria). Two basics — `quickstart` and `retries-errors` — sit at
+the root. Each example runs against the live API with `TYPESAFE_API_KEY`
+set:
 
 ```sh
 TYPESAFE_API_KEY=... go run ./examples/quickstart
@@ -338,7 +450,8 @@ TYPESAFE_API_KEY=... go run ./examples/quickstart
 
 ## Deviations from the Python SDK
 
-This port keeps Python v0.7.0 behavior, with deliberate Go adaptations:
+This port keeps Python v0.7.5 behavior, with deliberate Go adaptations
+(1–11 predate the v0.7.5 sync; 12–23 were added by it):
 
 1. **No `response_model` overload** — Go structs are the typed response;
    there is no runtime schema type to substitute.
@@ -396,7 +509,80 @@ This port keeps Python v0.7.0 behavior, with deliberate Go adaptations:
 11. **Security hardening** — unlike Python, wire bodies are redacted by
    default, response bodies have a 16 MiB limit, base URLs require HTTPS
    (with loopback-only opt-in for HTTP), and `ExtraBody` cannot override
-   SDK-owned fields.
+   SDK-owned fields (`assets` is not reserved — it is the documented user
+   override of the asset machinery, Python parity).
+12. **zstd request compression is NOT supported and gets no option** —
+   Python v0.7.5 compresses request bodies ≥ 1024 bytes with zstd by default
+   when a compressor is available; Go's standard library has no zstd
+   (`compress/` provides flate, gzip, zlib, bzip2, lzw only), so bodies are
+   always sent uncompressed and `Content-Encoding` is never set. A
+   `WithCompression` option whose only non-default value could solely fail
+   would be API noise; ported callers get this pointer instead. **Risk
+   flagged**: if the API ever *requires* zstd for large bodies, a
+   stdlib-only Go SDK cannot comply without breaking the zero-dependency
+   rule.
+13. **`attach_assets` context manager → `AttachAssets(assets ...*Image)
+   (detach func(), error)`** — Go has no with-blocks; `defer detach()` is
+   the idiomatic scope release. The returned function is **single-shot**
+   (`sync.Once`) because holds are per-reference refcounts — a double call
+   would decrement another holder's count and silently detach an in-scope
+   asset; Python's context manager makes double-exit effectively impossible.
+   Refcounted overlapping holds, per-client scope, goroutine reach,
+   snapshot-at-call, and enter-time validation are preserved; non-asset
+   rejection is enforced by the `*Image` parameter type, with `nil` rejected
+   using Python's message.
+14. **Asset enumeration order** — pending assets enumerate sorted `Assets`
+   keys, then references in order of first appearance in the encoded body,
+   where Python uses mapping insertion order (Go maps are unordered; sorted
+   keys are the accepted Go deviation). Part names (`asset-N`) are opaque to
+   the server, so only numbering differs.
+15. **`Image.from_pil` has no counterpart** — no Pillow in Go. Stdlib
+   `image/png`/`image/jpeg` could power a `NewImageFromImage` later; for
+   now, encode the image yourself and call `NewImageFromBytes`.
+16. **Explicit-empty API key still inherits `TYPESAFE_API_KEY`** (extends
+   deviation 9) — Python v0.7.1 errors on an explicit `""` without env
+   fallback. A non-empty but invalid explicit key errors with no env
+   fallback, matching Python.
+17. **Keep-alive is a best-effort mapping** — the SDK-owned default
+   transport gets `MaxIdleConnsPerHost=100` and `IdleConnTimeout=30s`
+   (Python keeps 100 pooled connections alive 30 s). Go's nearest knob to a
+   max-connections cap, `Transport.MaxConnsPerHost`, is deliberately left
+   unset: it caps by queueing excess requests before dialing, silently
+   changing latency semantics versus Python's pool; connection reuse is met
+   by the idle-conn settings alone. Transports supplied via
+   `WithHTTPClient` are never mutated.
+18. **Non-finite numbers and image substitution cover the walk, not struct
+   fields, custom marshalers, or non-string map keys** — covered:
+   `float64`/`float32` NaN/±Inf stringification and `*Image` substitution
+   anywhere inside string-keyed maps, slices, and arrays reachable through
+   the body walk, including through pointers (JSON of `*T` is byte-identical
+   to `T`). Not covered: fields of your own structs (a non-finite field still
+   fails with `encoding/json`'s unsupported-value error; an `*Image` in a
+   struct field serializes as an uncollected reference), anything behind
+   custom `json.Marshaler`/`TextMarshaler` implementations (never invoked),
+   and maps whose key type is not exactly `string` (`map[int]float64`,
+   defined string-key types), which pass through untouched so their contents
+   are neither stringified nor substituted (rebuilding them would drop
+   `TextMarshaler` key formatting). Python's content type has no struct,
+   pointer, or typed-key analog; Go's `JSONContent` does, so this is the
+   exact documented boundary.
+19. **Typed-nil and bare-value image handling** (Go-specific) — a nil
+   `*Image` inside content serializes as JSON `null`; a bare non-pointer
+   `Image` value is rejected with `Images must be passed as *Image.`
+   (surfaced verbatim) rather than silently encoding `{}`.
+20. **Multipart-only asset transport** — the SDK never emits base64
+   `data_base64` assets; they stay reachable solely through
+   `ExtraBody["assets"]`, exactly like Python.
+21. **DEBUG wire-body logging keeps the 16 KiB `<truncated>` cap** rather
+   than Python v0.7.5's 4096 bytes + `(+N bytes)` — pre-existing Go
+   behavior; large multipart/image bodies truncate, keeping logs bounded.
+22. **Read-error errno text** — image-file read errors carry Go's
+   `*fs.PathError` wording (lowercase `no such file or directory`) where
+   Python's strerror capitalizes; the message format is otherwise identical.
+23. **No client-side image/reference/byte limits** (parity — none exist in
+   Python either); the API's 16 MiB/pixel/32 MiB limits are server-side.
+   `TypeSafe-Danger-Zone-Images: true` is documented and sent in examples
+   but never auto-set (parity with both reference SDKs).
 
 ## License
 

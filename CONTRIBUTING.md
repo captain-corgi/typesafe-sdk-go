@@ -53,8 +53,8 @@ fails (`tools/pagegen`):
 - a `flow.mmd` Mermaid `flowchart` next to `main.go` that shows the state,
   the SDK call, each question, and the Go policy that follows. Tag every node
   with one of the classes `state`, `sdk`, `noul`, `choice`, `score`, `raw`,
-  `policy`, `outcome`, or `fail`, and don't add `classDef` lines; the site
-  supplies theme-aware styles.
+  `box`, `policy`, `outcome`, or `fail`, and don't add `classDef` lines; the
+  site supplies theme-aware styles.
 
 Preview the GitHub Pages site locally:
 

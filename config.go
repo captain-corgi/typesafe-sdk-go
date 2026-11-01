@@ -46,20 +46,19 @@ func resolveTimeout(timeout time.Duration) error {
 // resolveConfig applies the arg > env > default precedence for every setting.
 // Empty explicit values mean "unset" and fall through to the environment
 // (deliberate Go zero-value ergonomics: Python uses even empty explicit
-// values verbatim). A non-blank explicit API key is used verbatim; only env
-// values are trimmed, matching the Python SDK.
+// values verbatim). Both API key sources are stripped, and a non-empty but
+// invalid explicit key errors without falling back to the environment.
 func resolveConfig(apiKey, baseURL, defaultModel string, timeout time.Duration, maxResponseBodySize int64, allowInsecureHTTP bool, defaultHeaders http.Header) (*config, error) {
-	explicitKey := apiKey
-	if strings.TrimSpace(explicitKey) == "" {
-		// Blank explicit keys mean "unset" and fall through to the env.
-		explicitKey = ""
-	}
+	explicitKey := strings.TrimSpace(apiKey)
 	key := resolveEnv(explicitKey, EnvAPIKey, "")
 	if key == "" {
 		return nil, &TypeSafeError{
 			msg:     fmt.Sprintf("No API key was provided. Pass WithAPIKey or set the %s environment variable.", EnvAPIKey),
 			wrapped: ErrMissingAPIKey,
 		}
+	}
+	if err := validateAPIKey(key); err != nil {
+		return nil, err
 	}
 	resolvedBaseURL, err := validateBaseURL(resolveEnv(baseURL, EnvBaseURL, DefaultBaseURL), allowInsecureHTTP)
 	if err != nil {
@@ -87,6 +86,21 @@ func resolveConfig(apiKey, baseURL, defaultModel string, timeout time.Duration, 
 		allowInsecureHTTP:   allowInsecureHTTP,
 		defaultHeaders:      defaultHeaders,
 	}, nil
+}
+
+// validateAPIKey rejects a resolved key holding any byte outside printable
+// ASCII — control characters, DEL, and non-ASCII — or any whitespace,
+// including an internal space. The message is static so the key never leaks
+// into errors.
+func validateAPIKey(key string) error {
+	for i := 0; i < len(key); i++ {
+		if key[i] < 0x21 || key[i] > 0x7E {
+			return &TypeSafeError{
+				msg: "API key must contain only printable ASCII characters without whitespace.",
+			}
+		}
+	}
+	return nil
 }
 
 func validateBaseURL(raw string, allowInsecureHTTP bool) (string, error) {

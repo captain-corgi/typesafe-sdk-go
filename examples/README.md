@@ -19,7 +19,8 @@ The [`automation-use-cases/`](automation-use-cases) and
 Four more catalogs implement the 60 proposed Go patterns in
 [`plans/20260923-jev-go-software-use-cases/`](../plans/20260923-jev-go-software-use-cases/):
 general Go software, REST and GraphQL APIs, relational databases, and testing.
-Two basics stay at the root.
+The [`multimodal/`](multimodal) catalog covers the experimental images
+feature. Two basics stay at the root.
 
 ## Basics
 
@@ -27,6 +28,23 @@ Two basics stay at the root.
 |---|---|---|
 | [`quickstart`](quickstart) | Quickstart | Minimal client from env; one call with all three primitives; typed answers, probabilities, confidence, usage |
 | [`retries-errors`](retries-errors) | SDK usage docs | `errors.As` across the taxonomy (incl. `RateLimitError.RetryAfterMs`); custom `RetryPolicy`; per-call `Model`/`Timeout`/`ExtraHeaders`; `TYPESAFE_LOG_LEVEL=debug` |
+
+## Multimodal
+
+Programs under [`multimodal/`](multimodal) exercise the experimental images
+feature (Python SDK v0.7.5 parity). Each program generates its own images
+with the standard library, opts the client into the feature with the
+`TypeSafe-Danger-Zone-Images` header (the API rejects image requests without
+it), and teaches one lesson about `*typesafe.Image`. The API enforces a
+minimum image size, so every generated image is 512×512.
+
+| Example | Demonstrates |
+|---|---|
+| [`image-in-state`](multimodal/image-in-state) | A PNG in `State` beside text; one call with a `Noul` + `Choice` about the same pixels |
+| [`box-locate-and-crop`](multimodal/box-locate-and-crop) | `Box` question; edge fractions back to pixels; crop with stdlib `image`/`image/png`/`image/jpeg`; PNG + JPEG crops on disk |
+| [`image-sources`](multimodal/image-sources) | `NewImageFromBytes` vs `NewImageFromBase64` (whitespace-tolerant, decoded up front) vs `NewImageFromFile` (lazy read); all ride the same multipart transport; one asset per image identity |
+| [`attached-assets`](multimodal/attached-assets) | `Client.AttachAssets` — reference interpolation in state strings, nested refcounted scopes, single-shot `detach()` |
+| [`image-in-choice-criteria`](multimodal/image-in-choice-criteria) | `Choice` criteria whose labels are images; the state image matched against sample images |
 
 ## Automation use cases
 

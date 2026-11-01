@@ -1,7 +1,10 @@
 package typesafe
 
 import (
+	"bytes"
 	"errors"
+	"fmt"
+	"log/slog"
 	"net/http"
 	"regexp"
 	"strings"
@@ -266,5 +269,87 @@ func TestRuntimeHeaderValue(t *testing.T) {
 	}
 	if strings.Count(value, "go/") != 1 {
 		t.Errorf("runtime header %q should carry exactly one go/ prefix", value)
+	}
+}
+
+func TestAPIKeyValidation(t *testing.T) {
+	missing := fmt.Sprintf("No API key was provided. Pass WithAPIKey or set the %s environment variable.", EnvAPIKey)
+	printable := "API key must contain only printable ASCII characters without whitespace."
+	tests := []struct {
+		name    string
+		apiKey  string
+		env     string
+		message string
+		wantKey string
+	}{
+		{"missing key", "", "", missing, ""},
+		{"whitespace-only env ignored", "", "   \t\n", missing, ""},
+		{"valid explicit key stripped", "  ts_live_ok  ", "env-key", "", "ts_live_ok"},
+		{"valid env key", "", " env-key ", "", "env-key"},
+		// Edge whitespace is stripped (Python's .strip()); only invalid
+		// characters inside the key are rejected.
+		{"edge newline stripped", "\nts_live_ok\r\n", "env-key", "", "ts_live_ok"},
+		{"all-edge whitespace stripped", " \t\r\nts_live_ok \t\r\n", "env-key", "", "ts_live_ok"},
+		{"internal newline rejected", "ts_live_x\ny", "env-key", printable, ""},
+		{"internal tab rejected", "ts_live_x\ty", "env-key", printable, ""},
+		{"internal carriage return rejected", "ts_live_x\ry", "env-key", printable, ""},
+		{"internal unit separator rejected", "ts_live_x\x1fy", "env-key", printable, ""},
+		{"internal delete rejected", "ts_live_x\x7fy", "env-key", printable, ""},
+		{"internal nul rejected", "\x00ts_live_x", "env-key", printable, ""},
+		{"internal space rejected", "ts live x", "env-key", printable, ""},
+		{"non-ascii rejected", "ts_live_é", "env-key", printable, ""},
+		{"zero-width space rejected", "ts_live_\u200b", "env-key", printable, ""},
+		{"invalid env key rejected", "", "ts_live_é", printable, ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Setenv(EnvAPIKey, tt.env)
+			cfg, err := resolveConfig(tt.apiKey, "", "", 0, 0, false, nil)
+			if tt.message != "" {
+				if err == nil || err.Error() != tt.message {
+					t.Fatalf("error = %v, want %q", err, tt.message)
+				}
+				if errors.Is(err, ErrMissingAPIKey) != (tt.message == missing) {
+					t.Errorf("ErrMissingAPIKey wrapping = %v for %q", errors.Is(err, ErrMissingAPIKey), tt.message)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("resolveConfig: %v", err)
+			}
+			if cfg.apiKey != tt.wantKey {
+				t.Errorf("api key = %q, want %q", cfg.apiKey, tt.wantKey)
+			}
+		})
+	}
+}
+
+func TestAPIKeyNeverLeaked(t *testing.T) {
+	const secret = "ts_live_secret_value"
+	t.Setenv(EnvAPIKey, "")
+	_, err := NewClient(WithAPIKey(secret + "\x00" + "suffix"))
+	if err == nil {
+		t.Fatal("expected an invalid-key error")
+	}
+	if strings.Contains(err.Error(), secret) {
+		t.Errorf("error leaks the key: %v", err)
+	}
+
+	var logs bytes.Buffer
+	logger := slog.New(slog.NewTextHandler(&logs, &slog.HandlerOptions{Level: slog.LevelDebug}))
+	swapLogger(t, logger)
+	server := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		writeJSON(w, http.StatusOK, resultBody)
+	})
+	client, err := NewClient(WithAPIKey(secret), WithBaseURL(server.URL), WithAllowInsecureHTTP())
+	if err != nil {
+		t.Fatalf("NewClient: %v", err)
+	}
+	defer client.Close()
+	if _, err := systemOneCall(t, client, "x", Questions{"q": Noul{Instructions: "?"}}); err != nil {
+		t.Fatalf("SystemOne: %v", err)
+	}
+	if logged := logs.String(); strings.Contains(logged, secret) {
+		t.Errorf("wire logs leak the key: %s", logged)
 	}
 }

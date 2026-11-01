@@ -48,6 +48,16 @@ func TestMalformedSystemOneResponses(t *testing.T) {
 		{"score legend padded int key coerces", `{"s": {"type": "score", "score": 1, "confidence": 1, "legend": {" 1": "low"}, "probabilities": {" 1": 0.5}}}`, true, ""},
 		{"choice empty key with bad value", `{"c": {"type": "choice", "choice": "a", "confidence": 1, "probabilities": {"": "x"}}}`, true, "answers.c.probabilities."},
 		{"answer not an object", `{"c": "not-a-mapping"}`, true, "answers.c.type"},
+		{"box missing box", `{"b": {"type": "box", "confidence": 0.9}}`, true, "answers.b.box"},
+		{"box null box", `{"b": {"type": "box", "box": null, "confidence": 0.9}}`, true, "answers.b.box"},
+		{"box missing top", `{"b": {"type": "box", "box": {"bottom": 0.5, "left": 0.1, "right": 0.9}, "confidence": 0.9}}`, true, "answers.b.box.top"},
+		{"box missing bottom", `{"b": {"type": "box", "box": {"top": 0.1, "left": 0.1, "right": 0.9}, "confidence": 0.9}}`, true, "answers.b.box.bottom"},
+		{"box missing left", `{"b": {"type": "box", "box": {"top": 0.1, "bottom": 0.5, "right": 0.9}, "confidence": 0.9}}`, true, "answers.b.box.left"},
+		{"box missing right", `{"b": {"type": "box", "box": {"top": 0.1, "bottom": 0.5, "left": 0.1}, "confidence": 0.9}}`, true, "answers.b.box.right"},
+		{"box edge wrong type", `{"b": {"type": "box", "box": {"top": "0.1", "bottom": 0.5, "left": 0.1, "right": 0.9}, "confidence": 0.9}}`, true, "answers.b.box.top"},
+		{"box edge null", `{"b": {"type": "box", "box": {"top": null, "bottom": 0.5, "left": 0.1, "right": 0.9}, "confidence": 0.9}}`, true, "answers.b.box.top"},
+		{"box missing confidence", `{"b": {"type": "box", "box": {"top": 0.1, "bottom": 0.5, "left": 0.1, "right": 0.9}}}`, true, "answers.b.confidence"},
+		{"box confidence wrong type", `{"b": {"type": "box", "box": {"top": 0.1, "bottom": 0.5, "left": 0.1, "right": 0.9}, "confidence": "0.9"}}`, true, "answers.b.confidence"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -370,6 +380,49 @@ func TestAnswerFieldFailures(t *testing.T) {
 				t.Errorf("FieldPath = %q, want %q", validationErr.FieldPath, tt.path)
 			}
 		})
+	}
+}
+
+func TestBoxAnswerDecode(t *testing.T) {
+	// Unmodeled extra fields are ignored; a null confidence stays nil.
+	body := `{
+	  "model": "jev-preview",
+	  "usage": {},
+	  "answers": {
+	    "dog": {"type": "box", "box": {"top": 0.2, "bottom": 0.66, "left": 0.19, "right": 0.68,
+	             "future": "ignored"}, "confidence": 0.9, "another_extra": 1},
+	    "cat": {"type": "box", "box": {"top": 0.1, "bottom": 0.4, "left": 0.5, "right": 0.6}, "confidence": null},
+	    "not-a-box": {"type": "noul", "noul": 0.5}
+	  }
+	}`
+	server := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		writeJSON(w, http.StatusOK, body)
+	})
+	client := newLoggedOutClient(t, server.URL)
+	result, err := systemOneCall(t, client, "x", Questions{"q": Noul{Instructions: "?"}})
+	if err != nil {
+		t.Fatalf("SystemOne: %v", err)
+	}
+	boxes := result.Boxes()
+	if len(boxes) != 2 {
+		t.Fatalf("boxes = %v, want dog and cat", boxes)
+	}
+	dog := boxes["dog"]
+	if dog.Box.Top != 0.2 || dog.Box.Bottom != 0.66 || dog.Box.Left != 0.19 || dog.Box.Right != 0.68 {
+		t.Errorf("dog box = %+v", dog.Box)
+	}
+	if dog.Confidence == nil || *dog.Confidence != 0.9 {
+		t.Errorf("dog confidence = %v, want 0.9", dog.Confidence)
+	}
+	if cat := boxes["cat"]; cat.Confidence != nil {
+		t.Errorf("cat confidence = %v, want nil for a JSON null", cat.Confidence)
+	}
+	if _, present := boxes["not-a-box"]; present {
+		t.Error("non-box answers must not appear in Boxes()")
+	}
+	// The view is memoized: a second call returns the same map.
+	if fmt.Sprintf("%p", result.Boxes()) != fmt.Sprintf("%p", boxes) {
+		t.Error("Boxes() must be memoized")
 	}
 }
 
