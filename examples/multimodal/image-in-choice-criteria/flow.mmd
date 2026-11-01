@@ -1,0 +1,5 @@
+flowchart TD
+  S[/"Unknown-color image in State"/]:::state
+  S --> C(["client.SystemOne<br/>state image + criteria images, one multipart request"]):::sdk
+  C --> Q["sample · Choice<br/>red sample image · blue sample image"]:::choice
+  Q --> O("Print the label whose sample matches, with confidence"):::outcome

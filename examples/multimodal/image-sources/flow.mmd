@@ -1,0 +1,9 @@
+flowchart TD
+  S1[/"NewImageFromBytes<br/>copied at first use"/]:::state
+  S2[/"NewImageFromBase64<br/>whitespace-tolerant, decoded now"/]:::state
+  S3[/"NewImageFromFile<br/>read lazily at request time"/]:::state
+  S1 --> C(["client.SystemOne<br/>one asset part per image identity"]):::sdk
+  S2 --> C
+  S3 --> C
+  C --> Q["identical · Noul"]:::noul
+  Q --> O("Print whether all three photos match; same multipart transport either way"):::outcome

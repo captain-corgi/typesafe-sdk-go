@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>TypeSafe SDK for Go</title>
-  <meta name="description" content="Go client SDK for the TypeSafe AI API: typed answers to named questions, zero runtime dependencies, and 91 runnable examples with diagrams.">
+  <meta name="description" content="Go client SDK for the TypeSafe AI API: typed answers to named questions, zero runtime dependencies, and 96 runnable examples with diagrams.">
   <meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff">
   <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#020617">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2300ADD8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z'/%3E%3Cpath d='m9 12 2 2 4-4'/%3E%3C/svg%3E">
@@ -45,6 +45,8 @@
       --score-bg: light-dark(#f3e8ff, rgb(168 85 247 / .16));
       --raw: light-dark(#c2410c, #fdba74);
       --raw-bg: light-dark(#ffedd5, rgb(249 115 22 / .16));
+      --box: light-dark(#b45309, #fcd34d);
+      --box-bg: light-dark(#fef9c3, rgb(234 179 8 / .16));
       /* Step-through walkthrough kinds */
       --k-setup: light-dark(#5b6478, #9aa4bc);    --k-setup-bg: light-dark(#edf0f6, #232a3a);
       --k-request: light-dark(#4653e8, #93a0ff);  --k-request-bg: light-dark(#e8ebfe, #26305a);
@@ -215,6 +217,7 @@
     .tag-choice { color: var(--choice); background: var(--choice-bg); }
     .tag-score { color: var(--score); background: var(--score-bg); }
     .tag-raw { color: var(--raw); background: var(--raw-bg); }
+    .tag-box { color: var(--box); background: var(--box-bg); }
 
     /* ─── Quick start ─── */
     .qs { display: grid; grid-template-columns: .8fr 1.2fr; gap: 2.5rem; align-items: start; }
@@ -244,6 +247,7 @@
     .chip[aria-pressed="true"].k-choice { color: var(--choice); background: var(--choice-bg); border-color: transparent; }
     .chip[aria-pressed="true"].k-score { color: var(--score); background: var(--score-bg); border-color: transparent; }
     .chip[aria-pressed="true"].k-raw { color: var(--raw); background: var(--raw-bg); border-color: transparent; }
+    .chip[aria-pressed="true"].k-box { color: var(--box); background: var(--box-bg); border-color: transparent; }
     .count { font-size: .78rem; color: var(--muted); }
     .ex-list { overflow-y: auto; padding: .4rem .5rem 1rem; overscroll-behavior: contain; }
     .grp-h { display: flex; justify-content: space-between; font: 600 .72rem var(--mono); text-transform: uppercase; letter-spacing: .06em; color: var(--muted); padding: .9rem .5rem .4rem; }
@@ -450,7 +454,7 @@
 
 <header class="nav">
   <div class="wrap">
-    <a href="#top" class="brand"><svg class="i" aria-hidden="true"><use href="#i-shield"/></svg>TypeSafe SDK for Go <small>v0.7.0</small></a>
+    <a href="#top" class="brand"><svg class="i" aria-hidden="true"><use href="#i-shield"/></svg>TypeSafe SDK for Go <small>v0.7.5</small></a>
     <button class="nav-toggle" aria-label="Menu" aria-expanded="false" aria-controls="nav-links"><svg class="i" aria-hidden="true"><use href="#i-menu"/></svg></button>
     <nav class="nav-links" id="nav-links" aria-label="Primary">
       <a href="#intro">Intro</a>
@@ -474,7 +478,7 @@
   <div class="hero" id="top">
     <div class="wrap">
       <div>
-        <span class="eyebrow">Go SDK · Python v0.7.0 parity</span>
+        <span class="eyebrow">Go SDK · Python v0.7.5 parity</span>
         <h1>Typed answers to <span>named questions</span>.</h1>
         <p>Ask yes/no, classification, and rubric questions about any state in one request. Get statically typed answers back, then decide in plain Go.</p>
         <div class="cta">
@@ -488,7 +492,7 @@
         <div class="hero-stats">
           <div><strong>0</strong>dependencies</div>
           <div><strong>3</strong>typed primitives</div>
-          <div><strong data-total>91</strong>examples</div>
+          <div><strong data-total>96</strong>examples</div>
         </div>
       </div>
       <div class="code-card">
@@ -549,7 +553,7 @@ anger := resp.Scores()["anger"]  // .Score 1.4</code></pre>
         <div class="feature"><svg class="i" aria-hidden="true"><use href="#i-refresh"/></svg><h3>Smart retries</h3><p>Exponential backoff with jitter, <code>Retry-After</code> support, a per-call budget, and custom retry selectors.</p></div>
         <div class="feature"><svg class="i" aria-hidden="true"><use href="#i-alert"/></svg><h3>Structured errors</h3><p>Match any failure with <code>errors.As</code>: <code>*RateLimitError</code>, <code>*TimeoutError</code>, <code>*ResponseValidationError</code>, and more.</p></div>
         <div class="feature"><svg class="i" aria-hidden="true"><use href="#i-zap"/></svg><h3>Safe for concurrency</h3><p>One <code>Client</code> per process, shared across goroutines. Verified with <code>-race</code> in CI.</p></div>
-        <div class="feature"><svg class="i" aria-hidden="true"><use href="#i-compare"/></svg><h3>Secure and in parity</h3><p>HTTPS only, secret headers redacted from logs, bounded response size. Feature parity with Python SDK v0.7.0.</p></div>
+        <div class="feature"><svg class="i" aria-hidden="true"><use href="#i-compare"/></svg><h3>Secure and in parity</h3><p>HTTPS only, secret headers redacted from logs, bounded response size. Feature parity with Python SDK v0.7.5.</p></div>
       </div>
     </div>
   </section>
@@ -568,6 +572,7 @@ anger := resp.Scores()["anger"]  // .Score 1.4</code></pre>
           <div class="prim"><span class="tag tag-choice">Choice</span><h3>Pick one label</h3><p><code>ChoiceAnswer</code> has the <code>Choice</code>, its <code>Confidence</code>, and every label's probability.</p></div>
           <div class="prim"><span class="tag tag-score">Score</span><h3>Place on an ordered rubric</h3><p><code>ScoreAnswer.Score</code> is a position on your rubric, with a legend and probabilities.</p></div>
           <div class="prim"><span class="tag tag-raw">Raw</span><h3>Pass anything through</h3><p><code>RawQuestion</code> sends a question shape untouched, for fields this SDK version does not model.</p></div>
+          <div class="prim"><span class="tag tag-box">Box</span><h3>Locate it in an image (experimental)</h3><p><code>BoxAnswer.Box</code> names the target's edges as fractions of the image, with a confidence. Images ride the same call as multipart assets.</p></div>
         </div>
         <figure class="diagram-card">
           <div class="diagram" data-mermaid="how" role="img" aria-label="Sequence diagram of one SystemOne call: validate, send, retry on 429 or 5xx, decode typed answers, apply Go policy."><span class="diagram-status">Loading diagram…</span></div>
@@ -631,7 +636,7 @@ func main() {
     <div class="wrap">
       <div class="head">
         <span class="eyebrow">Examples</span>
-        <h2><span data-total>91</span> runnable examples, each with a diagram</h2>
+        <h2><span data-total>96</span> runnable examples, each with a diagram</h2>
         <p class="lead">Every example is one <code>package main</code> that uses only the standard library and this SDK, and runs against the live API. Pick one to see its flow and full source.</p>
       </div>
 
@@ -650,6 +655,7 @@ func main() {
               <button class="chip k-choice" data-kind="Choice" aria-pressed="false">Choice</button>
               <button class="chip k-score" data-kind="Score" aria-pressed="false">Score</button>
               <button class="chip k-raw" data-kind="Raw" aria-pressed="false">Raw</button>
+              <button class="chip k-box" data-kind="Box" aria-pressed="false">Box</button>
             </div>
             <div class="count" id="count" aria-hidden="true"></div>
           </div>
@@ -705,7 +711,7 @@ func main() {
   const SHIKI_LANGS = 'https://esm.sh/@shikijs/langs@4.4.3';
   const SHIKI_THEMES = 'https://esm.sh/@shikijs/themes@4.4.3';
   const MERMAID = 'https://cdn.jsdelivr.net/npm/mermaid@11.17.2/dist/mermaid.esm.min.mjs';
-  const KINDS = ['Noul', 'Choice', 'Score', 'Raw'];
+  const KINDS = ['Noul', 'Choice', 'Score', 'Raw', 'Box'];
   const root = document.documentElement;
   const $ = (s, el = document) => el.querySelector(s);
   const $$ = (s, el = document) => [...el.querySelectorAll(s)];
@@ -814,6 +820,7 @@ func main() {
         choice: ['#dbeafe', '#2563eb', '#1e3a8a'],
         score: ['#f3e8ff', '#9333ea', '#581c87'],
         raw: ['#ffedd5', '#ea580c', '#7c2d12'],
+        box: ['#fef9c3', '#ca8a04', '#713f12'],
         policy: ['#e0f7fc', '#00add8', '#0b4f60'],
         outcome: ['#f8fafc', '#334155', '#0f172a', 'font-weight:600'],
         fail: ['#fee2e2', '#dc2626', '#7f1d1d'],
@@ -828,13 +835,14 @@ func main() {
         choice: ['#172554', '#3b82f6', '#bfdbfe'],
         score: ['#3b0764', '#a855f7', '#e9d5ff'],
         raw: ['#431407', '#f97316', '#fed7aa'],
+        box: ['#422006', '#eab308', '#fef08a'],
         policy: ['#06303a', '#00add8', '#a5ecfa'],
         outcome: ['#1e293b', '#cbd5e1', '#f8fafc', 'font-weight:600'],
         fail: ['#450a0a', '#ef4444', '#fecaca'],
       },
     },
   };
-  const LEGEND = [['state', 'Input'], ['sdk', 'SDK call'], ['noul', 'Noul'], ['choice', 'Choice'], ['score', 'Score'], ['raw', 'Raw'], ['policy', 'Go policy'], ['outcome', 'Outcome'], ['fail', 'Error / fallback']];
+  const LEGEND = [['state', 'Input'], ['sdk', 'SDK call'], ['noul', 'Noul'], ['choice', 'Choice'], ['score', 'Score'], ['raw', 'Raw'], ['box', 'Box'], ['policy', 'Go policy'], ['outcome', 'Outcome'], ['fail', 'Error / fallback']];
   const HOW = `sequenceDiagram
   autonumber
   participant App as Your Go code

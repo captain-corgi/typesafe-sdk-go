@@ -1,0 +1,7 @@
+flowchart TD
+  S[/"Source image in State"/]:::state
+  S --> C(["client.SystemOne<br/>multipart: request part + image part"]):::sdk
+  C --> Q["red_square · Box<br/>edges as fractions of the image"]:::box
+  Q --> P["round(top·h, bottom·h, left·w, right·w) into a pixel rect"]:::policy
+  P --> O1("SubImage crop; encode with image/png and image/jpeg"):::outcome
+  P --> O2("Write crop.png and crop.jpg to disk"):::outcome

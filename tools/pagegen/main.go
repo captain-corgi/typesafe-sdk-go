@@ -66,6 +66,7 @@ type catalogMeta struct {
 // top-level examples directory must be added here before it can ship.
 var catalogs = []catalogMeta{
 	{"basics", "Basics", "Start here: the minimal client, and the error and retry toolkit."},
+	{"multimodal", "Multimodal", "Experimental images: reference an *Image anywhere in content, and locate targets with Box."},
 	{"go-software-use-cases", "Go software", "Go keeps dispatch, validation, and side effects; the API answers bounded questions about meaning."},
 	{"api-use-cases", "REST & GraphQL APIs", "Where a semantic decision fits after the usual request, schema, and authorization checks."},
 	{"relational-db-use-cases", "Relational databases", "PostgreSQL patterns: answers become allowlisted SQL and arguments for your own driver."},
@@ -75,12 +76,13 @@ var catalogs = []catalogMeta{
 }
 
 // diagramClasses are the node classes the page styles; see flow.mmd files.
-var diagramClasses = []string{"state", "sdk", "noul", "choice", "score", "raw", "policy", "outcome", "fail"}
+var diagramClasses = []string{"state", "sdk", "noul", "choice", "score", "raw", "box", "policy", "outcome", "fail"}
 
 var questionKinds = map[string]string{
 	"Noul":        "Noul",
 	"Choice":      "Choice",
 	"Score":       "Score",
+	"Box":         "Box",
 	"RawQuestion": "Raw",
 }
 
