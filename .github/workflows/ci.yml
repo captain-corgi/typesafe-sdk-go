@@ -104,7 +104,11 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          go-version: stable
+          # Pinned to the module's minimum toolchain: Go stable emits export
+          # data version 5, which staticcheck 2026.2.1 cannot decode (its
+          # bundled x/tools supports at most version 4). The Test matrix keeps
+          # a stable-toolchain run.
+          go-version: "1.27.x"
       # Run as a tool dependency rather than a module requirement, so the SDK
       # itself keeps zero dependencies.
       - name: Staticcheck
